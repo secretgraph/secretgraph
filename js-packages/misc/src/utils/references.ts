@@ -1,11 +1,15 @@
-import { mapHashNames, trusted_states } from '../constants'
+import { trusted_states } from '../constants'
 import * as Interfaces from '../interfaces'
-import { serializeToBase64, unserializeToArrayBuffer } from './encoding'
+import { serializeToBase64 } from './encoding'
 import {
-    encryptRSAOEAP,
+    encrypt,
+    encryptString,
+    mapDeriveAlgorithms,
+    sign,
     unserializeToCryptoKey,
-    verifySignature,
-} from './encryption'
+    verify,
+} from './crypto'
+import { MaybePromise } from '../typing'
 import { hashKey, hashObject } from './hashing'
 import { fallback_fetch } from './misc'
 
@@ -26,39 +30,30 @@ export async function extractGroupKeys({
     readonly hashAlgorithm: string
     readonly itemDomain: string
 }): Promise<{
-    [name: string]: { [hash: string]: Promise<CryptoKey> }
+    [name: string]: { [hash: string]: MaybePromise<ArrayBuffer> }
 }> {
-    const mapItem = mapHashNames['' + hashAlgorithm]
+    const mapItem = mapDeriveAlgorithms['' + hashAlgorithm]
     if (!mapItem) {
-        throw new Error(
-            'Invalid hash algorithm/no hash algorithm specified: ' +
-                hashAlgorithm
-        )
+        throw Error('invalid algorithm')
     }
     const groupsMapping: {
-        [name: string]: { [hash: string]: Promise<CryptoKey> }
+        [name: string]: { [hash: string]: MaybePromise<ArrayBuffer> }
     } = {}
-    const seenKeys: { [link: string]: [string, Promise<CryptoKey>] } = {}
+    const seenKeys: { [link: string]: [string, MaybePromise<ArrayBuffer>] } =
+        {}
     for (const groupNode of serverConfig.clusterGroups) {
         if (groupNode.injectedKeys.length) {
-            const keys: { [hash: string]: Promise<CryptoKey> } = {}
+            const keys: { [hash: string]: MaybePromise<ArrayBuffer> } = {}
             for (const keyNode of groupNode.injectedKeys) {
                 const isInSeenKeys = seenKeys[keyNode.link] ? false : true
-                let [key_hash, key]: [string, Promise<CryptoKey>] =
+                let [key_hash, key]: [string, MaybePromise<ArrayBuffer>] =
                     isInSeenKeys
                         ? seenKeys[keyNode.link]
                         : [
                               '',
                               fallback_fetch(new URL(keyNode.link, itemDomain))
                                   .then(async (result) => {
-                                      return await unserializeToCryptoKey(
-                                          result.arrayBuffer(),
-                                          {
-                                              name: 'RSA-OAEP',
-                                              hash: mapItem.operationName,
-                                          },
-                                          'publicKey'
-                                      )
+                                      return await result.arrayBuffer()
                                   })
                                   .catch((exc) => {
                                       console.error(
@@ -106,15 +101,15 @@ export function extractPubKeysClusterAndInjected({
     readonly itemDomain: string
     // can be used to boost speed; in case the key is already available it is used and not downloaded
     // if not onlySeen is specified, then source is merged
-    readonly source?: { [hash: string]: Promise<CryptoKey> }
+    readonly source?: { [hash: string]: MaybePromise<ArrayBuffer> }
     readonly validateKey?: boolean
     readonly onlySeen?: boolean
     readonly onlyExtraAndRequired?: Set<string>
     readonly groupKeys: {
-        [name: string]: { [hash: string]: Promise<CryptoKey> }
+        [name: string]: { [hash: string]: MaybePromise<ArrayBuffer> }
     }
-}): { [hash: string]: Promise<CryptoKey> } {
-    const mapItem = mapHashNames['' + props.hashAlgorithm]
+}): { [hash: string]: MaybePromise<ArrayBuffer> } {
+    const mapItem = mapDeriveAlgorithms['' + props.hashAlgorithm]
     if (!mapItem) {
         throw new Error(
             'Invalid hash algorithm/no hash algorithm specified: ' +
@@ -174,16 +169,7 @@ export function extractPubKeysClusterAndInjected({
             pubkeys[mainKeyHash] = fallback_fetch(
                 new URL(keyNode.link, props.itemDomain)
             )
-                .then(async (result) => {
-                    return await unserializeToCryptoKey(
-                        result.arrayBuffer(),
-                        {
-                            name: 'RSA-OAEP',
-                            hash: mapItem.operationName,
-                        },
-                        'publicKey'
-                    )
-                })
+                .then(async (result) => result.arrayBuffer())
                 .catch((exc) => {
                     console.error(
                         'failed exctracting public key from cluster',
@@ -191,15 +177,6 @@ export function extractPubKeysClusterAndInjected({
                     )
                     throw exc
                 })
-        } else {
-            pubkeys[mainKeyHash] = unserializeToCryptoKey(
-                pubkeys[mainKeyHash],
-                {
-                    name: 'RSA-OAEP',
-                    hash: mapItem.operationName,
-                },
-                'publicKey'
-            )
         }
     }
     if (props.source && Object.keys(props.source).length) {
@@ -207,20 +184,6 @@ export function extractPubKeysClusterAndInjected({
             for (const key of Object.keys(pubkeys)) {
                 if (!seen.has(key)) {
                     delete pubkeys[key]
-                }
-            }
-        } else {
-            // we need to convert the rest of source
-            for (const key of Object.keys(pubkeys)) {
-                if (!seen.has(key)) {
-                    pubkeys[key] = unserializeToCryptoKey(
-                        pubkeys[key],
-                        {
-                            name: 'RSA-OAEP',
-                            hash: mapItem.operationName,
-                        },
-                        'publicKey'
-                    )
                 }
             }
         }
@@ -236,15 +199,15 @@ export function extractPubKeysReferences({
 }: {
     readonly node: any
     readonly authorization: string[]
-    readonly source?: { [hash: string]: Promise<CryptoKey> }
+    readonly source?: { [hash: string]: Promise<ArrayBuffer> }
     readonly validateKey?: boolean
     readonly onlySeen?: boolean
     readonly hashAlgorithm: string
     readonly itemDomain: string
-}): { [hash: string]: Promise<CryptoKey> } {
+}): { [hash: string]: Promise<ArrayBuffer> } {
     const pubkeys = Object.assign({}, props.source || {})
     const seen = new Set<string>()
-    const mapItem = mapHashNames['' + props.hashAlgorithm]
+    const mapItem = mapDeriveAlgorithms['' + props.hashAlgorithm]
     if (!mapItem) {
         throw new Error(
             'Invalid hash algorithm/no hash algorithm specified: ' +
@@ -278,14 +241,7 @@ export function extractPubKeysReferences({
                 new URL(keyNode.link, props.itemDomain)
             )
                 .then(async (result) => {
-                    return await unserializeToCryptoKey(
-                        result.arrayBuffer(),
-                        {
-                            name: 'RSA-OAEP',
-                            hash: mapItem.operationName,
-                        },
-                        'publicKey'
-                    )
+                    return await result.arrayBuffer()
                 })
                 .catch((exc) => {
                     console.log(
@@ -294,15 +250,6 @@ export function extractPubKeysReferences({
                     )
                     throw exc
                 })
-        } else {
-            pubkeys[mainKeyHash] = unserializeToCryptoKey(
-                pubkeys[mainKeyHash],
-                {
-                    name: 'RSA-OAEP',
-                    hash: mapItem.operationName,
-                },
-                'publicKey'
-            )
         }
     }
     if (props.source && Object.keys(props.source).length) {
@@ -310,20 +257,6 @@ export function extractPubKeysReferences({
             for (const key of Object.keys(pubkeys)) {
                 if (!seen.has(key)) {
                     delete pubkeys[key]
-                }
-            }
-        } else {
-            // we need to convert the rest of source
-            for (const key of Object.keys(pubkeys)) {
-                if (!seen.has(key)) {
-                    pubkeys[key] = unserializeToCryptoKey(
-                        pubkeys[key],
-                        {
-                            name: 'RSA-OAEP',
-                            hash: mapItem.operationName,
-                        },
-                        'publicKey'
-                    )
                 }
             }
         }
@@ -368,7 +301,9 @@ export async function verifyContent({
                     return
                 }
                 const pubKeyBlob = await result.arrayBuffer()
-                if (await verifySignature(pubKeyBlob, signature, content)) {
+                if (
+                    await verify(pubKeyBlob, signature, content.arrayBuffer())
+                ) {
                     // level is inverted
                     if (maxLevel > level) {
                         maxLevel = level
@@ -379,10 +314,10 @@ export async function verifyContent({
         } else {
             const fn = async () => {
                 if (
-                    await verifySignature(
+                    await verify(
                         existing[keyHash],
                         signature,
-                        content
+                        content.arrayBuffer()
                     )
                 ) {
                     // level is inverted
@@ -403,13 +338,12 @@ async function createSignatureReferences_helper(
         | Interfaces.KeyInput
         | Interfaces.CryptoHashPair
         | PromiseLike<Interfaces.KeyInput | Interfaces.CryptoHashPair>,
-    hashalgo: string,
-    content: ArrayBuffer
+    content: ArrayBuffer,
+    hashAlgorithm: string,
+    signatureAlgorithm: string
 ) {
     const _x = await key
     let signkey: Interfaces.KeyInput, hash: string | Promise<string>
-    const hashalgo2 = mapHashNames[hashalgo].operationName
-    const hashalgo2_len = mapHashNames[hashalgo].length
     if ((_x as any)['hash']) {
         signkey = (_x as Interfaces.CryptoHashPair).key
         hash = (_x as Interfaces.CryptoHashPair).hash
@@ -417,28 +351,14 @@ async function createSignatureReferences_helper(
         signkey = key as Interfaces.KeyInput
 
         // serialize to spki of publickey for consistent hash
-        const result = await hashKey(signkey, hashalgo)
-        hash = result.hash
+        const result = await hashKey(signkey, hashAlgorithm)
+        hash = result.digest
     }
 
     return {
-        signature: await serializeToBase64(
-            crypto.subtle.sign(
-                {
-                    name: 'RSA-PSS',
-                    saltLength: hashalgo2_len / 8,
-                },
-                await unserializeToCryptoKey(
-                    signkey,
-                    {
-                        name: 'RSA-PSS',
-                        hash: hashalgo2,
-                    },
-                    'privateKey'
-                ),
-                content
-            )
-        ),
+        signature: await sign(signkey, content, {
+            algorithm: signatureAlgorithm,
+        }),
         hash: await hash,
     }
 }
@@ -450,25 +370,33 @@ export async function createSignatureReferences(
         | Interfaces.CryptoHashPair
         | PromiseLike<Interfaces.KeyInput | Interfaces.CryptoHashPair>
     )[],
-    hashalgo: string
+    hashAlgorithm: string,
+    signatureAlgorithm: string
 ): Promise<Interfaces.ReferenceInterface[]> {
     const references: Promise<Interfaces.ReferenceInterface>[] = []
-    const hashValue = mapHashNames[hashalgo]
+    const hashValue = mapDeriveAlgorithms[hashAlgorithm]
     if (!hashValue) {
-        throw Error('hashalgorithm not supported: ' + hashalgo)
+        throw Error('hashalgorithm not supported: ' + hashAlgorithm)
+    }
+    const signatureValue = mapDeriveAlgorithms[signatureAlgorithm]
+    if (!signatureValue) {
+        throw Error('signature algorithm not supported: ' + signatureAlgorithm)
     }
     for (const privKey of privkeys) {
         references.push(
-            createSignatureReferences_helper(privKey, hashalgo, content).then(
-                ({ signature, hash }): Interfaces.ReferenceInterface => {
-                    return {
-                        target: hash,
-                        group: 'signature',
-                        extra: `${hashValue.serializedName}:${signature}`,
-                        deleteRecursive: 'FALSE',
-                    }
+            createSignatureReferences_helper(
+                privKey,
+                content,
+                signatureAlgorithm,
+                hashAlgorithm
+            ).then(({ signature, hash }): Interfaces.ReferenceInterface => {
+                return {
+                    target: hash,
+                    group: 'signature',
+                    extra: `${hashValue.serializedName}:${signature}`,
+                    deleteRecursive: 'FALSE',
                 }
-            )
+            })
         )
     }
 
@@ -480,8 +408,9 @@ async function encryptSharedKey_helper(
         | Interfaces.KeyInput
         | Interfaces.CryptoHashPair
         | PromiseLike<Interfaces.KeyInput | Interfaces.CryptoHashPair>,
-    hashalgo: string | undefined,
-    sharedkey: ArrayBuffer
+    sharedkey: ArrayBuffer,
+    encryptAlgorithm: string,
+    deriveAlgorithm: string
 ) {
     const _x = await key
     let pubkey: CryptoKey, hash: string
@@ -489,16 +418,17 @@ async function encryptSharedKey_helper(
         pubkey = (_x as Interfaces.CryptoHashPair).key
         hash = (_x as Interfaces.CryptoHashPair).hash
     } else {
-        const result = await hashKey(key as Interfaces.KeyInput, '' + hashalgo)
+        const result = await hashKey(
+            key as Interfaces.KeyInput,
+            deriveAlgorithm
+        )
         pubkey = result.publicKey
-        hash = result.hash
+        hash = result.digest
     }
     return {
-        encrypted: await encryptRSAOEAP({
-            key: pubkey,
-            data: sharedkey,
-            hashAlgorithm: hashalgo,
-        }).then((data) => serializeToBase64(data.data)),
+        encrypted: await encryptString(key, sharedkey, {
+            algorithm: encryptAlgorithm,
+        }),
         hash,
     }
 }
@@ -510,23 +440,25 @@ export function encryptSharedKey(
         | Interfaces.CryptoHashPair
         | PromiseLike<Interfaces.KeyInput | Interfaces.CryptoHashPair>
     )[],
-    hashalgo?: string
+    encryptAlgorithm: string,
+    deriveAlgorithm: string
 ): [Promise<Interfaces.ReferenceInterface[]>, Promise<string[]>] {
     const references: PromiseLike<Interfaces.ReferenceInterface | void>[] = []
     const tags: PromiseLike<string>[] = []
-    const hashValue = mapHashNames['' + hashalgo]
-    if (!hashValue) {
-        throw Error('hashalgorithm not supported: ' + hashalgo)
-    }
     for (const pubkey of pubkeys) {
-        const temp = encryptSharedKey_helper(pubkey, hashalgo, sharedkey)
+        const temp = encryptSharedKey_helper(
+            pubkey,
+            sharedkey,
+            encryptAlgorithm,
+            deriveAlgorithm
+        )
         references.push(
             temp.then(
                 ({ encrypted, hash }): Interfaces.ReferenceInterface => {
                     return {
                         target: hash,
                         group: 'key',
-                        extra: `${hashValue.serializedName}:${encrypted}`,
+                        extra: encrypted,
                         deleteRecursive: 'NO_GROUP',
                     }
                 },

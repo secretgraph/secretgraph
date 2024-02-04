@@ -9,7 +9,7 @@ import * as Interfaces from '../../interfaces'
 import { serializeToBase64, unserializeToArrayBuffer } from '../encoding'
 import {
     encryptAESGCM,
-    encryptTag,
+    finalizeTag,
     unserializeToCryptoKey,
 } from '../encryption'
 import { map } from '../iterable'
@@ -92,7 +92,7 @@ export async function createKeys({
                     map(
                         options.privateTags,
                         async (tag: string | Promise<string>) => {
-                            return await encryptTag({
+                            return await finalizeTag({
                                 key: sharedkey,
                                 data: tag,
                             })
@@ -257,7 +257,7 @@ export async function updateKey({
                 privateTags && sharedKey
                     ? await Promise.all(
                           privateTags.map(async (tag: string) => {
-                              return await encryptTag({
+                              return await finalizeTag({
                                   key: sharedKey as ArrayBuffer,
                                   data: tag,
                               })

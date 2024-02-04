@@ -18,7 +18,7 @@ import {
     decryptAESGCM,
     decryptRSAOEAP,
     encryptAESGCM,
-    encryptTag,
+    finalizeTag,
     extractTags,
     extractTagsRaw,
 } from '../encryption'
@@ -110,7 +110,7 @@ export async function createContent({
             ((await tagsPromise) as (string | PromiseLike<string>)[])
                 .concat(tagsOptions)
                 .map((data) =>
-                    encryptTag({
+                    finalizeTag({
                         data,
                         key: key as NonNullable<typeof key>,
                     })
@@ -166,7 +166,7 @@ export async function updateContent({
     actions?: Iterable<Interfaces.ActionInterface>
     hashAlgorithm?: string
     authorization: Iterable<string>
-    // only for tag only updates if encryptTags is used
+    // only for tag only updates if finalizeTags is used
     oldKey?: Interfaces.RawInput
 }): Promise<FetchResult<any>> {
     const tagsOptions = options.tags
@@ -193,7 +193,7 @@ export async function updateContent({
     let tags: (PromiseLike<string> | string)[] | null = tagsOptions
     if (sharedKey && tagsOptions && !isPublic) {
         tags = tagsOptions.map((tag: string) => {
-            return encryptTag({
+            return finalizeTag({
                 key: sharedKey as ArrayBuffer,
                 data: tag,
             })

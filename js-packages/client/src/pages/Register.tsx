@@ -12,7 +12,7 @@ import {
 } from '@secretgraph/graphql-queries/server'
 import * as Interfaces from '@secretgraph/misc/interfaces'
 import * as Constants from '@secretgraph/misc/constants'
-import { deriveClientPW } from '@secretgraph/misc/utils/encryption'
+import { deriveString } from '@secretgraph/misc/utils/crypto'
 import { createClient } from '@secretgraph/misc/utils/graphql'
 import { findWorkingHashAlgorithms } from '@secretgraph/misc/utils/hashing'
 import { updateContent } from '@secretgraph/misc/utils/operations'
@@ -152,10 +152,11 @@ function Register() {
                             slots: [slot],
                             configSecurityQuestion: [
                                 securityQuestion[0],
-                                await deriveClientPW({
-                                    pw: securityQuestion[1],
-                                    hashAlgorithm: 'sha512',
-                                    iterations: 1000000,
+                                await deriveString(securityQuestion[1], {
+                                    algorithm: 'PBKDF2-sha512',
+                                    params: {
+                                        iterations: 1000000,
+                                    },
                                 }),
                             ],
                             configLockUrl: '',

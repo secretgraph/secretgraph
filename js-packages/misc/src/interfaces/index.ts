@@ -1,40 +1,11 @@
+import { MaybePromise } from 'typing'
+
 export type NonKeyInput = string | Blob | ArrayBuffer | DataView
 export type RawInput = NonKeyInput | CryptoKey
 export type KeyInput = RawInput | CryptoKeyPair
 
 export interface KeyOutInterface {
     data: ArrayBuffer
-}
-
-export interface CryptoRSAInInterface {
-    readonly data: RawInput | PromiseLike<RawInput>
-    readonly key: KeyInput | PromiseLike<KeyInput>
-    readonly hashAlgorithm?: string | PromiseLike<string>
-}
-
-export interface CryptoRSAOutInterface extends KeyOutInterface {
-    data: ArrayBuffer
-    key: CryptoKey
-    hashAlgorithm: string
-    nonce?: ArrayBuffer
-}
-
-export interface CryptoGCMInInterface {
-    readonly data: RawInput | PromiseLike<RawInput>
-    readonly key: KeyInput | PromiseLike<KeyInput>
-    readonly nonce?: NonKeyInput | PromiseLike<NonKeyInput>
-}
-
-export interface CryptoGCMOutInterface extends KeyOutInterface {
-    key: CryptoKey
-    nonce: ArrayBuffer
-}
-
-export interface PWInterface {
-    readonly pw: NonKeyInput | PromiseLike<NonKeyInput>
-    readonly salt?: NonKeyInput | PromiseLike<NonKeyInput>
-    readonly iterations: number | string | PromiseLike<number | string>
-    readonly hashAlgorithm: string | PromiseLike<string>
 }
 
 export interface ActionInterface {

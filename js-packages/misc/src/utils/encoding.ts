@@ -1,4 +1,5 @@
 import * as Interfaces from '../interfaces'
+import { MaybePromise } from '../typing'
 
 export const utf8encoder = new TextEncoder()
 export const utf8decoder = new TextDecoder()
@@ -31,10 +32,7 @@ export function b64toutf8(inp: string) {
 }
 
 export async function unserializeToArrayBuffer(
-    inp:
-        | Interfaces.RawInput
-        | Interfaces.KeyOutInterface
-        | PromiseLike<Interfaces.RawInput | Interfaces.KeyOutInterface>
+    inp: MaybePromise<Interfaces.RawInput | Interfaces.KeyOutInterface>
 ): Promise<ArrayBuffer> {
     const _inp = await inp
     let _result: ArrayBuffer
@@ -42,6 +40,7 @@ export async function unserializeToArrayBuffer(
         _result = b64tobuffer(_inp)
     } else {
         let _data
+        // check if keyout by faking type
         const _finp = (_inp as Interfaces.KeyOutInterface).data
         if (
             _finp &&
@@ -95,19 +94,31 @@ export async function unserializeToArrayBuffer(
 }
 
 export async function serializeToBase64(
-    inp:
-        | Interfaces.RawInput
-        | Interfaces.KeyOutInterface
-        | PromiseLike<Interfaces.RawInput | Interfaces.KeyOutInterface>
+    inp: MaybePromise<Interfaces.RawInput | Interfaces.KeyOutInterface>
 ): Promise<string> {
     return Buffer.from(await unserializeToArrayBuffer(inp)).toString('base64')
 }
 
-export function fromGraphqlId(gid: string) {
+export function splitFirstOnly(inp: string): [string, string] {
+    const matches = inp.match(/([^:]*):(.*)/)
+    if (!matches) {
+        return ['', inp]
+    }
+    return [matches[1], matches[2]]
+}
+
+export function splitLastOnly(inp: string): [string, string] {
+    const matches = inp.match(/(.*):([^:]*)$/)
+    if (!matches) {
+        return ['', inp]
+    }
+    return [matches[1], matches[2]]
+}
+
+export function fromGraphqlId(gid: string): [string, string] | null {
     try {
         const rawTxt = utf8decoder.decode(b64tobuffer(gid))
-        let [_, type, id] = rawTxt.match(/([^:]*):(.*)/) as string[]
-        return [type, id]
+        return splitFirstOnly(rawTxt)
     } catch (exc) {
         console.debug('error parsing id', gid, exc)
     }
@@ -115,7 +126,7 @@ export function fromGraphqlId(gid: string) {
 }
 
 export function toGraphqlId(type: string, rid: string) {
-    return Buffer.from(utf8ToBinary(`${type}:${rid}`)).toString('base64')
+    return Buffer.from(`${type}:${rid}`, 'utf-8').toString('base64')
 }
 
 export class InvalidPrefix extends Error {}

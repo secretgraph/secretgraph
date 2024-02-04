@@ -143,16 +143,19 @@ class HashNameItem:
     serializedName: str
 
 
-mapHashNames: dict[str, HashNameItem] = {
-    "sha512": HashNameItem(algorithm=hashes.SHA512(), serializedName="sha512"),
-    "SHA-512": HashNameItem(
-        algorithm=hashes.SHA512(), serializedName="sha512"
+mapHashNames: dict[str, HashNameItem] = {}
+for item, variants in [
+    (
+        HashNameItem(algorithm=hashes.SHA512(), serializedName="sha512"),
+        ["sha512", "SHA-512"],
     ),
-    "sha256": HashNameItem(algorithm=hashes.SHA256(), serializedName="sha256"),
-    "SHA-256": HashNameItem(
-        algorithm=hashes.SHA256(), serializedName="sha256"
+    (
+        HashNameItem(algorithm=hashes.SHA256(), serializedName="sha256"),
+        ["sha256", "SHA-256"],
     ),
-}
+]:
+    for variant in variants:
+        mapHashNames[variant] = item
 
 
 class TransferResult(enum.Enum):

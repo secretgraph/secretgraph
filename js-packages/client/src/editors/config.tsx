@@ -22,7 +22,6 @@ import {
     cleanConfig,
     updateConfig as updateConfigOb,
 } from '@secretgraph/misc/utils/config'
-import { deriveClientPW } from '@secretgraph/misc/utils/encryption'
 import {
     findWorkingHashAlgorithms,
     hashTagsContentHash,
@@ -53,6 +52,7 @@ import ClusterSelectViaUrl from '../components/formsWithContext/ClusterSelectVia
 import ConfigShareDialog from '../components/share/ConfigShareDialog'
 import * as Contexts from '../contexts'
 import { mappersToArray } from '../hooks'
+import { deriveString } from '@secretgraph/misc/utils/crypto'
 
 interface InnerConfigProps {
     disabled?: boolean
@@ -139,11 +139,15 @@ function InnerConfig({
                         update['configSecurityQuestion'] = [
                             values.securityQuestion[0],
                             values.securityQuestion[1]
-                                ? await deriveClientPW({
-                                      pw: values.securityQuestion[1],
-                                      hashAlgorithm: 'sha512',
-                                      iterations: 1000000,
-                                  })
+                                ? await deriveString(
+                                      values.securityQuestion[1],
+                                      {
+                                          algorithm: 'PBKDF2-sha512',
+                                          params: {
+                                              iterations: 1000000,
+                                          },
+                                      }
+                                  )
                                 : thisConfig.configSecurityQuestion[1],
                         ]
                     }

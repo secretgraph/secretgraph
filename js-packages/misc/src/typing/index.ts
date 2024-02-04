@@ -1,6 +1,10 @@
 export type UnpackPromise<T> = T extends PromiseLike<infer U> ? U : T
 export type ValueType<T extends object> = T[keyof T]
-export type EntryType<T extends object, K extends keyof T = keyof T> = [K, T[K]]
+export type EntryType<T extends object, K extends keyof T = keyof T> = [
+    K,
+    T[K]
+]
+export type MaybePromise<T> = T | PromiseLike<T>
 export type DistributivePick<
     T extends object,
     K extends keyof T

@@ -4,14 +4,18 @@ import * as Constants from '../constants'
 import * as Interfaces from '../interfaces'
 import { b64toarr, serializeToBase64, utf8encoder } from './encoding'
 import {
-    decryptAESGCM,
     decryptFirstPreKey,
     decryptPreKeys,
-    decryptRSAOEAP,
-    encryptAESGCM,
     encryptPreKey,
-    unserializeToCryptoKey,
 } from './encryption'
+import {
+    unserializeToCryptoKey,
+    mapHashNames,
+    mapEncryptionAlgorithms,
+    encrypt,
+    decrypt,
+    decryptString,
+} from './crypto'
 import { hashObject } from './hashing'
 import {
     InvalidMergeError,
@@ -91,17 +95,17 @@ export function cleanConfig(
     }
     if (!config.slots?.length) {
         config.slots = ['main']
-        console.debug("missing slots, fix")
+        console.debug('missing slots, fix')
         hasChanges = true
     }
     if (config.configLockUrl === undefined) {
-        console.debug("missing configLockUrl, fix")
+        console.debug('missing configLockUrl, fix')
         config.configLockUrl = ''
         hasChanges = true
     }
 
     if (!config.configSecurityQuestion?.length) {
-        console.debug("missing configSecurityQuestion, fix")
+        console.debug('missing configSecurityQuestion, fix')
         config.configSecurityQuestion = [
             'The answer to life, the universe, and everything ("The Hitchhiker\'s Guide to the Galaxy").',
             defaultAnswer,
@@ -109,13 +113,13 @@ export function cleanConfig(
         hasChanges = true
     }
     if (config.trustedKeys === undefined) {
-        console.debug("missing trustedKeys, fix")
+        console.debug('missing trustedKeys, fix')
         config.trustedKeys = {}
         hasChanges = true
     }
     for (const [key, val] of Object.entries(config.tokens)) {
         if (typeof val == 'string') {
-            console.debug("old token format, fix")
+            console.debug('old token format, fix')
             config.tokens[key] = {
                 data: val,
                 note: '',
@@ -126,7 +130,7 @@ export function cleanConfig(
     }
     for (const [key, val] of Object.entries(config.certificates)) {
         if (typeof val == 'string') {
-            console.debug("old certificate format, fix")
+            console.debug('old certificate format, fix')
             config.certificates[key] = {
                 data: val,
                 note: '',
@@ -145,7 +149,7 @@ export function cleanConfig(
     if (domain) {
         const nBaseurl = new URL(config.baseUrl, domain).href
         if (nBaseurl != config.baseUrl) {
-            console.debug("change baseurl")
+            console.debug('change baseurl')
             hasChanges = true
             config.baseUrl = nBaseurl
         }
@@ -232,7 +236,7 @@ export function cleanConfig(
                 )[0]
                 config.hosts[nhost].contents = new_contents
                 delete config.hosts[host]
-                console.log("move host")
+                console.log('move host')
                 hasChanges = true
             }
         }
@@ -244,7 +248,7 @@ export function cleanConfig(
                 const nlink = new URL(link, domain).href
                 // deduplicate
                 if (link != nlink || links.includes(nlink)) {
-                    console.debug("deduplicate trusted keys")
+                    console.debug('deduplicate trusted keys')
                     hasChanges = true
                     hasUpdate = true
                 }
@@ -457,7 +461,7 @@ export function extractPrivKeys({
     readonly url: string
     readonly clusters?: Set<string>
     readonly onlySignKeys?: boolean
-    readonly hashAlgorithm: string
+    readonly encryptionAlgorithm: string
     source?: { [hash: string]: Promise<CryptoKey> }
 }): { [hash: string]: Promise<CryptoKey> } {
     const privkeys = Object.assign({}, props.source || {})
@@ -467,11 +471,10 @@ export function extractPrivKeys({
         (props.onlySignKeys ? config.signWith[config.slots[0]] : []) || []
     )
 
-    const mapItem = Constants.mapHashNames['' + props.hashAlgorithm]
+    const mapItem = mapEncryptionAlgorithms['' + props.encryptionAlgorithm]
     if (!mapItem) {
         throw new Error(
-            'Invalid hash algorithm/no hash algorithm specified: ' +
-                props.hashAlgorithm
+            'Invalid encryption algorithm: ' + props.encryptionAlgorithm
         )
     }
     for (const id in clusters) {
@@ -488,10 +491,7 @@ export function extractPrivKeys({
             ) {
                 privkeys[hash] = unserializeToCryptoKey(
                     certEntry.data,
-                    {
-                        name: 'RSA-OAEP',
-                        hash: mapItem.operationName,
-                    },
+                    mapItem.keyParams,
                     'privateKey'
                 )
             }
@@ -1168,19 +1168,13 @@ async function loadConfigUrl_helper(
                 keys.map(async (key) => {
                     // decrypt private key
                     const privkey = (
-                        await decryptAESGCM({
-                            data: blob,
-                            key: key,
-                            nonce,
+                        await decrypt(key, blob.arrayBuffer(), {
+                            params: { nonce },
+                            algorithm: 'AESGCM',
                         })
                     ).data
                     // with the private key decrypt shared key
-                    return (
-                        await decryptRSAOEAP({
-                            key: privkey,
-                            data: esharedkey,
-                        })
-                    ).data
+                    return (await decryptString(privkey, esharedkey)).data
                 })
             )
         }
@@ -1194,10 +1188,9 @@ async function loadConfigUrl_helper(
     return await Promise.any(
         sharedkeys.map(async (sharedkey: ArrayBuffer) => {
             return (
-                await decryptAESGCM({
-                    data: content,
-                    key: sharedkey,
-                    nonce: contentNonce,
+                await decrypt(sharedkey, content.arrayBuffer(), {
+                    params: { none: contentNonce },
+                    algorithm: 'AESGCM',
                 })
             ).data
         })
@@ -1233,10 +1226,9 @@ export const loadConfig = async (
                         return Promise.reject('not for decryption')
                     }
                     return (
-                        await decryptAESGCM({
-                            data: parsedResult.data,
-                            key: data[0],
-                            nonce: parsedResult.nonce,
+                        await decrypt(data[0], parsedResult.data, {
+                            algorithm: 'AESGCM',
+                            params: { nonce: parsedResult.nonce },
                         })
                     ).data
                 },
@@ -1271,7 +1263,7 @@ export const loadConfig = async (
             return [null, false]
         }
         let content = await contentResult.blob()
-        // try unencrypted
+        // try if unencrypted config
         try {
             return cleanConfig(
                 JSON.parse(await content.text()),
@@ -1316,10 +1308,9 @@ export const loadConfig = async (
             return cleanConfig(
                 await Promise.any(
                     [...raw_keys].map(async (key) => {
-                        const res = await decryptAESGCM({
-                            key,
-                            data: content,
-                            nonce,
+                        const res = await decrypt(key, content.arrayBuffer(), {
+                            algorithm: 'AESGCM',
+                            params: { nonce },
                         })
                         return JSON.parse(await new Blob([res.data]).text())
                     })
@@ -1392,9 +1383,8 @@ export async function exportConfig(
     }
     if (pws && iterations) {
         const mainkey = crypto.getRandomValues(new Uint8Array(32))
-        const encrypted = await encryptAESGCM({
-            key: mainkey,
-            data: utf8encoder.encode(config),
+        const encrypted = await encrypt(mainkey, utf8encoder.encode(config), {
+            algorithm: 'AESGCM',
         })
         const prekeys = []
         for (const pw of pws) {
@@ -1402,15 +1392,15 @@ export async function exportConfig(
                 encryptPreKey({
                     prekey: mainkey,
                     pw,
-                    hashAlgorithm: 'SHA-512',
-                    iterations,
+                    deriveAlgorithm: 'PBKDF2-sha512',
+                    params: { iterations },
                 })
             )
         }
         newConfig = JSON.stringify({
             data: await serializeToBase64(encrypted.data),
             iterations,
-            nonce: await serializeToBase64(encrypted.nonce),
+            nonce: await serializeToBase64(encrypted.params.nonce),
             prekeys: await Promise.all(prekeys),
         })
     } else {
@@ -1446,7 +1436,7 @@ export async function pruneOldTrustedKeys({
             continue
         }
         const splitted = key.split(':')
-        if (splitted.length != 2 || !Constants.mapHashNames[splitted[0]]) {
+        if (splitted.length != 2 || !mapHashNames[splitted[0]]) {
             ret[key] = null
             continue
         }
