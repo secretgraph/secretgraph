@@ -5,6 +5,10 @@ import {
     mapDeriveAlgorithms,
     mapEncryptionAlgorithms,
     mapSignatureAlgorithms,
+    validAsymmetricNames,
+    validDeriveNames,
+    validHashNames,
+    validSymmetricNames,
 } from './base_crypto'
 
 export {
@@ -21,19 +25,27 @@ export class EmptyKeyError extends Error {}
 
 export function findWorkingAlgorithms(
     algorithms: string[],
-    domain?: 'derive' | 'encryption' | 'signature'
+    domain?: 'hash' | 'derive' | 'symmetric' | 'asymmetric' | 'signature'
 ): string[] {
+    // only signature needs no extra set
     // js sets are insertion order stable
     const algos: Set<string> = new Set()
     for (const algo of algorithms) {
         let found = null
-        if ((!domain || domain == 'derive') && mapDeriveAlgorithms[algo]) {
-            found = mapDeriveAlgorithms[algo].serializedName
+        if ((!domain || domain == 'hash') && validHashNames[algo]) {
+            found = validHashNames[algo]
+        } else if ((!domain || domain == 'derive') && validDeriveNames[algo]) {
+            found = validAsymmetricNames[algo]
         } else if (
-            (!domain || domain == 'encryption') &&
-            mapEncryptionAlgorithms[algo]
+            (!domain || domain == 'asymmetric') &&
+            validAsymmetricNames[algo]
         ) {
-            found = mapEncryptionAlgorithms[algo].serializedName
+            found = validAsymmetricNames[algo]
+        } else if (
+            (!domain || domain == 'symmetric') &&
+            validSymmetricNames[algo]
+        ) {
+            found = validSymmetricNames[algo]
         } else if (
             (!domain || domain == 'signature') &&
             mapSignatureAlgorithms[algo]

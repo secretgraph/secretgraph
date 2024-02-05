@@ -137,6 +137,10 @@ SECRETGRAPH_DEFAULT_CLUSTER_GROUPS = {}
 
 # specify hash names from most current to most old
 SECRETGRAPH_HASH_ALGORITHMS = ["sha512"]
+SECRETGRAPH_DERIVE_ALGORITHMS = ["PBKDF2-sha512", "sha512"]
+SECRETGRAPH_SYMMETRIC_ENCRYPTION_ALGORITHMS = ["AESGCM"]
+SECRETGRAPH_ASYMMETRIC_ENCRYPTION_ALGORITHMS = ["rsa-sha512", "sha512"]
+SECRETGRAPH_SIGNATURE_ALGORITHMS = ["rsa-sha512", "sha512"]
 # length of tokens used in file names
 SECRETGRAPH_FILETOKEN_LENGTH = 50
 # limit of accumated chars of tags and refs per clean method call

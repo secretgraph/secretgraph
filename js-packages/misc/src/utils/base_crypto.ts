@@ -1,12 +1,7 @@
 import * as Constants from '../constants'
 import * as Interfaces from '../interfaces'
-import {
-    unserializeToArrayBuffer,
-    serializeToBase64,
-    splitFirstOnly,
-} from './encoding'
+import { unserializeToArrayBuffer, serializeToBase64 } from './encoding'
 import { ValueType, MaybePromise } from '../typing'
-import * as IterableOps from './iterable'
 
 export const mapHashNames: { [key: string]: string } = {
     sha256: 'sha256',
@@ -14,6 +9,11 @@ export const mapHashNames: { [key: string]: string } = {
     sha512: 'sha512',
     'SHA-512': 'sha512',
 }
+
+export const validHashNames: { [key: string]: string } = {}
+export const validDeriveNames: { [key: string]: string } = {}
+export const validSymmetricNames: { [key: string]: string } = {}
+export const validAsymmetricNames: { [key: string]: string } = {}
 
 export function addWithVariants<T extends { [key: string]: any }>(
     obj: T,
@@ -96,6 +96,7 @@ addWithVariants(
     },
     ['sha256', 'SHA-256']
 )
+addWithVariants(validHashNames, 'sha256', ['sha256', 'SHA-256'])
 addWithVariants(
     mapDeriveAlgorithms,
     {
@@ -115,6 +116,7 @@ addWithVariants(
     },
     ['sha512', 'SHA-512']
 )
+addWithVariants(validHashNames, 'sha512', ['sha512', 'SHA-512'])
 addWithVariants(
     mapDeriveAlgorithms,
     {
@@ -176,6 +178,11 @@ addWithVariants(
     },
     ['PBKDF2-sha512']
 )
+addWithVariants(validDeriveNames, 'PBKDF2-sha512', [
+    'PBKDF2-sha512',
+    'sha512',
+    'SHA-512',
+])
 addWithVariants(
     mapDeriveAlgorithms,
     {
@@ -236,6 +243,11 @@ addWithVariants(
     },
     ['PBKDF2-sha256']
 )
+addWithVariants(validDeriveNames, 'PBKDF2-sha256', [
+    'PBKDF2-sha256',
+    'sha256',
+    'SHA-256',
+])
 addWithVariants(
     mapEncryptionAlgorithms,
     {
@@ -273,6 +285,11 @@ addWithVariants(
     },
     ['rsa-sha512', 'sha512', 'SHA-512']
 )
+addWithVariants(validAsymmetricNames, 'rsa-sha512', [
+    'rsa-sha512',
+    'sha512',
+    'SHA-512',
+])
 
 addWithVariants(
     mapEncryptionAlgorithms,
@@ -311,6 +328,11 @@ addWithVariants(
     },
     ['rsa-sha256', 'sha256', 'SHA-256']
 )
+addWithVariants(validAsymmetricNames, 'rsa-sha256', [
+    'rsa-sha256',
+    'sha256',
+    'SHA-256',
+])
 
 addWithVariants(
     mapEncryptionAlgorithms,
@@ -356,14 +378,12 @@ addWithVariants(
                 params: { nonce },
             }
         },
-        serializedName: 'rsa-sha256',
-        keyParams: {
-            name: 'RSA-OAEP',
-            hash: 'SHA-256',
-        },
+        serializedName: 'AESGCM',
+        keyParams: {},
     },
-    ['rsa-sha256', 'sha256', 'SHA-256']
+    ['AESGCM']
 )
+addWithVariants(validSymmetricNames, 'AESGCM', ['AESGCM'])
 addWithVariants(
     mapSignatureAlgorithms,
     {

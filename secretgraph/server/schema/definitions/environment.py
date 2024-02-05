@@ -60,9 +60,7 @@ class NetGroupNode(relay.Node):
         if "allow_hidden_net_props" in props or "manage_net_groups" in props:
             return list(self.properties.values_list("name", flat=True))
         return list(
-            self.properties.filter(name="default").values_list(
-                "name", flat=True
-            )
+            self.properties.filter(name="default").values_list("name", flat=True)
         )
 
 
@@ -119,6 +117,26 @@ class SecretgraphConfig(relay.Node):
     def hashAlgorithms() -> list[str]:
         return settings.SECRETGRAPH_HASH_ALGORITHMS
 
+    @strawberry.field()
+    @staticmethod
+    def deriveAlgorithms() -> list[str]:
+        return settings.SECRETGRAPH_DERIVE_ALGORITHMS
+
+    @strawberry.field()
+    @staticmethod
+    def symmetricEncryptionAlgorithms() -> list[str]:
+        return settings.SECRETGRAPH_SYMMETRIC_ENCRYPTION_ALGORITHMS
+
+    @strawberry.field()
+    @staticmethod
+    def asymmetricEncryptionAlgorithms() -> list[str]:
+        return settings.SECRETGRAPH_ASYMMETRIC_ENCRYPTION_ALGORITHMS
+
+    @strawberry.field()
+    @staticmethod
+    def signatureAlgorithms() -> list[str]:
+        return settings.SECRETGRAPH_SIGNATURE_ALGORITHMS
+
     @strawberry.field(description="Maximal results per relay query")
     @staticmethod
     def maxRelayResults() -> int:
@@ -149,9 +167,9 @@ class SecretgraphConfig(relay.Node):
     @strawberry.field()
     @staticmethod
     def loginUrl() -> Optional[str]:
-        if not getattr(
-            settings, "SECRETGRAPH_ALLOW_REGISTER", False
-        ) and not getattr(settings, "SECRETGRAPH_REQUIRE_USER", False):
+        if not getattr(settings, "SECRETGRAPH_ALLOW_REGISTER", False) and not getattr(
+            settings, "SECRETGRAPH_REQUIRE_USER", False
+        ):
             return None
         login_url = getattr(settings, "LOGIN_URL", None)
         if login_url:

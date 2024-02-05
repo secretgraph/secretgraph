@@ -1,7 +1,7 @@
 # TODO
 
--   complete refactory of ts code
--   major refactory of python code to the new crypto system
+-   complete the crypto refactory of ts code
+-   major refactory of python code to the new crypto system, add algorithm field or params field for Content
 -   goToNode document node change function
 -   document how to add elements, cannot use goToNode here
 -   editor for Personal Data (in progress)
