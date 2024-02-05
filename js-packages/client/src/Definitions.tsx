@@ -172,7 +172,7 @@ function Definitions({
         // than the 100 tokens limit
         if (mainCtx.currentCluster && mainCtx.type != 'Cluster') {
             let nCluster = fromGraphqlId(mainCtx.currentCluster)
-            if (nCluster) {
+            if (nCluster && nCluster[0] == 'Cluster') {
                 search.set('cluster', nCluster[1])
             }
         }
