@@ -4,16 +4,13 @@ import {
     updateKeyMutation,
 } from '@secretgraph/graphql-queries/key'
 
-import { mapHashNames } from '../../constants'
+import { encrypt } from '../crypto'
 import * as Interfaces from '../../interfaces'
 import { serializeToBase64, unserializeToArrayBuffer } from '../encoding'
-import {
-    encryptAESGCM,
-    finalizeTag,
-    unserializeToCryptoKey,
-} from '../encryption'
+import { finalizeTag } from '../encryption'
 import { map } from '../iterable'
 import { createSignatureReferences, encryptSharedKey } from '../references'
+import { MaybePromise } from 'typing'
 
 export async function createKeys({
     client,
@@ -26,8 +23,8 @@ export async function createKeys({
     client: ApolloClient<any>
     config: Interfaces.ConfigInterface
     cluster: string
-    privateKey?: Interfaces.KeyInput
-    publicKey: Interfaces.KeyInput
+    privateKey?: MaybePromise<string | ArrayBuffer | Blob>
+    publicKey: MaybePromise<string | ArrayBuffer | Blob>
     pubkeys?: Parameters<typeof encryptSharedKey>[1]
     privkeys?: Parameters<typeof createSignatureReferences>[1]
     privateTags?: Iterable<string | PromiseLike<string>>
@@ -36,31 +33,15 @@ export async function createKeys({
     privateActions?: Iterable<Interfaces.ActionInterface>
     publicActions?: Iterable<Interfaces.ActionInterface>
     hashAlgorithm: string
+    encryptionAlgorithm: string
     authorization: Iterable<string>
 }): Promise<FetchResult<any>> {
     const nonce = crypto.getRandomValues(new Uint8Array(13))
     const sharedkey = crypto.getRandomValues(new Uint8Array(32))
-    const halgo = mapHashNames[options.hashAlgorithm]
-
-    const keyParams = {
-        name: 'RSA-PSS',
-        hash: halgo.operationName,
-    }
-    const publicKey = await unserializeToCryptoKey(
-        options.publicKey,
-        keyParams,
-        'publicKey'
-    )
-
     const encryptedPrivateKeyPromise = privateKey
-        ? encryptAESGCM({
-              key: sharedkey,
-              nonce,
-              data: unserializeToCryptoKey(
-                  privateKey,
-                  keyParams,
-                  'privateKey'
-              ),
+        ? encrypt(sharedkey, unserializeToArrayBuffer(privateKey), {
+              algorithm: 'AESGCM',
+              params: { nonce },
           }).then((data) => new Blob([data.data]))
         : null
 
@@ -71,18 +52,20 @@ export async function createKeys({
     const [[specialRef, ...references], privateTags] = await Promise.all(
         encryptSharedKey(
             sharedkey,
-            ([publicKey] as Parameters<typeof encryptSharedKey>[1]).concat(
-                pubkeys
-            ),
-            halgo.operationName
+            (
+                [options.publicKey] as Parameters<typeof encryptSharedKey>[1]
+            ).concat(pubkeys),
+            options.hashAlgorithm,
+            options.encryptionAlgorithm
         )
     )
     privateTags.push(`key=${specialRef.extra}`)
-    const publicKeyArray = await unserializeToArrayBuffer(publicKey)
+    const publicKeyArray = await unserializeToArrayBuffer(options.publicKey)
     const signatureReferencesPromise = createSignatureReferences(
         publicKeyArray,
         options.privkeys ? options.privkeys : [],
-        halgo.operationName
+        options.hashAlgorithm,
+        options.hashAlgorithm
     )
     if (options.privateTags) {
         // only private tags can be encrypted
@@ -142,7 +125,8 @@ export async function updateKey({
     client: ApolloClient<any>
     config: Interfaces.ConfigInterface
     net?: string
-    key?: CryptoKey | PromiseLike<CryptoKey> // key or key data
+    // should be replaced
+    key?: MaybePromise<CryptoKey> // key or key data
     pubkeys?: Parameters<typeof encryptSharedKey>[1]
     privkeys?: Parameters<typeof createSignatureReferences>[1]
     publicTags?: Iterable<string | PromiseLike<string>>
@@ -152,6 +136,8 @@ export async function updateKey({
     references?: Iterable<Interfaces.ReferenceInterface> | null
     actions?: Iterable<Interfaces.ActionInterface>
     hashAlgorithm?: string
+    encryptionAlgorithm?: string
+    signatureAlgorithm?: string
     authorization: Iterable<string>
     oldKey?: Interfaces.RawInput
 }): Promise<FetchResult<any>> {
@@ -203,11 +189,14 @@ export async function updateKey({
         if (!options.pubkeys || options.pubkeys.length == 0) {
             throw Error('No public keys provided')
         }
-        completedKey = await encryptAESGCM({
-            key: sharedKey as ArrayBuffer,
-            nonce,
-            data: updatedKey,
-        })
+        completedKey = await encrypt(
+            sharedKey as ArrayBuffer,
+            unserializeToArrayBuffer(updatedKey),
+            {
+                params: { nonce },
+                algorithm: 'AESGCM',
+            }
+        )
 
         const [[specialRef, ...publicKeyReferences], privateTags] =
             await Promise.all(
@@ -216,7 +205,8 @@ export async function updateKey({
                     (
                         [updatedKey] as Parameters<typeof encryptSharedKey>[1]
                     ).concat(options.pubkeys),
-                    options.hashAlgorithm
+                    options.hashAlgorithm,
+                    options.encryptionAlgorithm as string
                 )
             )
         ;(privateTags as string[]).push(
@@ -234,7 +224,8 @@ export async function updateKey({
         const signatureReferencesPromise = createSignatureReferences(
             completedKey.data,
             options.privkeys ? options.privkeys : [],
-            options.hashAlgorithm
+            options.hashAlgorithm,
+            options.signatureAlgorithm as string
         )
         references = (await signatureReferencesPromise).concat(
             options.references ? [...options.references] : []

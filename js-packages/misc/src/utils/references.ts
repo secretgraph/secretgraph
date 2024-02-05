@@ -199,12 +199,12 @@ export function extractPubKeysReferences({
 }: {
     readonly node: any
     readonly authorization: string[]
-    readonly source?: { [hash: string]: Promise<ArrayBuffer> }
+    readonly source?: { [hash: string]: MaybePromise<ArrayBuffer> }
     readonly validateKey?: boolean
     readonly onlySeen?: boolean
     readonly hashAlgorithm: string
     readonly itemDomain: string
-}): { [hash: string]: Promise<ArrayBuffer> } {
+}): { [hash: string]: MaybePromise<ArrayBuffer> } {
     const pubkeys = Object.assign({}, props.source || {})
     const seen = new Set<string>()
     const mapItem = mapDeriveAlgorithms['' + props.hashAlgorithm]
@@ -387,8 +387,8 @@ export async function createSignatureReferences(
             createSignatureReferences_helper(
                 privKey,
                 content,
-                signatureAlgorithm,
-                hashAlgorithm
+                hashAlgorithm,
+                signatureAlgorithm
             ).then(({ signature, hash }): Interfaces.ReferenceInterface => {
                 return {
                     target: hash,
@@ -409,8 +409,8 @@ async function encryptSharedKey_helper(
         | Interfaces.CryptoHashPair
         | PromiseLike<Interfaces.KeyInput | Interfaces.CryptoHashPair>,
     sharedkey: ArrayBuffer,
-    encryptAlgorithm: string,
-    deriveAlgorithm: string
+    deriveAlgorithm: string,
+    encryptAlgorithm: string
 ) {
     const _x = await key
     let pubkey: CryptoKey, hash: string
@@ -435,13 +435,9 @@ async function encryptSharedKey_helper(
 
 export function encryptSharedKey(
     sharedkey: ArrayBuffer,
-    pubkeys: (
-        | Interfaces.KeyInput
-        | Interfaces.CryptoHashPair
-        | PromiseLike<Interfaces.KeyInput | Interfaces.CryptoHashPair>
-    )[],
-    encryptAlgorithm: string,
-    deriveAlgorithm: string
+    pubkeys: MaybePromise<Interfaces.KeyInput | Interfaces.CryptoHashPair>[],
+    deriveAlgorithm: string,
+    encryptAlgorithm: string
 ): [Promise<Interfaces.ReferenceInterface[]>, Promise<string[]>] {
     const references: PromiseLike<Interfaces.ReferenceInterface | void>[] = []
     const tags: PromiseLike<string>[] = []
@@ -449,8 +445,8 @@ export function encryptSharedKey(
         const temp = encryptSharedKey_helper(
             pubkey,
             sharedkey,
-            encryptAlgorithm,
-            deriveAlgorithm
+            deriveAlgorithm,
+            encryptAlgorithm
         )
         references.push(
             temp.then(

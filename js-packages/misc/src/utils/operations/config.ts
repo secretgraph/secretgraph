@@ -9,7 +9,7 @@ import { serverConfigQuery } from '@secretgraph/graphql-queries/server'
 
 import * as Constants from '../../constants'
 import * as Interfaces from '../../interfaces'
-import { UnpackPromise, ValueType } from '../../typing'
+import { MaybePromise, UnpackPromise, ValueType } from '../../typing'
 import { transformActions } from '../action'
 import {
     authInfoFromConfig,
@@ -18,12 +18,7 @@ import {
     updateConfig,
 } from '../config'
 import { b64toarr, utf8encoder } from '../encoding'
-import {
-    decryptRSAOEAP,
-    encryptPreKey,
-    unserializeToCryptoKey,
-    verifySignature,
-} from '../encryption'
+import { encryptPreKey } from '../encryption'
 import {
     calculateHashes,
     findWorkingHashAlgorithms,
@@ -39,6 +34,7 @@ import {
     extractPubKeysReferences,
 } from '../references'
 import { createContent, decryptContentObject, updateContent } from './content'
+import { decrypt, decryptString, verify } from 'utils/crypto'
 
 export async function loadConfigFromSlot({
     client,
@@ -160,7 +156,7 @@ async function updateRemoteConfig({
         tags: ['name=config.json', `slot=${mergedConfig.slots[0]}`],
         state: 'protected',
         hashAlgorithm,
-        value: new Blob([JSON.stringify(mergedConfig)]),
+        value: utf8encoder.encode(JSON.stringify(mergedConfig)),
         authorization: authInfo.tokens,
     })
     if (result.errors) {
@@ -288,15 +284,15 @@ export async function exportConfigAsUrl({
                 .match(/=(.*)/)[1]
             const url = new URL(config.baseUrl, window.location.href)
             // decrypt attached symmetric key
-            const sharedKeyPrivateKey = await decryptRSAOEAP({
-                key: privcert,
-                data: privkeykey,
-            })
+            const sharedKeyPrivateKey = await decryptString(
+                privcert,
+                privkeykey
+            )
             // shared key of config, test that everything is alright
-            const sharedKeyConfig = await decryptRSAOEAP({
-                key: sharedKeyPrivateKey.key,
-                data: extra,
-            })
+            const sharedKeyConfig = await decryptString(
+                sharedKeyPrivateKey.key,
+                extra
+            )
             // clean url
             url.searchParams.delete('token')
             url.searchParams.delete('key')
@@ -308,15 +304,17 @@ export async function exportConfigAsUrl({
                 url.pathname = configContent.link
                 url.searchParams.set('iterations', `${iterations}`)
                 if (types.includes('privatekey')) {
-                    const prekeyPrivateKey = await encryptPreKey({
-                        prekey: sharedKeyPrivateKey.data,
-                        pw,
-                        hashAlgorithm: 'SHA-512',
-                        iterations,
-                    })
                     url.searchParams.append(
                         'prekey',
-                        `${authInfo.certificateHashes[0]}:${prekeyPrivateKey}`
+                        await encryptPreKey({
+                            prekey: sharedKeyPrivateKey.data,
+                            pw,
+                            hash: authInfo.certificateHashes[0],
+                            deriveAlgorithm: 'PBKDF2-sha512',
+                            params: {
+                                iterations,
+                            },
+                        })
                     )
                 }
 
@@ -324,8 +322,10 @@ export async function exportConfigAsUrl({
                     const prekeyConfig = await encryptPreKey({
                         prekey: sharedKeyConfig.data,
                         pw,
-                        hashAlgorithm: 'SHA-512',
-                        iterations,
+                        deriveAlgorithm: 'PBKDF2-sha512',
+                        params: {
+                            iterations,
+                        },
                     })
                     url.pathname = configContent.link
                     for (const token of authInfo.tokens) {
@@ -492,7 +492,6 @@ export async function updateConfigRemoteReducer(
     const privkeys = extractPrivKeys({
         config: resconf[0],
         url: resconf[0].baseUrl,
-        hashAlgorithm: hashAlgorithms[0],
         onlySignKeys: true,
     })
 
@@ -568,10 +567,12 @@ interface updateOrCreateContentWithConfigSharedParams {
     state: string
     actions: Parameters<typeof transformActions>[0]['actions']
     hashAlgorithm: string
+    signatureAlgorithm: string
+    encryptionAlgorithm: string
     authorization: string[]
     validFor?: string
     groupKeys?: {
-        [name: string]: { [hash: string]: Promise<CryptoKey> }
+        [name: string]: { [hash: string]: MaybePromise<ArrayBuffer> }
     }
 }
 
@@ -604,6 +605,7 @@ export async function updateOrCreateContentWithConfig({
     config,
     cluster,
     hashAlgorithm,
+    signatureAlgorithm,
     url,
     authorization,
     actions,
@@ -640,11 +642,10 @@ export async function updateOrCreateContentWithConfig({
     const _privkeys = extractPrivKeys({
         config,
         url,
-        hashAlgorithm,
         clusters: new Set([cluster]),
         onlySignKeys: true,
     })
-    let pubkeys: { [hash: string]: Promise<CryptoKey> } = {}
+    let pubkeys: { [hash: string]: MaybePromise<ArrayBuffer> } = {}
     if (state != 'public') {
         // TODO: fetchMore and evaluate fetchPolicy
         const pubkeysResult = await itemClient.query({
@@ -681,6 +682,7 @@ export async function updateOrCreateContentWithConfig({
         mapper,
         config,
         hashAlgorithm,
+        signatureAlgorithm,
         signKeys: privkeys,
         validFor,
     })
@@ -694,6 +696,7 @@ export async function updateOrCreateContentWithConfig({
             privkeys,
             pubkeys: Object.values(pubkeys),
             hashAlgorithm,
+            signatureAlgorithm,
             actions: finishedActions,
             authorization,
             state,
@@ -781,8 +784,7 @@ async function updateTrust({
         [key: string]:
             | (ValueType<Interfaces.ConfigInterface['trustedKeys']> & {
                   nodes: any[]
-                  blob: Blob
-                  key: CryptoKey
+                  key: ArrayBuffer
               })
             | null
     }
@@ -816,10 +818,10 @@ async function updateTrust({
                         if (sourceOb && sourceOb.level > 2) {
                             try {
                                 if (
-                                    await verifySignature(
+                                    await verify(
                                         value.key,
                                         signature,
-                                        sourceOb.blob
+                                        sourceOb.key
                                     )
                                 ) {
                                     sourceOb.level = 2
@@ -886,8 +888,7 @@ export async function updateTrustedKeys({
         [key: string]:
             | (ValueType<Interfaces.ConfigInterface['trustedKeys']> & {
                   nodes: any[]
-                  blob: Blob
-                  key: CryptoKey
+                  key: ArrayBuffer
               })
             | null
     } = {}
@@ -940,11 +941,7 @@ export async function updateTrustedKeys({
                     trustedKeysWithNodes[hash] = {
                         ...config.trustedKeys[hash],
                         level,
-                        key: await unserializeToCryptoKey(
-                            keyBlob,
-                            'publickey'
-                        ),
-                        blob: keyBlob,
+                        key: await keyBlob.arrayBuffer(),
                         nodes: [node],
                         links: [...config.trustedKeys[hash].links, link.href],
                         lastChecked: Math.floor(Date.now() / 1000),
@@ -963,8 +960,7 @@ export async function updateTrustedKeys({
                 trustedKeysWithNodes[hash] = {
                     level,
                     note: '',
-                    key: await unserializeToCryptoKey(keyBlob, 'publickey'),
-                    blob: keyBlob,
+                    key: await keyBlob.arrayBuffer(),
                     nodes: [node],
                     links: [link.href],
                     lastChecked: Math.floor(Date.now() / 1000),

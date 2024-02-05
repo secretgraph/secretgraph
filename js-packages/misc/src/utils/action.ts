@@ -527,6 +527,7 @@ export function extractMapperValue(
 export async function transformActions({
     actions,
     hashAlgorithm,
+    signatureAlgorithm,
     mapper: _mapper,
     config,
     signKeys = [],
@@ -535,8 +536,9 @@ export async function transformActions({
 }: {
     actions: (ActionInputEntry | CertificateInputEntry)[]
     hashAlgorithm: string
+    signatureAlgorithm: string
     config?: Interfaces.ConfigInterface
-    signKeys?: CryptoKey[]
+    signKeys?: ArrayBuffer[]
     mapper?:
         | ReturnType<typeof generateActionMapper>
         | UnpackPromise<ReturnType<typeof generateActionMapper>>
@@ -657,7 +659,8 @@ export async function transformActions({
                                 `${val.value.requester}${val.value.challenge}`
                             ).buffer,
                             signKeys,
-                            hashAlgorithm
+                            hashAlgorithm,
+                            signatureAlgorithm
                         )
                     ).map((val) => val.extra)
                 }

@@ -26,6 +26,7 @@ import {
     multiAssign,
 } from './misc'
 import * as SetOps from './set'
+import { MaybePromise } from 'typing'
 
 export function moveHosts({
     config,
@@ -461,9 +462,8 @@ export function extractPrivKeys({
     readonly url: string
     readonly clusters?: Set<string>
     readonly onlySignKeys?: boolean
-    readonly encryptionAlgorithm: string
-    source?: { [hash: string]: Promise<CryptoKey> }
-}): { [hash: string]: Promise<CryptoKey> } {
+    source?: { [hash: string]: MaybePromise<ArrayBuffer> }
+}): { [hash: string]: MaybePromise<ArrayBuffer> } {
     const privkeys = Object.assign({}, props.source || {})
     const urlob = new URL(url, window.location.href)
     const clusters = config.hosts[urlob.href].clusters
@@ -471,12 +471,6 @@ export function extractPrivKeys({
         (props.onlySignKeys ? config.signWith[config.slots[0]] : []) || []
     )
 
-    const mapItem = mapEncryptionAlgorithms['' + props.encryptionAlgorithm]
-    if (!mapItem) {
-        throw new Error(
-            'Invalid encryption algorithm: ' + props.encryptionAlgorithm
-        )
-    }
     for (const id in clusters) {
         if (props.clusters && !props.clusters.has(id)) {
             continue
@@ -489,11 +483,7 @@ export function extractPrivKeys({
                 !privkeys[hash] &&
                 (!props.onlySignKeys || signWithHashes.has(hash))
             ) {
-                privkeys[hash] = unserializeToCryptoKey(
-                    certEntry.data,
-                    mapItem.keyParams,
-                    'privateKey'
-                )
+                privkeys[hash] = Buffer.from(certEntry.data, 'base64').buffer
             }
         }
     }
@@ -501,6 +491,7 @@ export function extractPrivKeys({
 }
 
 // also handles key= tags
+// TODO: remove legacy, it bloates the logic
 export function findCertCandidatesForRefs(
     config: Interfaces.ConfigInterface,
     nodeData: any,
@@ -508,8 +499,8 @@ export function findCertCandidatesForRefs(
 ) {
     const found: {
         hash: string
-        hashAlgorithm?: string
-        sharedKey: Uint8Array
+        hashAlgorithm: string
+        sharedKey: string
     }[] = []
     // extract tag key from private key
     if (nodeData.type == 'PrivateKey' && group == 'key') {
@@ -541,13 +532,11 @@ export function findCertCandidatesForRefs(
         for (const tag_value of nodeData.tags) {
             if (tag_value.startsWith('key=')) {
                 for (const { hash, hashAlgorithm } of hashes) {
-                    const [_, hashAlgorithmKey, shared] = tag_value.match(
-                        /=(?:([^:]*?):)?([^:]*)/
-                    )
+                    const [_, shared] = tag_value.match(/=(.*)/)
                     found.push({
                         hash,
-                        hashAlgorithm: hashAlgorithmKey || hashAlgorithm,
-                        sharedKey: b64toarr(shared),
+                        hashAlgorithm,
+                        sharedKey: shared,
                     })
                 }
                 // there is only one key
@@ -568,22 +557,16 @@ export function findCertCandidatesForRefs(
             )
             if (cleanhash) {
                 if (config.certificates[`${hashAlgorithm}:${cleanhash}`]) {
-                    const [_, hashAlgorithm2, b64extra] = refnode.extra.match(
-                        /^(?:([^:]*?):)?([^:]*)/
-                    )
                     found.push({
                         hash: `${hashAlgorithm}:${cleanhash}`,
-                        hashAlgorithm: hashAlgorithm2 || hashAlgorithm,
-                        sharedKey: b64toarr(b64extra),
+                        hashAlgorithm,
+                        sharedKey: refnode.extra,
                     })
                 } else if (config.certificates[cleanhash]) {
-                    const [_, hashAlgorithm2, b64extra] = refnode.extra.match(
-                        /^(?:([^:]*?):)?([^:]*)/
-                    )
                     found.push({
                         hash: cleanhash,
-                        hashAlgorithm: hashAlgorithm2 || hashAlgorithm,
-                        sharedKey: b64toarr(b64extra),
+                        hashAlgorithm,
+                        sharedKey: refnode.extra,
                     })
                 }
             }
@@ -1219,14 +1202,12 @@ export const loadConfig = async (
             const parsedResult2: ArrayBuffer = (await decryptFirstPreKey({
                 prekeys: parsedResult.prekeys,
                 pws,
-                fallbackHashAlgorithm: 'SHA-512',
-                iterations: parsedResult.iterations,
                 fn: async (data: [ArrayBuffer, string | null]) => {
                     if (data[1]) {
                         return Promise.reject('not for decryption')
                     }
                     return (
-                        await decrypt(data[0], parsedResult.data, {
+                        await decrypt(data, parsedResult.data, {
                             algorithm: 'AESGCM',
                             params: { nonce: parsedResult.nonce },
                         })
@@ -1289,8 +1270,6 @@ export const loadConfig = async (
             const pkeys = await decryptPreKeys({
                 prekeys,
                 pws,
-                iterations,
-                fallbackHashAlgorithm: 'SHA-512',
             })
 
             for (const pkey of pkeys) {

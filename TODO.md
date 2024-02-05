@@ -1,6 +1,7 @@
 # TODO
 
--   Workday edit, doesn't smoothly update, key missmatch
+-   complete refactory of ts code
+-   major refactory of python code to the new crypto system
 -   goToNode document node change function
 -   document how to add elements, cannot use goToNode here
 -   editor for Personal Data (in progress)

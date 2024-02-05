@@ -5,7 +5,6 @@ import {
     transferMutation,
 } from '@secretgraph/graphql-queries/content'
 
-import { mapHashNames } from '../../constants'
 import * as Constants from '../../constants'
 import * as Interfaces from '../../interfaces'
 import { findCertCandidatesForRefs } from '../config'
@@ -14,16 +13,11 @@ import {
     serializeToBase64,
     unserializeToArrayBuffer,
 } from '../encoding'
-import {
-    decryptAESGCM,
-    decryptRSAOEAP,
-    encryptAESGCM,
-    finalizeTag,
-    extractTags,
-    extractTagsRaw,
-} from '../encryption'
+import { finalizeTag, extractTags, extractTagsRaw } from '../encryption'
 import { fallback_fetch } from '../misc'
 import { createSignatureReferences, encryptSharedKey } from '../references'
+import { MaybePromise } from '../../typing'
+import { decrypt, decryptString, encrypt } from '../crypto'
 
 export async function createContent({
     client,
@@ -38,7 +32,7 @@ export async function createContent({
     net?: string
     type: string
     state: string
-    value: Interfaces.CryptoGCMInInterface['data']
+    value: Parameters<typeof encrypt>[1]
     pubkeys: Parameters<typeof encryptSharedKey>[1]
     privkeys: Parameters<typeof createSignatureReferences>[1]
     tags: Iterable<string | PromiseLike<string>>
@@ -46,6 +40,8 @@ export async function createContent({
     references?: Iterable<Interfaces.ReferenceInterface> | null
     actions?: Iterable<Interfaces.ActionInterface>
     hashAlgorithm: string
+    encryptionAlgorithm: string
+    signatureAlgorithm: string
     authorization: Iterable<string>
 }): Promise<FetchResult<any>> {
     const tagsOptions = await Promise.all(tagsIntern)
@@ -64,10 +60,9 @@ export async function createContent({
 
     const encryptedContentPromise = isPublic
         ? unserializeToArrayBuffer(value)
-        : encryptAESGCM({
-              key: key as NonNullable<typeof key>,
-              nonce,
-              data: value,
+        : encrypt(key as NonNullable<typeof key>, value, {
+              algorithm: 'AESGCM',
+              params: { nonce },
           }).then(
               (data) => {
                   return data.data
@@ -82,20 +77,21 @@ export async function createContent({
                   throw reason
               }
           )
-    const halgo = mapHashNames[options.hashAlgorithm].operationName
 
     const [publicKeyReferencesPromise, tagsPromise] = isPublic
         ? [[], []]
         : encryptSharedKey(
               key as NonNullable<typeof key>,
               options.pubkeys,
-              halgo
+              options.hashAlgorithm,
+              options.encryptionAlgorithm
           )
     const signatureReferencesPromise = encryptedContentPromise.then((data) =>
         createSignatureReferences(
             data,
             options.privkeys ? options.privkeys : [],
-            halgo
+            options.hashAlgorithm,
+            options.signatureAlgorithm
         )
     )
     let tags: string[]
@@ -157,7 +153,7 @@ export async function updateContent({
     cluster?: string
     net?: string
     state?: string
-    value?: Interfaces.CryptoGCMInInterface['data']
+    value?: Parameters<typeof encrypt>[1]
     pubkeys: Parameters<typeof encryptSharedKey>[1]
     privkeys?: Parameters<typeof createSignatureReferences>[1]
     tags?: Iterable<string | PromiseLike<string>>
@@ -165,6 +161,8 @@ export async function updateContent({
     references?: Iterable<Interfaces.ReferenceInterface> | null
     actions?: Iterable<Interfaces.ActionInterface>
     hashAlgorithm?: string
+    encryptionAlgorithm?: string
+    signatureAlgorithm?: string
     authorization: Iterable<string>
     // only for tag only updates if finalizeTags is used
     oldKey?: Interfaces.RawInput
@@ -219,23 +217,26 @@ export async function updateContent({
             if (!options.hashAlgorithm) {
                 throw Error('hashAlgorithm required for value updates')
             }
+            if (!options.encryptionAlgorithm) {
+                throw Error('encryptionAlgorithm required for value updates')
+            }
             if (options.pubkeys.length == 0) {
                 throw Error('No public keys provided')
             }
             nonce = crypto.getRandomValues(new Uint8Array(13))
 
             encryptedContent = (
-                await encryptAESGCM({
-                    key: sharedKey as ArrayBuffer,
-                    nonce,
-                    data: options.value,
+                await encrypt(sharedKey, options.value, {
+                    algorithm: 'AESGCM',
+                    params: { nonce },
                 })
             ).data
             const [publicKeyReferencesPromise, tagsPromise2] =
                 encryptSharedKey(
                     sharedKey as ArrayBuffer,
                     options.pubkeys,
-                    options.hashAlgorithm
+                    options.hashAlgorithm,
+                    options.encryptionAlgorithm
                 )
             references.push(...(await publicKeyReferencesPromise))
             tags.push(...(await tagsPromise2))
@@ -247,6 +248,9 @@ export async function updateContent({
                     options.privkeys,
                     options.hashAlgorithm as NonNullable<
                         typeof options.hashAlgorithm
+                    >,
+                    options.signatureAlgorithm as NonNullable<
+                        typeof options.signatureAlgorithm
                     >
                 ))
             )
@@ -281,8 +285,8 @@ export async function updateContent({
 class KeyMissmatchError extends Error {}
 class TransferFailedError extends Error {}
 
-interface decryptContentObjectInterface
-    extends Omit<Interfaces.CryptoGCMOutInterface, 'nonce' | 'key'> {
+interface decryptContentObjectInterface {
+    data: ArrayBuffer
     tags: { [tag: string]: string[] }
     updateId: string
     nodeData: any
@@ -351,11 +355,10 @@ export async function decryptContentObject({
                     transfer_key = (
                         await Promise.any(
                             found.map(async (value) => {
-                                return await decryptRSAOEAP({
-                                    key: config.certificates[value.hash].data,
-                                    data: value.sharedKey,
-                                    hashAlgorithm: value.hashAlgorithm,
-                                })
+                                return await decryptString(
+                                    config.certificates[value.hash].data,
+                                    value.sharedKey
+                                )
                             })
                         )
                     ).data
@@ -463,11 +466,10 @@ export async function decryptContentObject({
         key = (
             await Promise.any(
                 found.map(async (value) => {
-                    return await decryptRSAOEAP({
-                        key: config.certificates[value.hash].data,
-                        data: value.sharedKey,
-                        hashAlgorithm: value.hashAlgorithm,
-                    })
+                    return await decryptString(
+                        config.certificates[value.hash].data,
+                        value.sharedKey
+                    )
                 })
             )
         ).data
@@ -483,10 +485,9 @@ export async function decryptContentObject({
     // if this fails, it means shared key and encrypted object doesn't match
     try {
         return {
-            ...(await decryptAESGCM({
-                key,
-                nonce: _node.nonce,
-                data: arrPromise,
+            ...(await decrypt(key, arrPromise, {
+                params: { nonce: _node.nonce },
+                algorithm: 'AESGCM',
             })),
             tags: await extractTags({ key, tags: nodeData.tags }),
             updateId: nodeData.updateId,

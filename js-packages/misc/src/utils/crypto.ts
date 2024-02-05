@@ -19,6 +19,34 @@ export class UnknownAlgorithm extends Error {}
 export class KeyTypeError extends Error {}
 export class EmptyKeyError extends Error {}
 
+export function findWorkingAlgorithms(
+    algorithms: string[],
+    domain?: 'derive' | 'encryption' | 'signature'
+): string[] {
+    // js sets are insertion order stable
+    const algos: Set<string> = new Set()
+    for (const algo of algorithms) {
+        let found = null
+        if ((!domain || domain == 'derive') && mapDeriveAlgorithms[algo]) {
+            found = mapDeriveAlgorithms[algo].serializedName
+        } else if (
+            (!domain || domain == 'encryption') &&
+            mapEncryptionAlgorithms[algo]
+        ) {
+            found = mapEncryptionAlgorithms[algo].serializedName
+        } else if (
+            (!domain || domain == 'signature') &&
+            mapSignatureAlgorithms[algo]
+        ) {
+            found = mapSignatureAlgorithms[algo].serializedName
+        }
+        if (found) {
+            algos.add(found)
+        }
+    }
+    return [...algos]
+}
+
 function compareObjects(obj1: any, obj2: any) {
     const keys = new Set([...Object.keys(obj1), ...Object.keys(obj2)])
     for (const key of keys) {
@@ -149,7 +177,12 @@ export async function encrypt(
     { params, algorithm }: { params?: any; algorithm: string } = {
         algorithm: 'missing',
     }
-): Promise<{ data: ArrayBuffer; params: any; serializedName: string }> {
+): Promise<{
+    data: ArrayBuffer
+    params: any
+    serializedName: string
+    key: any
+}> {
     let data_cleaned = await unserializeToArrayBuffer(data)
     const entry = mapEncryptionAlgorithms['' + algorithm]
     if (!entry) {
@@ -163,6 +196,7 @@ export async function encrypt(
     return {
         ...(await entry.encrypt(key_cleaned, data_cleaned, params)),
         serializedName: entry.serializedName,
+        key: key_cleaned,
     }
 }
 
@@ -184,7 +218,12 @@ export async function decrypt(
     key: MaybePromise<any>,
     data: MaybePromise<string | ArrayBuffer>,
     { params, algorithm }: { params: any; algorithm: string }
-): Promise<{ data: ArrayBuffer; params: any; serializedName: string }> {
+): Promise<{
+    data: ArrayBuffer
+    params: any
+    serializedName: string
+    key: any
+}> {
     const entry = mapEncryptionAlgorithms['' + algorithm]
     if (!entry) {
         throw Error('invalid algorithm: ' + algorithm)
@@ -198,13 +237,19 @@ export async function decrypt(
     return {
         ...(await entry.decrypt(key_cleaned, data_cleaned, params)),
         serializedName: entry.serializedName,
+        key: key_cleaned,
     }
 }
 export async function decryptString(
     key: MaybePromise<any>,
     data: MaybePromise<string>,
     { params, algorithm }: { params?: any; algorithm?: string } = {}
-): Promise<{ data: ArrayBuffer; params: any; serializedName: string }> {
+): Promise<{
+    data: ArrayBuffer
+    params: any
+    serializedName: string
+    key: any
+}> {
     let data_cleaned = await data
     if (!algorithm) {
         const splitted = splitFirstOnly(data_cleaned)
@@ -225,6 +270,7 @@ export async function decryptString(
         return {
             ...(await entry.deserialize(data_cleaned)),
             serializedName: entry.serializedName,
+            key: key_cleaned,
         }
     }
     return {
@@ -234,6 +280,7 @@ export async function decryptString(
             params
         )),
         serializedName: entry.serializedName,
+        key: key_cleaned,
     }
 }
 export async function sign(
