@@ -8,19 +8,6 @@ import {
     deriveString,
 } from './crypto'
 
-// deprecate
-export function findWorkingHashAlgorithms(hashAlgorithms: string[]) {
-    const hashAlgosSet = new Set<string>()
-    const hashAlgos: string[] = []
-    for (const algo of hashAlgorithms) {
-        const mappedName = mapDeriveAlgorithms[algo]
-        if (mappedName && !hashAlgosSet.has(mappedName.serializedName)) {
-            hashAlgos.push(mappedName.serializedName)
-        }
-    }
-    return hashAlgos
-}
-
 export async function hashObject(
     obj: Parameters<typeof unserializeToArrayBuffer>[0],
     deriveAlgorithm: string
@@ -92,10 +79,9 @@ export async function calculateHashes(
     inp: Parameters<typeof unserializeToArrayBuffer>[0],
     hashAlgorithms: string[]
 ): Promise<string[]> {
-    const _hashAlgorithms = findWorkingHashAlgorithms(hashAlgorithms)
     const obj = await unserializeToArrayBuffer(inp)
     const hashes: Promise<string>[] = []
-    for (const algo of _hashAlgorithms) {
+    for (const algo of hashAlgorithms) {
         hashes.push(hashObject(obj, algo))
     }
     return await Promise.all(hashes)

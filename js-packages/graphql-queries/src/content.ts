@@ -223,6 +223,8 @@ export const contentRetrievalQuery = gql`
             config {
                 id
                 hashAlgorithms
+                asymmeticEncryptionAlgorithms
+                signatureAlgorithms
                 clusterGroups {
                     name
                     description
@@ -331,6 +333,8 @@ export const getContentConfigurationQuery = gql`
             config {
                 id
                 hashAlgorithms
+                asymmeticEncryptionAlgorithms
+                signatureAlgorithms
                 maxRelayResults
                 clusterGroups {
                     name

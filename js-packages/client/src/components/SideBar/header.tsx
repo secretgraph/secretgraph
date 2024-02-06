@@ -166,10 +166,6 @@ function MainSearchField() {
                                 })
                                 for (const algo of result.data.secretgraph
                                     .config.hashAlgorithms) {
-                                    const mappedName =
-                                        mapHashNames[algo].operationName
-                                    if (mappedName) {
-                                        hashAlgos.push(mappedName)
                                     }
                                 }
                             } catch (exc) {

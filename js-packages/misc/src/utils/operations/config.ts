@@ -19,12 +19,7 @@ import {
 } from '../config'
 import { b64toarr, utf8encoder } from '../encoding'
 import { encryptPreKey } from '../encryption'
-import {
-    calculateHashes,
-    findWorkingHashAlgorithms,
-    hashObject,
-    hashTagsContentHash,
-} from '../hashing'
+import { calculateHashes, hashObject, hashTagsContentHash } from '../hashing'
 import { fallback_fetch, retry } from '../misc'
 import {
     createSignatureReferences,
@@ -34,7 +29,7 @@ import {
     extractPubKeysReferences,
 } from '../references'
 import { createContent, decryptContentObject, updateContent } from './content'
-import { decrypt, decryptString, verify } from 'utils/crypto'
+import { findWorkingAlgorithms, decryptString, verify } from '../crypto'
 
 export async function loadConfigFromSlot({
     client,
@@ -196,8 +191,9 @@ export async function checkConfigObject(
             authorization: authInfo.tokens,
         },
     })
-    const algos = findWorkingHashAlgorithms(
-        data.secretgraph.config.hashAlgorithms
+    const algos = findWorkingAlgorithms(
+        data.secretgraph.config.hashAlgorithms,
+        'hash'
     )
     if (!data) {
         return false
@@ -409,8 +405,9 @@ export async function updateConfigRemoteReducer(
         query: serverConfigQuery,
         fetchPolicy: 'cache-first',
     })
-    const hashAlgorithms = findWorkingHashAlgorithms(
-        serverConfigRes.data.secretgraph.config.hashAlgorithms
+    const hashAlgorithms = findWorkingAlgorithms(
+        serverConfigRes.data.secretgraph.config.hashAlgorithms,
+        'hash'
     )
     let slotPre = [...(slots ? slots : resconf[0].slots)]
     if (excludeSlots) {

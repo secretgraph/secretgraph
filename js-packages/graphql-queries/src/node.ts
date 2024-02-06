@@ -29,6 +29,8 @@ export const getActionsQuery = gql`
             config {
                 id
                 hashAlgorithms
+                asymmeticEncryptionAlgorithms
+                signatureAlgorithms
             }
             node(id: $id) {
                 ... on Cluster {

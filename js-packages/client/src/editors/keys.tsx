@@ -19,7 +19,7 @@ import {
 import { keysRetrievalQuery } from '@secretgraph/graphql-queries/key'
 import * as Constants from '@secretgraph/misc/constants'
 import * as Interfaces from '@secretgraph/misc/interfaces'
-import { UnpackPromise } from '@secretgraph/misc/typing'
+import { MaybePromise, UnpackPromise } from '@secretgraph/misc/typing'
 import {
     generateActionMapper,
     transformActions,
@@ -33,15 +33,12 @@ import {
     serializeToBase64,
     unserializeToArrayBuffer,
 } from '@secretgraph/misc/utils/encoding'
+import { extractTagsRaw } from '@secretgraph/misc/utils/encryption'
+import { hashKey, hashObject } from '@secretgraph/misc/utils/hashing'
 import {
-    extractTagsRaw,
+    findWorkingAlgorithms,
     unserializeToCryptoKey,
-} from '@secretgraph/misc/utils/encryption'
-import {
-    findWorkingHashAlgorithms,
-    hashKey,
-    hashObject,
-} from '@secretgraph/misc/utils/hashing'
+} from '@secretgraph/misc/utils/crypto'
 import { fallback_fetch } from '@secretgraph/misc/utils/misc'
 import { updateConfigRemoteReducer } from '@secretgraph/misc/utils/operations/config'
 import { decryptContentObject } from '@secretgraph/misc/utils/operations/content'
@@ -104,14 +101,14 @@ async function loadKeys({
             mapper: UnpackPromise<ReturnType<typeof generateActionMapper>>
         }
     }
-    results['hashAlgorithmsWorking'] = findWorkingHashAlgorithms(
-        results['hashAlgorithmsRaw']
+    results['hashAlgorithmsWorking'] = findWorkingAlgorithms(
+        results['hashAlgorithmsRaw'],
+        'hash'
     )
 
     const keyParams = {
         name: 'RSA-OAEP',
-        hash: Constants.mapHashNames[results['hashAlgorithmsWorking'][0]]
-            .operationName,
+        hash: 'SHA-512',
     }
     requests.push(
         fallback_fetch(new URL(data.secretgraph.node.link, baseUrl), {
@@ -227,10 +224,10 @@ async function loadKeys({
     return results
 }
 
-async function calcPublicKey(key: string, hashAlgorithm: string) {
+async function calcPublicKey(key: string) {
     const keyParams = {
         name: 'RSA-OAEP',
-        hash: Constants.mapHashNames[hashAlgorithm].operationName,
+        hash: 'SHA-512',
     }
     // can fail, fail wanted
     const matchedPrivKey = (
@@ -255,7 +252,7 @@ async function calcHashes(key: string, hashAlgorithms: string[]) {
     // hash doesn't matter, just make sure to have one for appeasing importKey
     const keyParams = {
         name: 'RSA-OAEP',
-        hash: Constants.mapHashNames[hashAlgorithms[0]].operationName,
+        hash: 'SHA-512',
     }
     // can fail, fail wanted
     const matchedPubKey = (
@@ -626,10 +623,7 @@ function UpdateKeysForm({
                                 name="privateKey"
                                 validate={(val: string) => {
                                     if (val) {
-                                        calcPublicKey(
-                                            val,
-                                            hashAlgorithmsWorking[0]
-                                        ).then(
+                                        calcPublicKey(val).then(
                                             (data) => {
                                                 if (values.publicKey != data) {
                                                     console.debug(
@@ -750,10 +744,6 @@ function UpdateKeysForm({
                                 color="primary"
                                 disabled={disabled}
                                 onClick={async () => {
-                                    const operationName =
-                                        Constants.mapHashNames[
-                                            hashAlgorithmsWorking[0]
-                                        ].operationName
                                     const { publicKey, privateKey } =
                                         (await crypto.subtle.generateKey(
                                             {
@@ -762,7 +752,7 @@ function UpdateKeysForm({
                                                 publicExponent: new Uint8Array(
                                                     [1, 0, 1]
                                                 ),
-                                                hash: operationName,
+                                                hash: 'SHA-512',
                                             },
                                             true,
                                             [
@@ -919,16 +909,19 @@ const KeysUpdate = ({
                         mapper: privateKey?.mapper,
                         config,
                         hashAlgorithm: hashAlgorithmsWorking[0],
+                        signatureAlgorithm: hashAlgorithmsWorking[0],
                         validFor: 'PublicKey',
                     })
                     const keyParams = {
                         name: 'RSA-OAEP',
-                        hash: Constants.mapHashNames[hashAlgorithmsWorking[0]]
-                            .operationName,
+                        hash: 'SHA-512',
                     }
-                    let publicKeys: { [hash: string]: Promise<CryptoKey> } = {}
-                    let privateKeys: { [hash: string]: Promise<CryptoKey> } =
-                        {}
+                    let publicKeys: {
+                        [hash: string]: MaybePromise<ArrayBuffer>
+                    } = {}
+                    let privateKeys: {
+                        [hash: string]: MaybePromise<ArrayBuffer>
+                    } = {}
                     let tokensTarget = mainCtx.tokens
                     if (publicKey) {
                         if (values.cluster != publicKey.nodeData.cluster.id) {
@@ -956,7 +949,6 @@ const KeysUpdate = ({
                             config,
                             url,
                             onlySignKeys: true,
-                            hashAlgorithm: hashAlgorithmsWorking[0],
                         })
                         // we only encrypt for seen references, ignoring all injected or trusted keys
                         publicKeys = extractPubKeysReferences({
@@ -1000,6 +992,7 @@ const KeysUpdate = ({
                               mapper: privateKey?.mapper,
                               config,
                               hashAlgorithm: hashAlgorithmsWorking[0],
+                              signatureAlgorithm: hashAlgorithmsWorking[0],
                               validFor: 'PrivateKey',
                           })
                         : {
@@ -1060,13 +1053,16 @@ const KeysUpdate = ({
                                     (callback) => `callback=${callback}`
                                 ),
                             ],
-                            publicKey: pubKey,
-                            privateKey: privKey || undefined,
+                            publicKey: unserializeToArrayBuffer(pubKey),
+                            privateKey: privKey
+                                ? unserializeToArrayBuffer(privKey)
+                                : undefined,
                             privkeys: Object.values(privateKeys),
                             pubkeys: Object.values(publicKeys),
                             publicActions: finishedActionsPublicKey,
                             privateActions: finishedActionsPrivateKey,
                             hashAlgorithm: hashAlgorithmsWorking[0],
+                            encryptionAlgorithm: hashAlgorithmsWorking[0],
                             authorization: tokensTarget,
                         })
                         updateMainCtx({
@@ -1125,8 +1121,8 @@ const KeysUpdate = ({
                                 client,
                                 config,
                                 cluster: values.cluster,
-                                publicKey: pubKey,
-                                privateKey: privKey,
+                                publicKey: unserializeToArrayBuffer(pubKey),
+                                privateKey: unserializeToArrayBuffer(privKey),
                                 publicTags: [
                                     `description=${values.description}`,
                                     `name=${values.name}`,
@@ -1143,6 +1139,7 @@ const KeysUpdate = ({
                                 privkeys: Object.values(privateKeys),
                                 pubkeys: Object.values(publicKeys),
                                 hashAlgorithm: hashAlgorithmsWorking[0],
+                                encryptionAlgorithm: hashAlgorithmsWorking[0],
                                 authorization: mainCtx.tokens,
                             })
                         }
@@ -1170,7 +1167,7 @@ const KeysUpdate = ({
                     if (privKey || privateKey) {
                         const pubkeyhash = (
                             await hashKey(pubKey, hashAlgorithmsWorking[0])
-                        ).hash
+                        ).digest
                         configUpdate.certificates = {
                             [pubkeyhash]: privKey
                                 ? {
@@ -1398,8 +1395,10 @@ function CreateKeys() {
         return {
             key: `${new Date().getTime()}`,
             hashAlgorithmsRaw,
-            hashAlgorithmsWorking:
-                findWorkingHashAlgorithms(hashAlgorithmsRaw),
+            hashAlgorithmsWorking: findWorkingAlgorithms(
+                hashAlgorithmsRaw,
+                'hash'
+            ),
         }
     }, [data?.secretgraph?.config?.hashAlgorithms])
     return (

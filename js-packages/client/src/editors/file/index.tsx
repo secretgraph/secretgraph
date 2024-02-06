@@ -7,7 +7,7 @@ import * as Constants from '@secretgraph/misc/constants'
 import * as Interfaces from '@secretgraph/misc/interfaces'
 import { UnpackPromise } from '@secretgraph/misc/typing'
 import { generateActionMapper } from '@secretgraph/misc/utils/action'
-import { findWorkingHashAlgorithms } from '@secretgraph/misc/utils/hashing'
+import { findWorkingAlgorithms } from '@secretgraph/misc/utils/crypto'
 import { decryptContentObject } from '@secretgraph/misc/utils/operations'
 import DecisionFrame from '@secretgraph/ui-components/DecisionFrame'
 import * as React from 'react'
@@ -88,8 +88,9 @@ const EditFile = ({ viewOnly = false }: { viewOnly?: boolean }) => {
             const contentstuff =
                 host && host.contents[dataUnfinished.secretgraph.node.id]
 
-            const hashAlgorithms = findWorkingHashAlgorithms(
-                dataUnfinished.secretgraph.config.hashAlgorithms
+            const hashAlgorithms = findWorkingAlgorithms(
+                dataUnfinished.secretgraph.config.hashAlgorithms,
+                'hash'
             )
             const mapper = await generateActionMapper({
                 config,
@@ -211,8 +212,9 @@ const CreateFile = () => {
             if (!dataUnfinished) {
                 return
             }
-            const hashAlgorithms = findWorkingHashAlgorithms(
-                dataUnfinished.secretgraph.config.hashAlgorithms
+            const hashAlgorithms = findWorkingAlgorithms(
+                dataUnfinished.secretgraph.config.hashAlgorithms,
+                'hash'
             )
             const updateOb = {
                 //shareUrl: null,

@@ -1,19 +1,5 @@
-import * as Constants from '../constants'
-import * as Interfaces from '../interfaces'
 import { unserializeToArrayBuffer, serializeToBase64 } from './encoding'
-import { ValueType, MaybePromise } from '../typing'
-
-export const mapHashNames: { [key: string]: string } = {
-    sha256: 'sha256',
-    'SHA-256': 'sha256',
-    sha512: 'sha512',
-    'SHA-512': 'sha512',
-}
-
-export const validHashNames: { [key: string]: string } = {}
-export const validDeriveNames: { [key: string]: string } = {}
-export const validSymmetricNames: { [key: string]: string } = {}
-export const validAsymmetricNames: { [key: string]: string } = {}
+import { ValueType } from '../typing'
 
 export function addWithVariants<T extends { [key: string]: any }>(
     obj: T,
@@ -24,6 +10,11 @@ export function addWithVariants<T extends { [key: string]: any }>(
         ;(obj as any)[variant] = newEntry
     }
 }
+
+export const validHashNames: { [key: string]: string } = {}
+export const validDeriveNames: { [key: string]: string } = {}
+export const validSymmetricNames: { [key: string]: string } = {}
+export const validAsymmetricNames: { [key: string]: string } = {}
 
 // argon1id, pkb
 export const mapDeriveAlgorithms: {

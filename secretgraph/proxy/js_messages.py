@@ -61,3 +61,9 @@ _('Postbox')
 
 # rdf-editors/src/editors/index.tsx: 732
 _('Message')
+
+# ui-components/src/forms/SplittedGroupSelectList.tsx: 1825
+_('topics')
+
+# ui-components/src/forms/SplittedGroupSelectList.tsx: 2081
+_('misc')

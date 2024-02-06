@@ -10,7 +10,7 @@ import {
 } from './encryption'
 import {
     unserializeToCryptoKey,
-    mapHashNames,
+    validHashNames,
     mapEncryptionAlgorithms,
     encrypt,
     decrypt,
@@ -26,7 +26,7 @@ import {
     multiAssign,
 } from './misc'
 import * as SetOps from './set'
-import { MaybePromise } from 'typing'
+import { MaybePromise } from '../typing'
 
 export function moveHosts({
     config,
@@ -1415,7 +1415,7 @@ export async function pruneOldTrustedKeys({
             continue
         }
         const splitted = key.split(':')
-        if (splitted.length != 2 || !mapHashNames[splitted[0]]) {
+        if (splitted.length != 2 || !validHashNames[splitted[0]]) {
             ret[key] = null
             continue
         }

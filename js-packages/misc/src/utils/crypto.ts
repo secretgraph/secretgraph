@@ -16,6 +16,10 @@ export {
     mapDeriveAlgorithms,
     mapEncryptionAlgorithms,
     mapSignatureAlgorithms,
+    validAsymmetricNames,
+    validHashNames,
+    validDeriveNames,
+    validSymmetricNames,
 } from './base_crypto'
 
 export class UnknownAlgorithm extends Error {}
@@ -25,34 +29,43 @@ export class EmptyKeyError extends Error {}
 
 export function findWorkingAlgorithms(
     algorithms: string[],
-    domain?: 'hash' | 'derive' | 'symmetric' | 'asymmetric' | 'signature'
+    domain:
+        | 'hash'
+        | 'derive'
+        | 'symmetric'
+        | 'asymmetric'
+        | 'signature'
+        | 'all'
 ): string[] {
     // only signature needs no extra set
     // js sets are insertion order stable
     const algos: Set<string> = new Set()
     for (const algo of algorithms) {
         let found = null
-        if ((!domain || domain == 'hash') && validHashNames[algo]) {
+        if ((domain == 'all' || domain == 'hash') && validHashNames[algo]) {
             found = validHashNames[algo]
-        } else if ((!domain || domain == 'derive') && validDeriveNames[algo]) {
+        } else if (
+            (domain == 'all' || domain == 'derive') &&
+            validDeriveNames[algo]
+        ) {
             found = validAsymmetricNames[algo]
         } else if (
-            (!domain || domain == 'asymmetric') &&
+            (domain == 'all' || domain == 'asymmetric') &&
             validAsymmetricNames[algo]
         ) {
             found = validAsymmetricNames[algo]
         } else if (
-            (!domain || domain == 'symmetric') &&
+            (domain == 'all' || domain == 'symmetric') &&
             validSymmetricNames[algo]
         ) {
             found = validSymmetricNames[algo]
         } else if (
-            (!domain || domain == 'signature') &&
+            (domain == 'all' || domain == 'signature') &&
             mapSignatureAlgorithms[algo]
         ) {
             found = mapSignatureAlgorithms[algo].serializedName
         }
-        if (found) {
+        if (found && !algos.has(found)) {
             algos.add(found)
         }
     }

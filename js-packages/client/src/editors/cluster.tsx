@@ -24,11 +24,11 @@ import {
 import { authInfoFromConfig } from '@secretgraph/misc/utils/config'
 import { serializeToBase64 } from '@secretgraph/misc/utils/encoding'
 import {
-    findWorkingHashAlgorithms,
     hashKey,
     hashObject,
     hashToken,
 } from '@secretgraph/misc/utils/hashing'
+import { findWorkingAlgorithms } from '@secretgraph/misc/utils/crypto'
 import {
     createCluster,
     updateCluster,
@@ -216,6 +216,7 @@ const ClusterIntern = ({
                         mapper,
                         config,
                         hashAlgorithm,
+                        signatureAlgorithm: hashAlgorithm,
                         ignoreCluster: false,
                     })
                     let digestCert: undefined | string = undefined,
@@ -253,21 +254,21 @@ const ClusterIntern = ({
                                     name: 'RSA-OAEP',
                                     modulusLength: 4096,
                                     publicExponent: new Uint8Array([1, 0, 1]),
-                                    hash: Constants.mapHashNames[hashAlgorithm]
-                                        .operationName,
+                                    hash: 'SHA-512',
                                 },
                                 true,
                                 ['wrapKey', 'unwrapKey', 'encrypt', 'decrypt']
                             )) as Required<CryptoKeyPair>
                         privPromise = serializeToBase64(privateKey)
                         digestCert = (await hashKey(publicKey, hashAlgorithm))
-                            .hash
+                            .digest
                         clusterResponse = await createCluster({
                             client: itemClient,
                             actions: finishedActions,
                             name,
                             description,
                             hashAlgorithm,
+                            encryptionAlgorithm: hashAlgorithm,
                             keys: [
                                 {
                                     publicKey,
@@ -623,8 +624,9 @@ const EditCluster = ({ viewOnly = false }: { viewOnly?: boolean }) => {
                 return
             }
 
-            const hashAlgorithms = findWorkingHashAlgorithms(
-                dataUnfinished.secretgraph.config.hashAlgorithms
+            const hashAlgorithms = findWorkingAlgorithms(
+                dataUnfinished.secretgraph.config.hashAlgorithms,
+                'hash'
             )
 
             const updateOb = {
@@ -725,8 +727,9 @@ const CreateCluster = () => {
                 deleted: false,
                 updateId: null,
             })
-            const hashAlgorithms = findWorkingHashAlgorithms(
-                dataUnfinished.secretgraph.config.hashAlgorithms
+            const hashAlgorithms = findWorkingAlgorithms(
+                dataUnfinished.secretgraph.config.hashAlgorithms,
+                'hash'
             )
 
             const hashKey = await hashToken(manage_key, hashAlgorithms[0])

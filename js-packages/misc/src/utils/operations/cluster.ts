@@ -4,11 +4,14 @@ import {
     updateClusterMutation,
 } from '@secretgraph/graphql-queries/cluster'
 
-import { mapHashNames } from '../../constants'
 import * as Interfaces from '../../interfaces'
 import { authInfoFromConfig, cleanConfig } from '../config'
-import { serializeToBase64, unserializeToArrayBuffer } from '../encoding'
-import { encryptAESGCM, encryptRSAOEAP } from '../encryption'
+import {
+    serializeToBase64,
+    unserializeToArrayBuffer,
+    utf8encoder,
+} from '../encoding'
+import { encrypt, encryptString } from '../crypto'
 import { hashObject, hashTagsContentHash, hashToken } from '../hashing'
 import { createContent } from './content'
 
@@ -16,6 +19,7 @@ export async function createCluster(options: {
     client: ApolloClient<any>
     actions: Iterable<Interfaces.ActionInterface>
     hashAlgorithm: string
+    encryptionAlgorithm: string
     net?: string
     name?: string
     description?: string
@@ -41,7 +45,6 @@ export async function createCluster(options: {
     netGroups?: string[]
     authorization?: string[]
 }): Promise<FetchResult<any>> {
-    const halgo = mapHashNames[options.hashAlgorithm]
     let keys: Promise<
         | {
               publicKey: Blob
@@ -101,11 +104,11 @@ export async function createCluster(options: {
                         publicKey: await unserializeToArrayBuffer(
                             k2.publicKey
                         ).then((obj) => new Blob([obj])),
-                        privateKey: await encryptAESGCM({
-                            key: privateKeyKey.slice(-32),
-                            data: k2.privateKey,
-                            nonce,
-                        }).then((obj) => new Blob([obj.data])),
+                        privateKey: await encrypt(
+                            privateKeyKey.slice(-32),
+                            unserializeToArrayBuffer(k2.privateKey),
+                            { algorithm: 'AESGCM', params: { nonce } }
+                        ).then((obj) => new Blob([obj.data])),
                         privateTags: [],
                         publicTags: k2.publicTags || [],
                         nonce: await serializeToBase64(nonce),
@@ -115,15 +118,11 @@ export async function createCluster(options: {
                         ret.privateTags.push(...k2.privateTags)
                     }
                     ret.privateTags.push(
-                        await encryptRSAOEAP({
-                            key: k2.privateKey,
-                            data: privateKeyKey.slice(-32),
-                            hashAlgorithm: options.hashAlgorithm,
-                        })
-                            .then((data) => serializeToBase64(data.data))
-                            .then(
-                                (obj) => `key=${halgo.serializedName}:${obj}`
-                            )
+                        await encryptString(
+                            k2.privateKey,
+                            privateKeyKey.slice(-32),
+                            { algorithm: options.encryptionAlgorithm }
+                        ).then((data) => `key=:${data}`)
                     )
                     return ret
                 })()
@@ -182,6 +181,8 @@ export async function updateCluster(options: {
 
 export async function initializeCluster({
     hashAlgorithm,
+    encryptionAlgorithm,
+    signatureAlgorithm,
     client,
     config,
     name,
@@ -202,6 +203,8 @@ export async function initializeCluster({
     description?: string
     featured?: boolean
     hashAlgorithm: string
+    encryptionAlgorithm: string
+    signatureAlgorithm: string
     noteToken: string
     noteCertificate: string
     clusterGroups?: string[]
@@ -214,7 +217,7 @@ export async function initializeCluster({
             name: 'RSA-OAEP',
             modulusLength: 4096,
             publicExponent: new Uint8Array([1, 0, 1]),
-            hash: mapHashNames[hashAlgorithm].operationName,
+            hash: 'SHA-512',
         },
         true,
         ['wrapKey', 'unwrapKey', 'encrypt', 'decrypt']
@@ -245,6 +248,7 @@ export async function initializeCluster({
         net,
         description,
         hashAlgorithm,
+        encryptionAlgorithm,
         clusterGroups,
         netGroups,
         keys: [
@@ -319,7 +323,7 @@ export async function initializeCluster({
     const { data: configResult } = await createContent({
         client,
         cluster: clusterResult.cluster['id'],
-        value: new Blob([JSON.stringify(config)]),
+        value: utf8encoder.encode(JSON.stringify(config)),
         pubkeys: [publicKey],
         privkeys: [privateKey],
         type: 'Config',
@@ -327,6 +331,8 @@ export async function initializeCluster({
         tags: ['name=config.json', `slot=${slot}`],
         contentHash,
         hashAlgorithm,
+        encryptionAlgorithm,
+        signatureAlgorithm,
         authorization,
     })
 

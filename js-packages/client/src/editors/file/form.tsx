@@ -26,10 +26,8 @@ import * as Interfaces from '@secretgraph/misc/interfaces'
 import { UnpackPromise } from '@secretgraph/misc/typing'
 import { generateActionMapper } from '@secretgraph/misc/utils/action'
 import { authInfoFromConfig } from '@secretgraph/misc/utils/config'
-import {
-    findWorkingHashAlgorithms,
-    hashTagsContentHash,
-} from '@secretgraph/misc/utils/hashing'
+import { hashTagsContentHash } from '@secretgraph/misc/utils/hashing'
+import { findWorkingAlgorithms } from '@secretgraph/misc/utils/crypto'
 import {
     decryptContentObject,
     updateOrCreateContentWithConfig,
@@ -245,7 +243,7 @@ export function InnerFile({
                         config,
                         mapper,
                         cluster: values.cluster,
-                        value,
+                        value: value.arrayBuffer(),
                         itemClient,
                         baseClient,
                         authorization: mainCtx.tokens,
@@ -264,6 +262,8 @@ export function InnerFile({
                         updateId: nodeData?.updateId,
                         url,
                         hashAlgorithm,
+                        signatureAlgorithm: hashAlgorithm,
+                        encryptionAlgorithm: hashAlgorithm,
                     })
                     await itemClient.refetchQueries({
                         include: [contentRetrievalQuery, contentFeedQuery],

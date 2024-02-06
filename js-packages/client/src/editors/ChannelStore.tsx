@@ -25,7 +25,7 @@ import * as Interfaces from '@secretgraph/misc/interfaces'
 import { UnpackPromise } from '@secretgraph/misc/typing'
 import { generateActionMapper } from '@secretgraph/misc/utils/action'
 import { authInfoFromConfig } from '@secretgraph/misc/utils/config'
-import { findWorkingHashAlgorithms } from '@secretgraph/misc/utils/hashing'
+import { findWorkingAlgorithms } from '@secretgraph/misc/utils/crypto'
 import {
     decryptContentObject,
     updateOrCreateContentWithConfig,
@@ -256,8 +256,9 @@ function ViewChannelStore() {
             const contentstuff =
                 host && host.contents[dataUnfinished.secretgraph.node.id]
 
-            const hashAlgorithms = findWorkingHashAlgorithms(
-                dataUnfinished.secretgraph.config.hashAlgorithms
+            const hashAlgorithms = findWorkingAlgorithms(
+                dataUnfinished.secretgraph.config.hashAlgorithms,
+                'hash'
             )
             const mapper = await generateActionMapper({
                 config,

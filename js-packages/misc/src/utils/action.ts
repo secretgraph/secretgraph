@@ -6,7 +6,8 @@ import {
     unserializeToArrayBuffer,
     utf8encoder,
 } from './encoding'
-import { findWorkingHashAlgorithms, hashObject, hashToken } from './hashing'
+import { hashObject, hashToken } from './hashing'
+import { findWorkingAlgorithms } from './crypto'
 import { compareArray } from './misc'
 import { createSignatureReferences } from './references'
 import * as SetOps from './set'
@@ -85,7 +86,7 @@ export async function generateActionMapper({
 }): Promise<{
     [newHash: string]: ActionMapperEntry | CertificateMapperEntry
 }> {
-    const hashalgos = findWorkingHashAlgorithms(hashAlgorithms)
+    const hashalgos = findWorkingAlgorithms(hashAlgorithms, 'hash')
     const tokenToHash: Record<string, string> = {}
     const upgradeHash: Record<string, string> = {}
 

@@ -10,7 +10,7 @@ import { serializeToBase64, unserializeToArrayBuffer } from '../encoding'
 import { finalizeTag } from '../encryption'
 import { map } from '../iterable'
 import { createSignatureReferences, encryptSharedKey } from '../references'
-import { MaybePromise } from 'typing'
+import { MaybePromise } from '../../typing'
 
 export async function createKeys({
     client,

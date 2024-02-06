@@ -30,6 +30,8 @@ getActionsQuery = """
             config {
                 id
                 hashAlgorithms
+                asymmeticEncryptionAlgorithms
+                signatureAlgorithms
             }
             node(id: $id) {
                 ... on Cluster {
