@@ -224,7 +224,7 @@ contentRetrievalQuery = """
             config {
                 id
                 hashAlgorithms
-                asymmeticEncryptionAlgorithms
+                asymmetricEncryptionAlgorithms
                 signatureAlgorithms
                 clusterGroups {
                     name
@@ -334,7 +334,7 @@ getContentConfigurationQuery = """
             config {
                 id
                 hashAlgorithms
-                asymmeticEncryptionAlgorithms
+                asymmetricEncryptionAlgorithms
                 signatureAlgorithms
                 maxRelayResults
                 clusterGroups {

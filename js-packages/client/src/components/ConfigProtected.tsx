@@ -31,8 +31,8 @@ export default function ConfigProtected({
             setPwOk(false)
             setLoading(true)
             const _isPwOk = await compareClientPw(
-                deferredPw,
-                config.configSecurityQuestion[1]
+                config.configSecurityQuestion[1],
+                deferredPw
             )
             if (active) {
                 if (_isPwOk) {

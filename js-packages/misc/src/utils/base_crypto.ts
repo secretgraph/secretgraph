@@ -20,7 +20,11 @@ export const validAsymmetricNames: { [key: string]: string } = {}
 export const mapDeriveAlgorithms: {
     [algo: string]: {
         readonly derive: (
-            inp: ArrayBuffer | string,
+            inp: ArrayBuffer,
+            params: any
+        ) => Promise<{ data: ArrayBuffer; params: any }>
+        readonly deserialize?: (
+            inp: string,
             params?: any
         ) => Promise<{ data: ArrayBuffer; params: any }>
         readonly serialize: (inp: {
@@ -71,12 +75,9 @@ export const mapSignatureAlgorithms: {
 addWithVariants(
     mapDeriveAlgorithms,
     {
-        derive: async (inp: ArrayBuffer | string) => {
+        derive: async (inp: ArrayBuffer) => {
             return {
-                data: await crypto.subtle.digest(
-                    'SHA-256',
-                    await unserializeToArrayBuffer(inp)
-                ),
+                data: await crypto.subtle.digest('SHA-256', inp),
                 params: {},
             }
         },
@@ -91,12 +92,9 @@ addWithVariants(validHashNames, 'sha256', ['sha256', 'SHA-256'])
 addWithVariants(
     mapDeriveAlgorithms,
     {
-        derive: async (inp: ArrayBuffer | string) => {
+        derive: async (inp: ArrayBuffer) => {
             return {
-                data: await crypto.subtle.digest(
-                    'SHA-512',
-                    await unserializeToArrayBuffer(inp)
-                ),
+                data: await crypto.subtle.digest('SHA-512', inp),
                 params: {},
             }
         },
@@ -112,7 +110,7 @@ addWithVariants(
     mapDeriveAlgorithms,
     {
         derive: async (
-            inp: ArrayBuffer | string,
+            inp: ArrayBuffer,
             params: {
                 iterations: number
                 salt?: string
@@ -122,18 +120,6 @@ addWithVariants(
         ) => {
             // copy
             params = Object.assign({}, params)
-            if (typeof inp == 'string') {
-                const splitted = inp.split(':')
-                if (splitted.length > 1) {
-                    params.iterations = parseInt(splitted[0])
-                }
-                if (splitted.length > 2) {
-                    params.salt = splitted[1]
-                }
-                inp = await unserializeToArrayBuffer(
-                    splitted[splitted.length - 1]
-                )
-            }
             const key = await crypto.subtle.importKey(
                 'raw',
                 inp,
@@ -159,6 +145,28 @@ addWithVariants(
                 params,
             }
         },
+        deserialize: async (
+            inp: string,
+            params: {
+                iterations: number
+                salt?: string
+            } = {
+                iterations: 800000,
+            }
+        ) => {
+            params = Object.assign({}, params)
+            const splitted = inp.split(':')
+            if (splitted.length > 1) {
+                params.iterations = parseInt(splitted[0])
+            }
+            if (splitted.length > 2) {
+                params.salt = splitted[1]
+            }
+            const data = await unserializeToArrayBuffer(
+                splitted[splitted.length - 1]
+            )
+            return { data, params }
+        },
         serialize: async (inp) => {
             return `${inp.params.iterations}:${
                 inp.params.salt
@@ -178,7 +186,7 @@ addWithVariants(
     mapDeriveAlgorithms,
     {
         derive: async (
-            inp: ArrayBuffer | string,
+            inp: ArrayBuffer,
             params: {
                 iterations: number
                 salt?: string
@@ -186,20 +194,6 @@ addWithVariants(
                 iterations: 800000,
             }
         ) => {
-            // copy
-            params = Object.assign({}, params)
-            if (typeof inp == 'string') {
-                const splitted = inp.split(':')
-                if (splitted.length > 1) {
-                    params.iterations = parseInt(splitted[0])
-                }
-                if (splitted.length > 2) {
-                    params.salt = splitted[1]
-                }
-                inp = await unserializeToArrayBuffer(
-                    splitted[splitted.length - 1]
-                )
-            }
             const key = await crypto.subtle.importKey(
                 'raw',
                 inp,
@@ -224,6 +218,28 @@ addWithVariants(
                 ),
                 params,
             }
+        },
+        deserialize: async (
+            inp: string,
+            params: {
+                iterations: number
+                salt?: string
+            } = {
+                iterations: 800000,
+            }
+        ) => {
+            params = Object.assign({}, params)
+            const splitted = inp.split(':')
+            if (splitted.length > 1) {
+                params.iterations = parseInt(splitted[0])
+            }
+            if (splitted.length > 2) {
+                params.salt = splitted[1]
+            }
+            const data = await unserializeToArrayBuffer(
+                splitted[splitted.length - 1]
+            )
+            return { data, params }
         },
         serialize: async (inp) => {
             return `${inp.params.iterations}:${

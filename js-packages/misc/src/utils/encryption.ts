@@ -23,6 +23,7 @@ import {
     deriveString,
     encrypt,
     serializeDerive,
+    deserializeDerivedString,
 } from './crypto'
 import * as IterableOps from './iterable'
 
@@ -181,6 +182,19 @@ export async function extractTags(options: {
         })
     )
     return tags
+}
+
+export async function compareClientPw(data: string, pw: string) {
+    const result = await deserializeDerivedString(data)
+    return (
+        result.data ==
+        (
+            await derive(utf8encoder.encode(pw), {
+                params: result.params,
+                algorithm: result.serializedName,
+            })
+        ).data
+    )
 }
 
 // key for unlocking private key/config

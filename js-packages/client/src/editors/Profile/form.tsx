@@ -24,7 +24,6 @@ import * as Interfaces from '@secretgraph/misc/interfaces'
 import { UnpackPromise } from '@secretgraph/misc/typing'
 import { generateActionMapper } from '@secretgraph/misc/utils/action'
 import { authInfoFromConfig } from '@secretgraph/misc/utils/config'
-import { findWorkingHashAlgorithms } from '@secretgraph/misc/utils/hashing'
 import {
     decryptContentObject,
     updateOrCreateContentWithConfig,
@@ -51,6 +50,7 @@ import ActionsDialog from '../../components/ActionsDialog'
 import ClusterSelectViaUrl from '../../components/formsWithContext/ClusterSelectViaUrl'
 import * as Contexts from '../../contexts'
 import { mappersToArray } from '../../hooks'
+import { utf8encoder } from '@secretgraph/misc/utils/encoding'
 
 export interface InnerProfileProps {
     disabled?: boolean
@@ -101,11 +101,11 @@ export function InnerProfile({
                 if (!values.cluster) {
                     throw Error('Cluster not set')
                 }
-                const value = new Blob([
+                const value = utf8encoder.encode(
                     JSON.stringify({
                         note: values.note,
-                    }),
-                ])
+                    })
+                )
                 const res = await updateOrCreateContentWithConfig({
                     actions: values.actions,
                     config,
@@ -126,6 +126,8 @@ export function InnerProfile({
                     updateId: nodeData?.updateId,
                     url,
                     hashAlgorithm,
+                    signatureAlgorithm: hashAlgorithm,
+                    encryptionAlgorithm: hashAlgorithm,
                 })
                 await itemClient.refetchQueries({
                     include: [getContentConfigurationQuery, contentFeedQuery],

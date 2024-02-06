@@ -179,6 +179,7 @@ function NewPanel({
                         await transformActions({
                             actions: values.actions,
                             hashAlgorithm,
+                            signatureAlgorithm: hashAlgorithm,
                         })
 
                     await itemClient.mutate({
@@ -323,7 +324,6 @@ function AuthPanel({
                             extractPrivKeys({
                                 config,
                                 url,
-                                hashAlgorithm,
                                 clusters: new Set([
                                     mainCtx.currentCluster as string,
                                 ]),
@@ -353,6 +353,7 @@ function AuthPanel({
                         await transformActions({
                             actions,
                             hashAlgorithm,
+                            signatureAlgorithm: hashAlgorithm,
                             signKeys,
                         })
 

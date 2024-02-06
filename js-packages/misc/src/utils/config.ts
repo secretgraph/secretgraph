@@ -1372,7 +1372,10 @@ export async function exportConfig(
                     prekey: mainkey,
                     pw,
                     deriveAlgorithm: 'PBKDF2-sha512',
-                    params: { iterations },
+                    params: {
+                        iterations,
+                        salt: crypto.getRandomValues(new Uint8Array(20)),
+                    },
                 })
             )
         }

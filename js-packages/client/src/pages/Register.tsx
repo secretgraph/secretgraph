@@ -14,7 +14,7 @@ import * as Interfaces from '@secretgraph/misc/interfaces'
 import * as Constants from '@secretgraph/misc/constants'
 import { deriveString } from '@secretgraph/misc/utils/crypto'
 import { createClient } from '@secretgraph/misc/utils/graphql'
-import { findWorkingHashAlgorithms } from '@secretgraph/misc/utils/hashing'
+import { findWorkingAlgorithms } from '@secretgraph/misc/utils/crypto'
 import { updateContent } from '@secretgraph/misc/utils/operations'
 import { initializeCluster } from '@secretgraph/misc/utils/operations/cluster'
 import { exportConfigAsUrl } from '@secretgraph/misc/utils/operations/config'
@@ -31,6 +31,7 @@ import {
     registerClusterLabel,
     registerUserLabel,
 } from '../messages'
+import { utf8encoder } from '@secretgraph/misc/utils/encoding'
 
 function Register() {
     const theme = useTheme()
@@ -156,6 +157,9 @@ function Register() {
                                     algorithm: 'PBKDF2-sha512',
                                     params: {
                                         iterations: 1000000,
+                                        salt: crypto.getRandomValues(
+                                            new Uint8Array(20)
+                                        ),
                                     },
                                 }),
                             ],
@@ -170,6 +174,10 @@ function Register() {
                             client,
                             config: newConfig,
                             hashAlgorithm: registerContext!.hashAlgorithms[0],
+                            signatureAlgorithm:
+                                registerContext!.hashAlgorithms[0],
+                            encryptionAlgorithm:
+                                registerContext!.hashAlgorithms[0],
                             slot,
                             noteCertificate: 'initial certificate',
                             noteToken: 'initial token',
@@ -189,7 +197,9 @@ function Register() {
                                 id: result.configResult.content.id,
                                 updateId: result.configResult.content.updateId,
                                 client,
-                                value: new Blob([JSON.stringify(newConfig)]),
+                                value: utf8encoder.encode(
+                                    JSON.stringify(newConfig)
+                                ),
                                 tags: [
                                     'name=config.json',
                                     `slot=${newConfig.slots[0]}`,
@@ -283,8 +293,9 @@ function Register() {
                             activeUser:
                                 result.data.secretgraph.activeUser ||
                                 undefined,
-                            hashAlgorithms: findWorkingHashAlgorithms(
-                                sconfig.hashAlgorithms
+                            hashAlgorithms: findWorkingAlgorithms(
+                                sconfig.hashAlgorithms,
+                                'hash'
                             ),
                             netGroups: sconfig.netGroups,
                             clusterGroups: sconfig.clusterGroups,

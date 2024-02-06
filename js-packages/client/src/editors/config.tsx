@@ -22,10 +22,7 @@ import {
     cleanConfig,
     updateConfig as updateConfigOb,
 } from '@secretgraph/misc/utils/config'
-import {
-    findWorkingHashAlgorithms,
-    hashTagsContentHash,
-} from '@secretgraph/misc/utils/hashing'
+import { hashTagsContentHash } from '@secretgraph/misc/utils/hashing'
 import { compareArray } from '@secretgraph/misc/utils/misc'
 import {
     decryptContentObject,
@@ -52,7 +49,11 @@ import ClusterSelectViaUrl from '../components/formsWithContext/ClusterSelectVia
 import ConfigShareDialog from '../components/share/ConfigShareDialog'
 import * as Contexts from '../contexts'
 import { mappersToArray } from '../hooks'
-import { deriveString } from '@secretgraph/misc/utils/crypto'
+import {
+    deriveString,
+    findWorkingAlgorithms,
+} from '@secretgraph/misc/utils/crypto'
+import { utf8encoder } from '@secretgraph/misc/utils/encoding'
 
 interface InnerConfigProps {
     disabled?: boolean
@@ -145,6 +146,9 @@ function InnerConfig({
                                           algorithm: 'PBKDF2-sha512',
                                           params: {
                                               iterations: 1000000,
+                                              salt: crypto.getRandomValues(
+                                                  new Uint8Array(20)
+                                              ),
                                           },
                                       }
                                   )
@@ -162,7 +166,9 @@ function InnerConfig({
                               config,
                               mapper,
                               cluster: values.cluster,
-                              value: new Blob([JSON.stringify(mergedConfig)]),
+                              value: utf8encoder.encode(
+                                  JSON.stringify(mergedConfig)
+                              ),
                               contentHash: !nodeData
                                   ? await hashTagsContentHash(
                                         [`slot=${slots[0]}`],
@@ -180,6 +186,8 @@ function InnerConfig({
                               updateId: nodeData?.updateId,
                               url,
                               hashAlgorithm,
+                              signatureAlgorithm: hashAlgorithm,
+                              encryptionAlgorithm: hashAlgorithm,
                               // to disable groupkeys
                               groupKeys: {},
                           })
@@ -511,8 +519,9 @@ const EditConfig = ({ viewOnly }: { viewOnly?: boolean }) => {
             const contentstuff =
                 host && host.contents[dataUnfinished.secretgraph.node.id]
 
-            const hashAlgorithms = findWorkingHashAlgorithms(
-                dataUnfinished.secretgraph.config.hashAlgorithms
+            const hashAlgorithms = findWorkingAlgorithms(
+                dataUnfinished.secretgraph.config.hashAlgorithms,
+                'hash'
             )
             const mapper = await generateActionMapper({
                 config,

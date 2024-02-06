@@ -29,7 +29,7 @@ export const getActionsQuery = gql`
             config {
                 id
                 hashAlgorithms
-                asymmeticEncryptionAlgorithms
+                asymmetricEncryptionAlgorithms
                 signatureAlgorithms
             }
             node(id: $id) {

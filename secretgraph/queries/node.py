@@ -30,7 +30,7 @@ getActionsQuery = """
             config {
                 id
                 hashAlgorithms
-                asymmeticEncryptionAlgorithms
+                asymmetricEncryptionAlgorithms
                 signatureAlgorithms
             }
             node(id: $id) {

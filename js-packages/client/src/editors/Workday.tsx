@@ -22,7 +22,7 @@ import * as Interfaces from '@secretgraph/misc/interfaces'
 import { UnpackPromise } from '@secretgraph/misc/typing'
 import { generateActionMapper } from '@secretgraph/misc/utils/action'
 import { authInfoFromConfig } from '@secretgraph/misc/utils/config'
-import { findWorkingHashAlgorithms } from '@secretgraph/misc/utils/hashing'
+import { findWorkingAlgorithms } from '@secretgraph/misc/utils/crypto'
 import {
     decryptContentObject,
     updateOrCreateContentWithConfig,
@@ -232,7 +232,7 @@ const InnerWorkday = React.memo(function InnerWorkday({
                     config,
                     mapper,
                     cluster: values.cluster,
-                    value,
+                    value: value.arrayBuffer(),
                     itemClient,
                     baseClient,
                     authorization: mainCtx.tokens,
@@ -248,6 +248,8 @@ const InnerWorkday = React.memo(function InnerWorkday({
                     updateId: nodeData?.updateId,
                     url,
                     hashAlgorithm,
+                    signatureAlgorithm: hashAlgorithm,
+                    encryptionAlgorithm: hashAlgorithm,
                 })
                 await itemClient.refetchQueries({
                     include: [getContentConfigurationQuery, contentFeedQuery],
@@ -412,7 +414,10 @@ const InnerWorkday = React.memo(function InnerWorkday({
                                         variant="contained"
                                         color="primary"
                                         disabled={
-                                            disabled || !values.work || isSubmitting || !dirty
+                                            disabled ||
+                                            !values.work ||
+                                            isSubmitting ||
+                                            !dirty
                                         }
                                         onClick={submitForm}
                                     >
@@ -489,8 +494,9 @@ const EditWorkday = ({ viewOnly }: { viewOnly?: boolean }) => {
             const contentstuff =
                 host && host.contents[dataUnfinished.secretgraph.node.id]
 
-            const hashAlgorithms = findWorkingHashAlgorithms(
-                dataUnfinished.secretgraph.config.hashAlgorithms
+            const hashAlgorithms = findWorkingAlgorithms(
+                dataUnfinished.secretgraph.config.hashAlgorithms,
+                'hash'
             )
             const mapper = await generateActionMapper({
                 config,
@@ -599,8 +605,10 @@ const CreateWorkday = () => {
                 deleted: false,
                 updateId: null,
             })
-            const hashAlgorithms = findWorkingHashAlgorithms(
-                dataUnfinished.secretgraph.config.hashAlgorithms
+
+            const hashAlgorithms = findWorkingAlgorithms(
+                dataUnfinished.secretgraph.config.hashAlgorithms,
+                'hash'
             )
 
             const host = mainCtx.url ? config.hosts[mainCtx.url] : null

@@ -21,7 +21,10 @@ import * as Interfaces from '@secretgraph/misc/interfaces'
 import { UnpackPromise } from '@secretgraph/misc/typing'
 import { generateActionMapper } from '@secretgraph/misc/utils/action'
 import { authInfoFromConfig } from '@secretgraph/misc/utils/config'
-import { findWorkingHashAlgorithms } from '@secretgraph/misc/utils/hashing'
+import {
+    findWorkingAlgorithms,
+    validHashNames,
+} from '@secretgraph/misc/utils/crypto'
 import {
     decryptContentObject,
     updateOrCreateContentWithConfig,
@@ -108,7 +111,7 @@ const InnerCustom = ({
                     config,
                     mapper,
                     cluster: values.cluster,
-                    value,
+                    value: value.arrayBuffer(),
                     itemClient,
                     baseClient,
                     authorization: mainCtx.tokens,
@@ -119,6 +122,8 @@ const InnerCustom = ({
                     updateId: nodeData?.updateId,
                     url,
                     hashAlgorithm,
+                    signatureAlgorithm: hashAlgorithm,
+                    encryptionAlgorithm: hashAlgorithm,
                 })
                 await itemClient.refetchQueries({
                     include: [contentRetrievalQuery, contentFeedQuery],
@@ -284,7 +289,7 @@ const InnerCustom = ({
                                         if (
                                             val &&
                                             !val.match(
-                                                `^[^:]*:${Constants.mapHashNames[hashAlgorithm].serializedName}:[a-zA-Z0-9+/]+={0,2}$`
+                                                `^[^:]*:${validHashNames[hashAlgorithm]}:[a-zA-Z0-9+/]+={0,2}$`
                                             )
                                         ) {
                                             return 'invalid ContentHash'
@@ -597,8 +602,9 @@ const EditCustom = ({ viewOnly }: { viewOnly?: boolean }) => {
             const contentstuff =
                 host && host.contents[dataUnfinished.secretgraph.node.id]
 
-            const hashAlgorithms = findWorkingHashAlgorithms(
-                dataUnfinished.secretgraph.config.hashAlgorithms
+            const hashAlgorithms = findWorkingAlgorithms(
+                dataUnfinished.secretgraph.config.hashAlgorithms,
+                'hash'
             )
             const mapper = await generateActionMapper({
                 config,
@@ -707,8 +713,9 @@ const CreateCustom = () => {
                 deleted: false,
                 updateId: null,
             })
-            const hashAlgorithms = findWorkingHashAlgorithms(
-                dataUnfinished.secretgraph.config.hashAlgorithms
+            const hashAlgorithms = findWorkingAlgorithms(
+                dataUnfinished.secretgraph.config.hashAlgorithms,
+                'hash'
             )
 
             const host = mainCtx.url ? config.hosts[mainCtx.url] : null

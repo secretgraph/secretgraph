@@ -2,6 +2,7 @@
 
 -   add compatibility check for keys, or doesn't fail when a keys fails
 -   remove mapKeyusages
+-   don't use hacky signatureAlgorithms: hashAlgorithms
 -   complete the crypto refactory of ts code
 -   major refactory of python code to the new crypto system, add algorithm field or params field for Content
 -   goToNode document node change function

@@ -309,6 +309,9 @@ export async function exportConfigAsUrl({
                             deriveAlgorithm: 'PBKDF2-sha512',
                             params: {
                                 iterations,
+                                salt: crypto.getRandomValues(
+                                    new Uint8Array(20)
+                                ),
                             },
                         })
                     )
@@ -321,6 +324,7 @@ export async function exportConfigAsUrl({
                         deriveAlgorithm: 'PBKDF2-sha512',
                         params: {
                             iterations,
+                            salt: crypto.getRandomValues(new Uint8Array(20)),
                         },
                     })
                     url.pathname = configContent.link

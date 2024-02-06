@@ -12,7 +12,6 @@ import {
 } from './base_crypto'
 
 export {
-    mapHashNames,
     mapDeriveAlgorithms,
     mapEncryptionAlgorithms,
     mapSignatureAlgorithms,
@@ -159,7 +158,7 @@ export async function derive(
     inp: MaybePromise<string | ArrayBuffer>,
     { params, algorithm }: { params?: any; algorithm?: string } = {}
 ): Promise<{ data: ArrayBuffer; params: any; serializedName: string }> {
-    let inp_cleaned = await inp
+    let inp_cleaned: ArrayBuffer | string = await inp
     if (!algorithm && typeof inp_cleaned == 'string') {
         const splitted = splitFirstOnly(inp_cleaned)
         algorithm = splitted[0]
@@ -170,11 +169,46 @@ export async function derive(
     if (!entry) {
         throw Error('invalid algorithm: ' + algorithm)
     }
+    if (typeof inp_cleaned == 'string') {
+        if (entry.deserialize) {
+            const result = await entry.deserialize(inp_cleaned, params)
+            inp_cleaned = result.data
+            params = result.params
+        } else {
+            inp_cleaned = await unserializeToArrayBuffer(inp_cleaned)
+        }
+    }
     return {
         ...(await entry.derive(inp_cleaned, params)),
         serializedName: entry.serializedName,
     }
 }
+
+export async function deserializeDerivedString(
+    inp: MaybePromise<string>,
+    { params, algorithm }: { params?: any; algorithm?: string } = {} // params are here fallback?
+) {
+    let inp_cleaned: string = await inp
+    if (!algorithm) {
+        const splitted = splitFirstOnly(inp_cleaned)
+        algorithm = splitted[0]
+        inp_cleaned = splitted[1]
+    }
+    const entry = mapDeriveAlgorithms['' + algorithm]
+    if (!entry) {
+        throw Error('invalid algorithm: ' + algorithm)
+    }
+    let data
+    if (entry.deserialize) {
+        const result = await entry.deserialize(inp_cleaned, params)
+        data = result.data
+        params = result.params
+    } else {
+        data = await unserializeToArrayBuffer(inp_cleaned)
+    }
+    return { params: params || {}, data, serializedName: algorithm }
+}
+
 export async function deriveString(
     data: MaybePromise<string | ArrayBuffer>,
     options: { params?: any; algorithm?: string } = {}

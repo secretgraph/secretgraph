@@ -70,7 +70,7 @@ getClusterQuery = """
             config {
                 id
                 hashAlgorithms
-                asymmeticEncryptionAlgorithms
+                asymmetricEncryptionAlgorithms
                 signatureAlgorithms
                 clusterGroups {
                     name
