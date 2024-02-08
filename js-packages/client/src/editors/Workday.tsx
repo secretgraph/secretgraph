@@ -248,8 +248,6 @@ const InnerWorkday = React.memo(function InnerWorkday({
                     updateId: nodeData?.updateId,
                     url,
                     hashAlgorithm,
-                    signatureAlgorithm: hashAlgorithm,
-                    encryptionAlgorithm: hashAlgorithm,
                 })
                 await itemClient.refetchQueries({
                     include: [getContentConfigurationQuery, contentFeedQuery],

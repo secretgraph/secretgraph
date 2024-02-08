@@ -71,8 +71,6 @@ export const getClusterQuery = gql`
             config {
                 id
                 hashAlgorithms
-                asymmetricEncryptionAlgorithms
-                signatureAlgorithms
                 clusterGroups {
                     name
                     description

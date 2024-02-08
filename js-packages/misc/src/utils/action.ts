@@ -7,7 +7,7 @@ import {
     utf8encoder,
 } from './encoding'
 import { hashObject, hashToken } from './hashing'
-import { findWorkingAlgorithms } from './crypto'
+import { DEFAULT_SIGNATURE_ALGORITHM, findWorkingAlgorithms } from './crypto'
 import { compareArray } from './misc'
 import { createSignatureReferences } from './references'
 import * as SetOps from './set'
@@ -537,7 +537,7 @@ export async function transformActions({
 }: {
     actions: (ActionInputEntry | CertificateInputEntry)[]
     hashAlgorithm: string
-    signatureAlgorithm: string
+    signatureAlgorithm?: string
     config?: Interfaces.ConfigInterface
     signKeys?: ArrayBuffer[]
     mapper?:
@@ -661,7 +661,7 @@ export async function transformActions({
                             ).buffer,
                             signKeys,
                             hashAlgorithm,
-                            signatureAlgorithm
+                            signatureAlgorithm || DEFAULT_SIGNATURE_ALGORITHM
                         )
                     ).map((val) => val.extra)
                 }

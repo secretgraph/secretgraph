@@ -112,8 +112,6 @@ export const keysRetrievalQuery = gql`
             config {
                 id
                 hashAlgorithms
-                asymmetricEncryptionAlgorithms
-                signatureAlgorithms
             }
             node(id: $id) {
                 ... on Content {
@@ -203,8 +201,6 @@ export const trustedKeysRetrieval = gql`
             config {
                 id
                 hashAlgorithms
-                asymmetricEncryptionAlgorithms
-                signatureAlgorithms
             }
             contents(
                 filters: {

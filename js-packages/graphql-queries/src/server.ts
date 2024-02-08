@@ -6,8 +6,6 @@ export const serverConfigQuery = gql`
             config {
                 id
                 hashAlgorithms
-                asymmetricEncryptionAlgorithms
-                signatureAlgorithms
                 maxRelayResults
                 clusterGroups {
                     name
@@ -45,8 +43,6 @@ export const serverConfigQueryWithPermissions = gql`
             config {
                 id
                 hashAlgorithms
-                asymmetricEncryptionAlgorithms
-                signatureAlgorithms
                 maxRelayResults
                 clusterGroups {
                     name

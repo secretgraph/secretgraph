@@ -111,8 +111,6 @@ keysRetrievalQuery = """
             config {
                 id
                 hashAlgorithms
-                asymmetricEncryptionAlgorithms
-                signatureAlgorithms
             }
             node(id: $id) {
                 ... on Content {
@@ -203,8 +201,6 @@ trustedKeysRetrieval = """
             config {
                 id
                 hashAlgorithms
-                asymmetricEncryptionAlgorithms
-                signatureAlgorithms
             }
             contents(
                 filters: {

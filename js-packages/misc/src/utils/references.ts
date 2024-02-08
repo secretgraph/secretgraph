@@ -5,8 +5,10 @@ import {
     encrypt,
     encryptString,
     mapDeriveAlgorithms,
+    mapSignatureAlgorithms,
     sign,
     unserializeToCryptoKey,
+    validHashNames,
     verify,
 } from './crypto'
 import { MaybePromise } from '../typing'
@@ -359,7 +361,7 @@ async function createSignatureReferences_helper(
         signature: await sign(signkey, content, {
             algorithm: signatureAlgorithm,
         }),
-        hash: await hash,
+        hash,
     }
 }
 
@@ -374,11 +376,11 @@ export async function createSignatureReferences(
     signatureAlgorithm: string
 ): Promise<Interfaces.ReferenceInterface[]> {
     const references: Promise<Interfaces.ReferenceInterface>[] = []
-    const hashValue = mapDeriveAlgorithms[hashAlgorithm]
+    const hashValue = validHashNames[hashAlgorithm]
     if (!hashValue) {
         throw Error('hashalgorithm not supported: ' + hashAlgorithm)
     }
-    const signatureValue = mapDeriveAlgorithms[signatureAlgorithm]
+    const signatureValue = mapSignatureAlgorithms[signatureAlgorithm]
     if (!signatureValue) {
         throw Error('signature algorithm not supported: ' + signatureAlgorithm)
     }
@@ -393,7 +395,7 @@ export async function createSignatureReferences(
                 return {
                     target: hash,
                     group: 'signature',
-                    extra: `${hashValue.serializedName}:${signature}`,
+                    extra: signature,
                     deleteRecursive: 'FALSE',
                 }
             })

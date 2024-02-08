@@ -4,7 +4,11 @@ import {
     updateKeyMutation,
 } from '@secretgraph/graphql-queries/key'
 
-import { encrypt } from '../crypto'
+import {
+    DEFAULT_ASYMMETRIC_ENCRYPTION_ALGORITHM,
+    DEFAULT_SYMMETRIC_ENCRYPTION_ALGORITHM,
+    encrypt,
+} from '../crypto'
 import * as Interfaces from '../../interfaces'
 import { serializeToBase64, unserializeToArrayBuffer } from '../encoding'
 import { finalizeTag } from '../encryption'
@@ -18,6 +22,7 @@ export async function createKeys({
     privateKey,
     pubkeys,
     publicState = 'public',
+    symmetricEncryptionAlgorithm,
     ...options
 }: {
     client: ApolloClient<any>
@@ -33,7 +38,8 @@ export async function createKeys({
     privateActions?: Iterable<Interfaces.ActionInterface>
     publicActions?: Iterable<Interfaces.ActionInterface>
     hashAlgorithm: string
-    encryptionAlgorithm: string
+    symmetricEncryptionAlgorithm?: string
+    asymmetricEncryptionAlgorithm?: string
     authorization: Iterable<string>
 }): Promise<FetchResult<any>> {
     const nonce = crypto.getRandomValues(new Uint8Array(13))
@@ -56,7 +62,8 @@ export async function createKeys({
                 [options.publicKey] as Parameters<typeof encryptSharedKey>[1]
             ).concat(pubkeys),
             options.hashAlgorithm,
-            options.encryptionAlgorithm
+            options.asymmetricEncryptionAlgorithm ||
+                DEFAULT_ASYMMETRIC_ENCRYPTION_ALGORITHM
         )
     )
     privateTags.push(`key=${specialRef.extra}`)
@@ -78,6 +85,9 @@ export async function createKeys({
                             return await finalizeTag({
                                 key: sharedkey,
                                 data: tag,
+                                symmetricEncryptionAlgorithm:
+                                    symmetricEncryptionAlgorithm ||
+                                    DEFAULT_SYMMETRIC_ENCRYPTION_ALGORITHM,
                             })
                         }
                     )
@@ -136,7 +146,8 @@ export async function updateKey({
     references?: Iterable<Interfaces.ReferenceInterface> | null
     actions?: Iterable<Interfaces.ActionInterface>
     hashAlgorithm?: string
-    encryptionAlgorithm?: string
+    symmetricEncryptionAlgorithm?: string
+    asymmetricEncryptionAlgorithm?: string
     signatureAlgorithm?: string
     authorization: Iterable<string>
     oldKey?: Interfaces.RawInput
@@ -206,7 +217,8 @@ export async function updateKey({
                         [updatedKey] as Parameters<typeof encryptSharedKey>[1]
                     ).concat(options.pubkeys),
                     options.hashAlgorithm,
-                    options.encryptionAlgorithm as string
+                    options.asymmetricEncryptionAlgorithm ||
+                        DEFAULT_ASYMMETRIC_ENCRYPTION_ALGORITHM
                 )
             )
         ;(privateTags as string[]).push(
@@ -251,6 +263,9 @@ export async function updateKey({
                               return await finalizeTag({
                                   key: sharedKey as ArrayBuffer,
                                   data: tag,
+                                  symmetricEncryptionAlgorithm:
+                                      options.symmetricEncryptionAlgorithm ||
+                                      DEFAULT_SYMMETRIC_ENCRYPTION_ALGORITHM,
                               })
                           })
                       )

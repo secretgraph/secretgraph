@@ -13,17 +13,12 @@ import {
 import { hashObject, hashToken } from './hashing'
 import { MaybePromise } from '../typing'
 import {
-    mapDeriveAlgorithms,
-    mapEncryptionAlgorithms,
-    mapSignatureAlgorithms,
-    EmptyKeyError,
     decryptString,
     encryptString,
     derive,
-    deriveString,
-    encrypt,
     serializeDerive,
     deserializeDerivedString,
+    DEFAULT_SYMMETRIC_ENCRYPTION_ALGORITHM,
 } from './crypto'
 import * as IterableOps from './iterable'
 
@@ -37,6 +32,7 @@ export async function finalizeTag(options: {
     readonly key: MaybePromise<any>
     readonly data: MaybePromise<string>
     readonly tag?: MaybePromise<string>
+    readonly symmetricEncryptionAlgorithm: string
 }): Promise<string> {
     let tag: string | undefined, data: ArrayBuffer | string
     if (options.tag !== undefined) {
@@ -57,7 +53,7 @@ export async function finalizeTag(options: {
         const nonce = crypto.getRandomValues(new Uint8Array(13))
         try {
             data = await encryptString(options.key, data, {
-                algorithm: 'AESGCM',
+                algorithm: options.symmetricEncryptionAlgorithm,
             })
         } catch (e) {
             console.debug('error encrypting tag', data, nonce)

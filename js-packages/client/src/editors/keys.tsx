@@ -36,6 +36,7 @@ import {
 import { extractTagsRaw } from '@secretgraph/misc/utils/encryption'
 import { hashKey, hashObject } from '@secretgraph/misc/utils/hashing'
 import {
+    DEFAULT_SIGNATURE_ALGORITHM,
     findWorkingAlgorithms,
     unserializeToCryptoKey,
 } from '@secretgraph/misc/utils/crypto'
@@ -909,7 +910,6 @@ const KeysUpdate = ({
                         mapper: privateKey?.mapper,
                         config,
                         hashAlgorithm: hashAlgorithmsWorking[0],
-                        signatureAlgorithm: hashAlgorithmsWorking[0],
                         validFor: 'PublicKey',
                     })
                     const keyParams = {
@@ -992,7 +992,6 @@ const KeysUpdate = ({
                               mapper: privateKey?.mapper,
                               config,
                               hashAlgorithm: hashAlgorithmsWorking[0],
-                              signatureAlgorithm: hashAlgorithmsWorking[0],
                               validFor: 'PrivateKey',
                           })
                         : {
@@ -1062,7 +1061,6 @@ const KeysUpdate = ({
                             publicActions: finishedActionsPublicKey,
                             privateActions: finishedActionsPrivateKey,
                             hashAlgorithm: hashAlgorithmsWorking[0],
-                            encryptionAlgorithm: hashAlgorithmsWorking[0],
                             authorization: tokensTarget,
                         })
                         updateMainCtx({
@@ -1139,7 +1137,6 @@ const KeysUpdate = ({
                                 privkeys: Object.values(privateKeys),
                                 pubkeys: Object.values(publicKeys),
                                 hashAlgorithm: hashAlgorithmsWorking[0],
-                                encryptionAlgorithm: hashAlgorithmsWorking[0],
                                 authorization: mainCtx.tokens,
                             })
                         }

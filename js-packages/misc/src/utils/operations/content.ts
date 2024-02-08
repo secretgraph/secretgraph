@@ -17,7 +17,14 @@ import { finalizeTag, extractTags, extractTagsRaw } from '../encryption'
 import { fallback_fetch } from '../misc'
 import { createSignatureReferences, encryptSharedKey } from '../references'
 import { MaybePromise } from '../../typing'
-import { decrypt, decryptString, encrypt } from '../crypto'
+import {
+    DEFAULT_ASYMMETRIC_ENCRYPTION_ALGORITHM,
+    DEFAULT_SIGNATURE_ALGORITHM,
+    DEFAULT_SYMMETRIC_ENCRYPTION_ALGORITHM,
+    decrypt,
+    decryptString,
+    encrypt,
+} from '../crypto'
 
 export async function createContent({
     client,
@@ -40,8 +47,9 @@ export async function createContent({
     references?: Iterable<Interfaces.ReferenceInterface> | null
     actions?: Iterable<Interfaces.ActionInterface>
     hashAlgorithm: string
-    encryptionAlgorithm: string
-    signatureAlgorithm: string
+    asymmetricEncryptionAlgorithm?: string
+    symmetricEncryptionAlgorithm?: string
+    signatureAlgorithm?: string
     authorization: Iterable<string>
 }): Promise<FetchResult<any>> {
     const tagsOptions = await Promise.all(tagsIntern)
@@ -84,14 +92,15 @@ export async function createContent({
               key as NonNullable<typeof key>,
               options.pubkeys,
               options.hashAlgorithm,
-              options.encryptionAlgorithm
+              options.asymmetricEncryptionAlgorithm ||
+                  DEFAULT_ASYMMETRIC_ENCRYPTION_ALGORITHM
           )
     const signatureReferencesPromise = encryptedContentPromise.then((data) =>
         createSignatureReferences(
             data,
             options.privkeys ? options.privkeys : [],
             options.hashAlgorithm,
-            options.signatureAlgorithm
+            options.signatureAlgorithm || DEFAULT_SIGNATURE_ALGORITHM
         )
     )
     let tags: string[]
@@ -109,6 +118,9 @@ export async function createContent({
                     finalizeTag({
                         data,
                         key: key as NonNullable<typeof key>,
+                        symmetricEncryptionAlgorithm:
+                            options.symmetricEncryptionAlgorithm ||
+                            DEFAULT_SYMMETRIC_ENCRYPTION_ALGORITHM,
                     })
                 )
         )
@@ -161,7 +173,8 @@ export async function updateContent({
     references?: Iterable<Interfaces.ReferenceInterface> | null
     actions?: Iterable<Interfaces.ActionInterface>
     hashAlgorithm?: string
-    encryptionAlgorithm?: string
+    asymmetricEncryptionAlgorithm?: string
+    symmetricEncryptionAlgorithm?: string
     signatureAlgorithm?: string
     authorization: Iterable<string>
     // only for tag only updates if finalizeTags is used
@@ -194,6 +207,9 @@ export async function updateContent({
             return finalizeTag({
                 key: sharedKey as ArrayBuffer,
                 data: tag,
+                symmetricEncryptionAlgorithm:
+                    options.symmetricEncryptionAlgorithm ||
+                    DEFAULT_SYMMETRIC_ENCRYPTION_ALGORITHM,
             })
         })
     }
@@ -217,9 +233,6 @@ export async function updateContent({
             if (!options.hashAlgorithm) {
                 throw Error('hashAlgorithm required for value updates')
             }
-            if (!options.encryptionAlgorithm) {
-                throw Error('encryptionAlgorithm required for value updates')
-            }
             if (options.pubkeys.length == 0) {
                 throw Error('No public keys provided')
             }
@@ -227,7 +240,9 @@ export async function updateContent({
 
             encryptedContent = (
                 await encrypt(sharedKey, options.value, {
-                    algorithm: 'AESGCM',
+                    algorithm:
+                        options.symmetricEncryptionAlgorithm ||
+                        DEFAULT_SYMMETRIC_ENCRYPTION_ALGORITHM,
                     params: { nonce },
                 })
             ).data
@@ -236,7 +251,8 @@ export async function updateContent({
                     sharedKey as ArrayBuffer,
                     options.pubkeys,
                     options.hashAlgorithm,
-                    options.encryptionAlgorithm
+                    options.asymmetricEncryptionAlgorithm ||
+                        DEFAULT_ASYMMETRIC_ENCRYPTION_ALGORITHM
                 )
             references.push(...(await publicKeyReferencesPromise))
             tags.push(...(await tagsPromise2))

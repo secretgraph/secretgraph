@@ -6,8 +6,6 @@ serverConfigQuery = """
             config {
                 id
                 hashAlgorithms
-                asymmetricEncryptionAlgorithms
-                signatureAlgorithms
                 maxRelayResults
                 clusterGroups {
                     name
@@ -45,8 +43,6 @@ serverConfigQueryWithPermissions = """
             config {
                 id
                 hashAlgorithms
-                asymmetricEncryptionAlgorithms
-                signatureAlgorithms
                 maxRelayResults
                 clusterGroups {
                     name

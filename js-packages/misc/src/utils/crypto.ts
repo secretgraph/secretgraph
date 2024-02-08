@@ -19,6 +19,10 @@ export {
     validHashNames,
     validDeriveNames,
     validSymmetricNames,
+    DEFAULT_SIGNATURE_ALGORITHM,
+    DEFAULT_ASYMMETRIC_ENCRYPTION_ALGORITHM,
+    DEFAULT_SYMMETRIC_ENCRYPTION_ALGORITHM,
+    DEFAULT_DERIVE_ALGORITHM,
 } from './base_crypto'
 
 export class UnknownAlgorithm extends Error {}
@@ -93,6 +97,7 @@ const mapKeyUsages: {
     'AES-GCM': ['encrypt', 'decrypt'],
 }
 
+// TODO: fix conversion of OEAP from SHA-256 to SHA-512
 export async function toPublicKey(
     inp: Interfaces.KeyInput | PromiseLike<Interfaces.KeyInput>,
     params: any
@@ -356,10 +361,20 @@ export async function sign(
             unserializeToCryptoKey(key, entry.keyParams, 'privateKey'),
             unserializeToArrayBuffer(data),
         ])
-    return `${entry.serializedName}:${await entry.sign(
-        key_cleaned,
-        data_cleaned
-    )}`
+    try {
+        return `${entry.serializedName}:${await entry.sign(
+            key_cleaned,
+            data_cleaned
+        )}`
+    } catch (exc) {
+        console.error(
+            'sign parameters:',
+            algorithm,
+            entry.keyParams,
+            key_cleaned
+        )
+        throw exc
+    }
 }
 export async function verify(
     key: MaybePromise<any>,

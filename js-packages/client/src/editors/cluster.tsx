@@ -28,7 +28,10 @@ import {
     hashObject,
     hashToken,
 } from '@secretgraph/misc/utils/hashing'
-import { findWorkingAlgorithms } from '@secretgraph/misc/utils/crypto'
+import {
+    DEFAULT_SIGNATURE_ALGORITHM,
+    findWorkingAlgorithms,
+} from '@secretgraph/misc/utils/crypto'
 import {
     createCluster,
     updateCluster,
@@ -216,7 +219,6 @@ const ClusterIntern = ({
                         mapper,
                         config,
                         hashAlgorithm,
-                        signatureAlgorithm: hashAlgorithm,
                         ignoreCluster: false,
                     })
                     let digestCert: undefined | string = undefined,
@@ -268,7 +270,6 @@ const ClusterIntern = ({
                             name,
                             description,
                             hashAlgorithm,
-                            encryptionAlgorithm: hashAlgorithm,
                             keys: [
                                 {
                                     publicKey,

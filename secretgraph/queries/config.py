@@ -11,8 +11,6 @@ updateConfigQuery = """
             config {
                 id
                 hashAlgorithms
-                asymmetricEncryptionAlgorithms
-                signatureAlgorithms
             }
             contents(
                 filters: {
@@ -139,8 +137,6 @@ findConfigQuery = """
             config {
                 id
                 hashAlgorithms
-                asymmetricEncryptionAlgorithms
-                signatureAlgorithms
             }
             contents(
                 filters: {

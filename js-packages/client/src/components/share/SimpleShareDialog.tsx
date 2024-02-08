@@ -45,6 +45,7 @@ import { QRCodeSVG } from 'qrcode.react'
 import * as React from 'react'
 
 import * as Contexts from '../../contexts'
+import { DEFAULT_SIGNATURE_ALGORITHM } from '@secretgraph/misc/utils/crypto'
 
 const _update_set = new Set(['update', 'manage'])
 function SharePanel({ url }: { url: string }) {
@@ -179,7 +180,6 @@ function NewPanel({
                         await transformActions({
                             actions: values.actions,
                             hashAlgorithm,
-                            signatureAlgorithm: hashAlgorithm,
                         })
 
                     await itemClient.mutate({
@@ -353,7 +353,6 @@ function AuthPanel({
                         await transformActions({
                             actions,
                             hashAlgorithm,
-                            signatureAlgorithm: hashAlgorithm,
                             signKeys,
                         })
 

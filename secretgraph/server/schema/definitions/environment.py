@@ -117,26 +117,6 @@ class SecretgraphConfig(relay.Node):
     def hashAlgorithms() -> list[str]:
         return settings.SECRETGRAPH_HASH_ALGORITHMS
 
-    @strawberry.field()
-    @staticmethod
-    def deriveAlgorithms() -> list[str]:
-        return settings.SECRETGRAPH_DERIVE_ALGORITHMS
-
-    @strawberry.field()
-    @staticmethod
-    def symmetricEncryptionAlgorithms() -> list[str]:
-        return settings.SECRETGRAPH_SYMMETRIC_ENCRYPTION_ALGORITHMS
-
-    @strawberry.field()
-    @staticmethod
-    def asymmetricEncryptionAlgorithms() -> list[str]:
-        return settings.SECRETGRAPH_ASYMMETRIC_ENCRYPTION_ALGORITHMS
-
-    @strawberry.field()
-    @staticmethod
-    def signatureAlgorithms() -> list[str]:
-        return settings.SECRETGRAPH_SIGNATURE_ALGORITHMS
-
     @strawberry.field(description="Maximal results per relay query")
     @staticmethod
     def maxRelayResults() -> int:

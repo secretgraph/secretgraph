@@ -12,8 +12,6 @@ export const updateConfigQuery = gql`
             config {
                 id
                 hashAlgorithms
-                asymmetricEncryptionAlgorithms
-                signatureAlgorithms
             }
             contents(
                 filters: {
@@ -140,8 +138,6 @@ export const findConfigQuery = gql`
             config {
                 id
                 hashAlgorithms
-                asymmetricEncryptionAlgorithms
-                signatureAlgorithms
             }
             contents(
                 filters: {

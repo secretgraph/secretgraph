@@ -50,6 +50,8 @@ import ConfigShareDialog from '../components/share/ConfigShareDialog'
 import * as Contexts from '../contexts'
 import { mappersToArray } from '../hooks'
 import {
+    DEFAULT_ASYMMETRIC_ENCRYPTION_ALGORITHM,
+    DEFAULT_SIGNATURE_ALGORITHM,
     deriveString,
     findWorkingAlgorithms,
 } from '@secretgraph/misc/utils/crypto'
@@ -186,8 +188,6 @@ function InnerConfig({
                               updateId: nodeData?.updateId,
                               url,
                               hashAlgorithm,
-                              signatureAlgorithm: hashAlgorithm,
-                              encryptionAlgorithm: hashAlgorithm,
                               // to disable groupkeys
                               groupKeys: {},
                           })

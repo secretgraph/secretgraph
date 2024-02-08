@@ -126,8 +126,6 @@ export function InnerProfile({
                     updateId: nodeData?.updateId,
                     url,
                     hashAlgorithm,
-                    signatureAlgorithm: hashAlgorithm,
-                    encryptionAlgorithm: hashAlgorithm,
                 })
                 await itemClient.refetchQueries({
                     include: [getContentConfigurationQuery, contentFeedQuery],

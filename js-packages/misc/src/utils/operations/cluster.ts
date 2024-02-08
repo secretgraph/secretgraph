@@ -11,7 +11,13 @@ import {
     unserializeToArrayBuffer,
     utf8encoder,
 } from '../encoding'
-import { encrypt, encryptString } from '../crypto'
+import {
+    DEFAULT_ASYMMETRIC_ENCRYPTION_ALGORITHM,
+    DEFAULT_SIGNATURE_ALGORITHM,
+    DEFAULT_SYMMETRIC_ENCRYPTION_ALGORITHM,
+    encrypt,
+    encryptString,
+} from '../crypto'
 import { hashObject, hashTagsContentHash, hashToken } from '../hashing'
 import { createContent } from './content'
 
@@ -19,7 +25,8 @@ export async function createCluster(options: {
     client: ApolloClient<any>
     actions: Iterable<Interfaces.ActionInterface>
     hashAlgorithm: string
-    encryptionAlgorithm: string
+    asymmetricEncryptionAlgorithm?: string
+    symmetricEncryptionAlgorithm?: string
     net?: string
     name?: string
     description?: string
@@ -107,7 +114,12 @@ export async function createCluster(options: {
                         privateKey: await encrypt(
                             privateKeyKey.slice(-32),
                             unserializeToArrayBuffer(k2.privateKey),
-                            { algorithm: 'AESGCM', params: { nonce } }
+                            {
+                                algorithm:
+                                    options.symmetricEncryptionAlgorithm ||
+                                    DEFAULT_SYMMETRIC_ENCRYPTION_ALGORITHM,
+                                params: { nonce },
+                            }
                         ).then((obj) => new Blob([obj.data])),
                         privateTags: [],
                         publicTags: k2.publicTags || [],
@@ -121,7 +133,11 @@ export async function createCluster(options: {
                         await encryptString(
                             k2.privateKey,
                             privateKeyKey.slice(-32),
-                            { algorithm: options.encryptionAlgorithm }
+                            {
+                                algorithm:
+                                    options.asymmetricEncryptionAlgorithm ||
+                                    DEFAULT_ASYMMETRIC_ENCRYPTION_ALGORITHM,
+                            }
                         ).then((data) => `key=:${data}`)
                     )
                     return ret
@@ -181,7 +197,8 @@ export async function updateCluster(options: {
 
 export async function initializeCluster({
     hashAlgorithm,
-    encryptionAlgorithm,
+    asymmetricEncryptionAlgorithm,
+    symmetricEncryptionAlgorithm,
     signatureAlgorithm,
     client,
     config,
@@ -203,8 +220,9 @@ export async function initializeCluster({
     description?: string
     featured?: boolean
     hashAlgorithm: string
-    encryptionAlgorithm: string
-    signatureAlgorithm: string
+    symmetricEncryptionAlgorithm?: string
+    asymmetricEncryptionAlgorithm?: string
+    signatureAlgorithm?: string
     noteToken: string
     noteCertificate: string
     clusterGroups?: string[]
@@ -212,6 +230,7 @@ export async function initializeCluster({
 }) {
     const manage_key = crypto.getRandomValues(new Uint8Array(50))
     const view_key = crypto.getRandomValues(new Uint8Array(50))
+    // TODO: use asymmetricEncryptionAlgorithm, signatureAlgorithm for creating crypto key
     const { publicKey, privateKey } = (await crypto.subtle.generateKey(
         {
             name: 'RSA-OAEP',
@@ -248,7 +267,8 @@ export async function initializeCluster({
         net,
         description,
         hashAlgorithm,
-        encryptionAlgorithm,
+        symmetricEncryptionAlgorithm,
+        asymmetricEncryptionAlgorithm,
         clusterGroups,
         netGroups,
         keys: [
@@ -320,6 +340,7 @@ export async function initializeCluster({
     if (!authorization.length) {
         throw new Error('no tokens found after initialization')
     }
+
     const { data: configResult } = await createContent({
         client,
         cluster: clusterResult.cluster['id'],
@@ -331,7 +352,8 @@ export async function initializeCluster({
         tags: ['name=config.json', `slot=${slot}`],
         contentHash,
         hashAlgorithm,
-        encryptionAlgorithm,
+        symmetricEncryptionAlgorithm,
+        asymmetricEncryptionAlgorithm,
         signatureAlgorithm,
         authorization,
     })

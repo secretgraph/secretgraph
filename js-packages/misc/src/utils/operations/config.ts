@@ -29,7 +29,14 @@ import {
     extractPubKeysReferences,
 } from '../references'
 import { createContent, decryptContentObject, updateContent } from './content'
-import { findWorkingAlgorithms, decryptString, verify } from '../crypto'
+import {
+    findWorkingAlgorithms,
+    decryptString,
+    verify,
+    DEFAULT_SIGNATURE_ALGORITHM,
+    DEFAULT_ASYMMETRIC_ENCRYPTION_ALGORITHM,
+    DEFAULT_SYMMETRIC_ENCRYPTION_ALGORITHM,
+} from '../crypto'
 
 export async function loadConfigFromSlot({
     client,
@@ -94,6 +101,8 @@ async function updateRemoteConfig({
     pubkeys,
     node,
     hashAlgorithm,
+    symmetricEncryptionAlgorithm,
+    asymmetricEncryptionAlgorithm,
 }: {
     update: Interfaces.ConfigInputInterface
     client: ApolloClient<any>
@@ -104,6 +113,8 @@ async function updateRemoteConfig({
     pubkeys: Parameters<typeof encryptSharedKey>[1]
     privkeys: Parameters<typeof createSignatureReferences>[1]
     hashAlgorithm: string
+    symmetricEncryptionAlgorithm?: string
+    asymmetricEncryptionAlgorithm?: string
 }): Promise<[Interfaces.ConfigInterface, number] | false> {
     if (!node) {
         const configQueryRes = await client.query({
@@ -151,6 +162,8 @@ async function updateRemoteConfig({
         tags: ['name=config.json', `slot=${mergedConfig.slots[0]}`],
         state: 'protected',
         hashAlgorithm,
+        symmetricEncryptionAlgorithm,
+        asymmetricEncryptionAlgorithm,
         value: utf8encoder.encode(JSON.stringify(mergedConfig)),
         authorization: authInfo.tokens,
     })
@@ -568,8 +581,9 @@ interface updateOrCreateContentWithConfigSharedParams {
     state: string
     actions: Parameters<typeof transformActions>[0]['actions']
     hashAlgorithm: string
-    signatureAlgorithm: string
-    encryptionAlgorithm: string
+    signatureAlgorithm?: string
+    asymmmetricEncryptionAlgorithm?: string
+    symmmetricEncryptionAlgorithm?: string
     authorization: string[]
     validFor?: string
     groupKeys?: {
@@ -605,6 +619,8 @@ export async function updateOrCreateContentWithConfig({
     net,
     config,
     cluster,
+    asymmetricEncryptionAlgorithm,
+    symmetricEncryptionAlgorithm,
     hashAlgorithm,
     signatureAlgorithm,
     url,
@@ -630,6 +646,12 @@ export async function updateOrCreateContentWithConfig({
     | false
 > {
     const host = config.hosts[url]
+    signatureAlgorithm = signatureAlgorithm || DEFAULT_SIGNATURE_ALGORITHM
+    asymmetricEncryptionAlgorithm =
+        asymmetricEncryptionAlgorithm ||
+        DEFAULT_ASYMMETRIC_ENCRYPTION_ALGORITHM
+    symmetricEncryptionAlgorithm =
+        symmetricEncryptionAlgorithm || DEFAULT_SYMMETRIC_ENCRYPTION_ALGORITHM
 
     const content_key_or_token_hashes = new Set<string>(
         (id &&
@@ -698,6 +720,8 @@ export async function updateOrCreateContentWithConfig({
             pubkeys: Object.values(pubkeys),
             hashAlgorithm,
             signatureAlgorithm,
+            asymmetricEncryptionAlgorithm,
+            symmetricEncryptionAlgorithm,
             actions: finishedActions,
             authorization,
             state,

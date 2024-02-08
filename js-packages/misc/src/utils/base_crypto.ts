@@ -11,6 +11,11 @@ export function addWithVariants<T extends { [key: string]: any }>(
     }
 }
 
+export let DEFAULT_SIGNATURE_ALGORITHM = 'rsa-sha512'
+export let DEFAULT_ASYMMETRIC_ENCRYPTION_ALGORITHM = 'rsa-sha512'
+export let DEFAULT_SYMMETRIC_ENCRYPTION_ALGORITHM = 'AESGCM'
+export let DEFAULT_DERIVE_ALGORITHM = 'PBKDF2-sha512'
+
 export const validHashNames: { [key: string]: string } = {}
 export const validDeriveNames: { [key: string]: string } = {}
 export const validSymmetricNames: { [key: string]: string } = {}
@@ -255,6 +260,7 @@ addWithVariants(validDeriveNames, 'PBKDF2-sha256', [
     'sha256',
     'SHA-256',
 ])
+
 addWithVariants(
     mapEncryptionAlgorithms,
     {
@@ -263,8 +269,7 @@ addWithVariants(
                 data: await crypto.subtle.encrypt(
                     {
                         name: 'RSA-OAEP',
-                        hash: 'SHA-512',
-                    } as RsaOaepParams,
+                    },
                     key,
                     data
                 ),
@@ -276,8 +281,7 @@ addWithVariants(
                 data: await crypto.subtle.decrypt(
                     {
                         name: 'RSA-OAEP',
-                        hash: 'SHA-512',
-                    } as RsaOaepParams,
+                    },
                     key,
                     data
                 ),
@@ -306,8 +310,7 @@ addWithVariants(
                 data: await crypto.subtle.encrypt(
                     {
                         name: 'RSA-OAEP',
-                        hash: 'SHA-256',
-                    } as RsaOaepParams,
+                    },
                     key,
                     data
                 ),
@@ -319,8 +322,7 @@ addWithVariants(
                 data: await crypto.subtle.decrypt(
                     {
                         name: 'RSA-OAEP',
-                        hash: 'SHA-256',
-                    } as RsaOaepParams,
+                    },
                     key,
                     data
                 ),
@@ -360,7 +362,7 @@ addWithVariants(
                     {
                         name: 'AES-GCM',
                         iv: nonce,
-                    } as AesGcmParams,
+                    },
                     key,
                     data
                 ),
@@ -378,7 +380,7 @@ addWithVariants(
                     {
                         name: 'AES-GCM',
                         iv: nonce,
-                    } as AesGcmParams,
+                    },
                     key,
                     data
                 ),
@@ -386,7 +388,9 @@ addWithVariants(
             }
         },
         serializedName: 'AESGCM',
-        keyParams: {},
+        keyParams: {
+            name: 'AES-GCM',
+        },
     },
     ['AESGCM']
 )
@@ -399,9 +403,8 @@ addWithVariants(
                 crypto.subtle.sign(
                     {
                         name: 'RSA-PSS',
-                        hash: 'SHA-512',
-                        saltLength: 512,
-                    } as RsaPssParams,
+                        saltLength: 64,
+                    },
                     key,
                     data
                 )
@@ -410,9 +413,8 @@ addWithVariants(
             await crypto.subtle.verify(
                 {
                     name: 'RSA-PSS',
-                    hash: 'SHA-512',
-                    saltLength: 512,
-                } as RsaPssParams,
+                    saltLength: 64,
+                },
                 key,
                 await unserializeToArrayBuffer(signature),
                 data
@@ -434,9 +436,8 @@ addWithVariants(
                 crypto.subtle.sign(
                     {
                         name: 'RSA-PSS',
-                        hash: 'SHA-256',
-                        saltLength: 256,
-                    } as RsaPssParams,
+                        saltLength: 32,
+                    },
                     key,
                     data
                 )
@@ -445,9 +446,8 @@ addWithVariants(
             await crypto.subtle.verify(
                 {
                     name: 'RSA-PSS',
-                    hash: 'SHA-256',
-                    saltLength: 256,
-                } as RsaPssParams,
+                    saltLength: 32,
+                },
                 key,
                 await unserializeToArrayBuffer(signature),
                 data

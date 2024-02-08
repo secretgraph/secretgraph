@@ -174,10 +174,6 @@ function Register() {
                             client,
                             config: newConfig,
                             hashAlgorithm: registerContext!.hashAlgorithms[0],
-                            signatureAlgorithm:
-                                registerContext!.hashAlgorithms[0],
-                            encryptionAlgorithm:
-                                registerContext!.hashAlgorithms[0],
                             slot,
                             noteCertificate: 'initial certificate',
                             noteToken: 'initial token',
