@@ -5,20 +5,12 @@ import {
     mapDeriveAlgorithms,
     mapEncryptionAlgorithms,
     mapSignatureAlgorithms,
-    validAsymmetricNames,
-    validDeriveNames,
-    validHashNames,
-    validSymmetricNames,
 } from './base_crypto'
 
 export {
     mapDeriveAlgorithms,
     mapEncryptionAlgorithms,
     mapSignatureAlgorithms,
-    validAsymmetricNames,
-    validHashNames,
-    validDeriveNames,
-    validSymmetricNames,
     DEFAULT_SIGNATURE_ALGORITHM,
     DEFAULT_ASYMMETRIC_ENCRYPTION_ALGORITHM,
     DEFAULT_SYMMETRIC_ENCRYPTION_ALGORITHM,
@@ -45,23 +37,26 @@ export function findWorkingAlgorithms(
     const algos: Set<string> = new Set()
     for (const algo of algorithms) {
         let found = null
-        if ((domain == 'all' || domain == 'hash') && validHashNames[algo]) {
-            found = validHashNames[algo]
+        if (
+            (domain == 'all' || domain == 'hash') &&
+            mapDeriveAlgorithms[algo]?.type == 'hash'
+        ) {
+            found = mapDeriveAlgorithms[algo].serializedName
         } else if (
             (domain == 'all' || domain == 'derive') &&
-            validDeriveNames[algo]
+            mapDeriveAlgorithms[algo]?.type == 'derive'
         ) {
-            found = validAsymmetricNames[algo]
+            found = mapDeriveAlgorithms[algo].serializedName
         } else if (
             (domain == 'all' || domain == 'asymmetric') &&
-            validAsymmetricNames[algo]
+            mapEncryptionAlgorithms[algo]?.type == 'asymmetric'
         ) {
-            found = validAsymmetricNames[algo]
+            found = mapEncryptionAlgorithms[algo].serializedName
         } else if (
             (domain == 'all' || domain == 'symmetric') &&
-            validSymmetricNames[algo]
+            mapEncryptionAlgorithms[algo]?.type == 'symmetric'
         ) {
-            found = validSymmetricNames[algo]
+            found = mapEncryptionAlgorithms[algo].serializedName
         } else if (
             (domain == 'all' || domain == 'signature') &&
             mapSignatureAlgorithms[algo]

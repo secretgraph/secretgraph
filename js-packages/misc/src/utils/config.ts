@@ -10,7 +10,7 @@ import {
 } from './encryption'
 import {
     unserializeToCryptoKey,
-    validHashNames,
+    mapDeriveAlgorithms,
     mapEncryptionAlgorithms,
     encrypt,
     decrypt,
@@ -1418,7 +1418,10 @@ export async function pruneOldTrustedKeys({
             continue
         }
         const splitted = key.split(':')
-        if (splitted.length != 2 || !validHashNames[splitted[0]]) {
+        if (
+            splitted.length != 2 ||
+            mapDeriveAlgorithms[splitted[0]]?.type == 'hash'
+        ) {
             ret[key] = null
             continue
         }

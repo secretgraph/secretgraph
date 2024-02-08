@@ -23,7 +23,7 @@ import { generateActionMapper } from '@secretgraph/misc/utils/action'
 import { authInfoFromConfig } from '@secretgraph/misc/utils/config'
 import {
     findWorkingAlgorithms,
-    validHashNames,
+    mapDeriveAlgorithms,
 } from '@secretgraph/misc/utils/crypto'
 import {
     decryptContentObject,
@@ -287,7 +287,7 @@ const InnerCustom = ({
                                         if (
                                             val &&
                                             !val.match(
-                                                `^[^:]*:${validHashNames[hashAlgorithm]}:[a-zA-Z0-9+/]+={0,2}$`
+                                                `^[^:]*:${mapDeriveAlgorithms[hashAlgorithm].serializedName}:[a-zA-Z0-9+/]+={0,2}$`
                                             )
                                         ) {
                                             return 'invalid ContentHash'

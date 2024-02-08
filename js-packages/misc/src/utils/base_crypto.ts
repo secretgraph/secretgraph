@@ -16,11 +16,6 @@ export let DEFAULT_ASYMMETRIC_ENCRYPTION_ALGORITHM = 'rsa-sha512'
 export let DEFAULT_SYMMETRIC_ENCRYPTION_ALGORITHM = 'AESGCM'
 export let DEFAULT_DERIVE_ALGORITHM = 'PBKDF2-sha512'
 
-export const validHashNames: { [key: string]: string } = {}
-export const validDeriveNames: { [key: string]: string } = {}
-export const validSymmetricNames: { [key: string]: string } = {}
-export const validAsymmetricNames: { [key: string]: string } = {}
-
 // argon1id, pkb
 export const mapDeriveAlgorithms: {
     [algo: string]: {
@@ -37,6 +32,7 @@ export const mapDeriveAlgorithms: {
             params: any
         }) => Promise<string>
         readonly serializedName: string
+        readonly type: 'hash' | 'derive'
     }
 } = {}
 
@@ -62,6 +58,7 @@ export const mapEncryptionAlgorithms: {
         ) => Promise<{ data: ArrayBuffer; params: any }>
         readonly serializedName: string
         readonly keyParams: any
+        readonly type: 'symmetric' | 'asymmetric'
     }
 } = {}
 export const mapSignatureAlgorithms: {
@@ -90,10 +87,10 @@ addWithVariants(
             return await serializeToBase64(inp.data)
         },
         serializedName: 'sha256',
+        type: 'hash',
     },
     ['sha256', 'SHA-256']
 )
-addWithVariants(validHashNames, 'sha256', ['sha256', 'SHA-256'])
 addWithVariants(
     mapDeriveAlgorithms,
     {
@@ -107,10 +104,10 @@ addWithVariants(
             return await serializeToBase64(inp.data)
         },
         serializedName: 'sha512',
+        type: 'hash',
     },
     ['sha512', 'SHA-512']
 )
-addWithVariants(validHashNames, 'sha512', ['sha512', 'SHA-512'])
 addWithVariants(
     mapDeriveAlgorithms,
     {
@@ -179,14 +176,10 @@ addWithVariants(
         },
 
         serializedName: 'PBKDF2-sha512',
+        type: 'derive',
     },
     ['PBKDF2-sha512']
 )
-addWithVariants(validDeriveNames, 'PBKDF2-sha512', [
-    'PBKDF2-sha512',
-    'sha512',
-    'SHA-512',
-])
 addWithVariants(
     mapDeriveAlgorithms,
     {
@@ -252,14 +245,10 @@ addWithVariants(
             }:${await serializeToBase64(inp.data)}`
         },
         serializedName: 'PBKDF2-sha256',
+        type: 'derive',
     },
     ['PBKDF2-sha256']
 )
-addWithVariants(validDeriveNames, 'PBKDF2-sha256', [
-    'PBKDF2-sha256',
-    'sha256',
-    'SHA-256',
-])
 
 addWithVariants(
     mapEncryptionAlgorithms,
@@ -288,19 +277,15 @@ addWithVariants(
                 params: {},
             }
         },
-        serializedName: 'rsa-sha512',
         keyParams: {
             name: 'RSA-OAEP',
             hash: 'SHA-512',
         },
+        serializedName: 'rsa-sha512',
+        type: 'asymmetric',
     },
     ['rsa-sha512', 'sha512', 'SHA-512']
 )
-addWithVariants(validAsymmetricNames, 'rsa-sha512', [
-    'rsa-sha512',
-    'sha512',
-    'SHA-512',
-])
 
 addWithVariants(
     mapEncryptionAlgorithms,
@@ -329,20 +314,15 @@ addWithVariants(
                 params: {},
             }
         },
-        serializedName: 'rsa-sha256',
         keyParams: {
             name: 'RSA-OAEP',
             hash: 'SHA-256',
         },
+        serializedName: 'rsa-sha256',
+        type: 'asymmetric',
     },
     ['rsa-sha256', 'sha256', 'SHA-256']
 )
-addWithVariants(validAsymmetricNames, 'rsa-sha256', [
-    'rsa-sha256',
-    'sha256',
-    'SHA-256',
-])
-
 addWithVariants(
     mapEncryptionAlgorithms,
     {
@@ -387,14 +367,14 @@ addWithVariants(
                 params: { nonce },
             }
         },
-        serializedName: 'AESGCM',
         keyParams: {
             name: 'AES-GCM',
         },
+        serializedName: 'AESGCM',
+        type: 'symmetric',
     },
     ['AESGCM']
 )
-addWithVariants(validSymmetricNames, 'AESGCM', ['AESGCM'])
 addWithVariants(
     mapSignatureAlgorithms,
     {
@@ -419,11 +399,11 @@ addWithVariants(
                 await unserializeToArrayBuffer(signature),
                 data
             ),
-        serializedName: 'rsa-sha512',
         keyParams: {
             name: 'RSA-PSS',
             hash: 'SHA-512',
         },
+        serializedName: 'rsa-sha512',
     },
     ['rsa-sha512', 'sha512', 'SHA-512']
 )
@@ -452,11 +432,11 @@ addWithVariants(
                 await unserializeToArrayBuffer(signature),
                 data
             ),
-        serializedName: 'rsa-sha256',
         keyParams: {
             name: 'RSA-PSS',
             hash: 'SHA-256',
         },
+        serializedName: 'rsa-sha256',
     },
     ['rsa-sha256', 'sha256', 'SHA-256']
 )

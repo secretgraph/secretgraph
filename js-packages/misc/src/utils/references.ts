@@ -7,8 +7,6 @@ import {
     mapDeriveAlgorithms,
     mapSignatureAlgorithms,
     sign,
-    unserializeToCryptoKey,
-    validHashNames,
     verify,
 } from './crypto'
 import { MaybePromise } from '../typing'
@@ -376,8 +374,7 @@ export async function createSignatureReferences(
     signatureAlgorithm: string
 ): Promise<Interfaces.ReferenceInterface[]> {
     const references: Promise<Interfaces.ReferenceInterface>[] = []
-    const hashValue = validHashNames[hashAlgorithm]
-    if (!hashValue) {
+    if (mapDeriveAlgorithms[hashAlgorithm]?.type != 'hash') {
         throw Error('hashalgorithm not supported: ' + hashAlgorithm)
     }
     const signatureValue = mapSignatureAlgorithms[signatureAlgorithm]
