@@ -49,13 +49,14 @@ export const mapEncryptionAlgorithms: {
             data: ArrayBuffer,
             params?: any
         ) => Promise<{ data: ArrayBuffer; params: any }>
-        readonly serialize?: (inp: {
-            data: ArrayBuffer
+        readonly generateKey: (
             params: any
-        }) => Promise<string>
+        ) => Promise<{ key: any; params: any }>
+        readonly serializeParams?: (inp: any) => Promise<string>
         readonly deserialize?: (
-            inp: string
-        ) => Promise<{ data: ArrayBuffer; params: any }>
+            inp: string,
+            params: any
+        ) => Promise<{ data?: ArrayBuffer; params: any }>
         readonly serializedName: string
         readonly keyParams: any
         readonly type: 'symmetric' | 'asymmetric'
@@ -70,6 +71,9 @@ export const mapSignatureAlgorithms: {
             signature: string,
             data: ArrayBuffer
         ) => Promise<boolean>
+        readonly generateKey: (
+            params: any
+        ) => Promise<{ key: any; params: any }>
         readonly serializedName: string
         readonly keyParams: any
     }
@@ -158,11 +162,12 @@ addWithVariants(
         ) => {
             params = Object.assign({}, params)
             const splitted = inp.split(':')
-            if (splitted.length > 1) {
-                params.iterations = parseInt(splitted[0])
-            }
-            if (splitted.length > 2) {
-                params.salt = splitted[1]
+            if (splitted.length >= 2) {
+                const splitted2 = splitted[0].split(',')
+                params.iterations = parseInt(splitted2[0])
+                if (splitted2.length > 2) {
+                    params.salt = splitted2[1]
+                }
             }
             const data = await unserializeToArrayBuffer(
                 splitted[splitted.length - 1]
@@ -170,7 +175,7 @@ addWithVariants(
             return { data, params }
         },
         serialize: async (inp) => {
-            return `${inp.params.iterations}:${
+            return `${inp.params.iterations},${
                 inp.params.salt
             }:${await serializeToBase64(inp.data)}`
         },
@@ -228,11 +233,12 @@ addWithVariants(
         ) => {
             params = Object.assign({}, params)
             const splitted = inp.split(':')
-            if (splitted.length > 1) {
-                params.iterations = parseInt(splitted[0])
-            }
-            if (splitted.length > 2) {
-                params.salt = splitted[1]
+            if (splitted.length >= 2) {
+                const splitted2 = splitted[0].split(',')
+                params.iterations = parseInt(splitted2[0])
+                if (splitted2.length > 2) {
+                    params.salt = splitted2[1]
+                }
             }
             const data = await unserializeToArrayBuffer(
                 splitted[splitted.length - 1]
@@ -240,7 +246,7 @@ addWithVariants(
             return { data, params }
         },
         serialize: async (inp) => {
-            return `${inp.params.iterations}:${
+            return `${inp.params.iterations},${
                 inp.params.salt
             }:${await serializeToBase64(inp.data)}`
         },
@@ -275,6 +281,21 @@ addWithVariants(
                     data
                 ),
                 params: {},
+            }
+        },
+        generateKey: async ({ bits }: { bits: number } = { bits: 4096 }) => {
+            return {
+                key: await crypto.subtle.generateKey(
+                    {
+                        name: 'RSA-OAEP',
+                        modulusLength: bits,
+                        publicExponent: new Uint8Array([1, 0, 1]),
+                        hash: 'SHA-512',
+                    },
+                    true,
+                    ['wrapKey', 'unwrapKey', 'encrypt', 'decrypt']
+                ),
+                params: { bits },
             }
         },
         keyParams: {
@@ -312,6 +333,21 @@ addWithVariants(
                     data
                 ),
                 params: {},
+            }
+        },
+        generateKey: async ({ bits }: { bits: number } = { bits: 4096 }) => {
+            return {
+                key: await crypto.subtle.generateKey(
+                    {
+                        name: 'RSA-OAEP',
+                        modulusLength: bits,
+                        publicExponent: new Uint8Array([1, 0, 1]),
+                        hash: 'SHA-256',
+                    },
+                    true,
+                    ['wrapKey', 'unwrapKey', 'encrypt', 'decrypt']
+                ),
+                params: { bits },
             }
         },
         keyParams: {
@@ -367,6 +403,35 @@ addWithVariants(
                 params: { nonce },
             }
         },
+        serializeParams: async (params: { nonce: ArrayBuffer }) => {
+            return `${await serializeToBase64(params.nonce)}`
+        },
+        deserialize: async (inp: string, params?: { nonce: ArrayBuffer }) => {
+            let params2: { nonce?: ArrayBuffer } = Object.assign(
+                {},
+                params || {}
+            )
+            const splitted = inp.split(':')
+            if (splitted.length >= 2) {
+                params2.nonce = await unserializeToArrayBuffer(splitted[0])
+            }
+            let cleaned: ArrayBuffer | undefined = undefined
+            if (params2.nonce && splitted[splitted.length - 1]) {
+                cleaned = await unserializeToArrayBuffer(
+                    splitted[splitted.length - 1]
+                )
+            }
+            return {
+                params: params2,
+                data: cleaned,
+            }
+        },
+        generateKey: async () => {
+            return {
+                key: crypto.getRandomValues(new Uint8Array(32)),
+                params: {},
+            }
+        },
         keyParams: {
             name: 'AES-GCM',
         },
@@ -399,6 +464,21 @@ addWithVariants(
                 await unserializeToArrayBuffer(signature),
                 data
             ),
+        generateKey: async ({ bits }: { bits: number } = { bits: 4096 }) => {
+            return {
+                key: await crypto.subtle.generateKey(
+                    {
+                        name: 'RSA-PSS',
+                        modulusLength: bits,
+                        publicExponent: new Uint8Array([1, 0, 1]),
+                        hash: 'SHA-512',
+                    },
+                    true,
+                    ['wrapKey', 'unwrapKey', 'encrypt', 'decrypt']
+                ),
+                params: {},
+            }
+        },
         keyParams: {
             name: 'RSA-PSS',
             hash: 'SHA-512',
@@ -432,6 +512,21 @@ addWithVariants(
                 await unserializeToArrayBuffer(signature),
                 data
             ),
+        generateKey: async ({ bits }: { bits: number } = { bits: 4096 }) => {
+            return {
+                key: await crypto.subtle.generateKey(
+                    {
+                        name: 'RSA-PSS',
+                        modulusLength: bits,
+                        publicExponent: new Uint8Array([1, 0, 1]),
+                        hash: 'SHA-256',
+                    },
+                    true,
+                    ['wrapKey', 'unwrapKey', 'encrypt', 'decrypt']
+                ),
+                params: { bits },
+            }
+        },
         keyParams: {
             name: 'RSA-PSS',
             hash: 'SHA-256',

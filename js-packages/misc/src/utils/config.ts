@@ -135,6 +135,7 @@ export function cleanConfig(
             config.certificates[key] = {
                 data: val,
                 note: '',
+                algorithm: 'rsa-sha512',
             }
             hasChanges = true
         }

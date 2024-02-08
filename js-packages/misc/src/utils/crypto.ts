@@ -230,6 +230,25 @@ export async function serializeDerive(
     return `${entry.serializedName}:${await entry.serialize(result)}`
 }
 
+export async function generateKey(
+    { params, algorithm }: { params?: any; algorithm: string } = {
+        algorithm: 'missing',
+    }
+): Promise<{
+    params?: any
+    serializedName: string
+    key: any
+}> {
+    const entry = mapEncryptionAlgorithms['' + algorithm]
+    if (!entry) {
+        throw Error('invalid algorithm: ' + algorithm)
+    }
+    return {
+        ...(await entry.generateKey(params)),
+        serializedName: entry.serializedName,
+    }
+}
+
 export async function encrypt(
     key: MaybePromise<any>,
     data: MaybePromise<string | ArrayBuffer>,
@@ -266,11 +285,12 @@ export async function encryptString(
 ): Promise<string> {
     const result = await encrypt(key, data, options)
     const entry = mapEncryptionAlgorithms[result.serializedName]
-    const serialize = entry.serialize
-        ? entry.serialize
-        : async ({ data }: { data: ArrayBuffer }) =>
-              await unserializeToArrayBuffer(data)
-    return `${entry.serializedName}:${await serialize(result)}`
+    const serializeParams = entry.serializeParams
+        ? entry.serializeParams
+        : async () => ''
+    return `${entry.serializedName}:${await serializeParams(
+        result.params
+    )}:${await unserializeToArrayBuffer(data)}`
 }
 
 export async function decrypt(
@@ -292,17 +312,30 @@ export async function decrypt(
             unserializeToCryptoKey(key, entry.keyParams, 'privateKey'),
             unserializeToArrayBuffer(data),
         ])
+    try {
+        return {
+            ...(await entry.decrypt(key_cleaned, data_cleaned, params)),
+            serializedName: entry.serializedName,
+            key: key_cleaned,
+        }
+    } catch (exc) {
+        console.error('decrypt failed:', key_cleaned, data_cleaned, params)
 
-    return {
-        ...(await entry.decrypt(key_cleaned, data_cleaned, params)),
-        serializedName: entry.serializedName,
-        key: key_cleaned,
+        throw exc
     }
 }
 export async function decryptString(
     key: MaybePromise<any>,
     data: MaybePromise<string>,
-    { params, algorithm }: { params?: any; algorithm?: string } = {}
+    {
+        params,
+        algorithm,
+        data2,
+    }: {
+        params?: any
+        algorithm?: string
+        data2?: MaybePromise<ArrayBuffer>
+    } = {}
 ): Promise<{
     data: ArrayBuffer
     params: any
@@ -320,27 +353,25 @@ export async function decryptString(
     if (!entry) {
         throw Error('invalid algorithm: ' + algorithm)
     }
-    const key_cleaned = await unserializeToCryptoKey(
-        key,
-        entry.keyParams,
-        'privateKey'
-    )
+    let data_cleaned2: ArrayBuffer | undefined = undefined
     if (entry.deserialize) {
-        return {
-            ...(await entry.deserialize(data_cleaned)),
-            serializedName: entry.serializedName,
-            key: key_cleaned,
+        const result = await entry.deserialize(data_cleaned, params)
+        data_cleaned2 = await (result.data || data2)
+        params = result.params
+    } else {
+        if (data2) {
+            data_cleaned2 = await data2
+        } else {
+            data_cleaned2 = await unserializeToArrayBuffer(data_cleaned)
         }
     }
-    return {
-        ...(await entry.decrypt(
-            key_cleaned,
-            await unserializeToArrayBuffer(data_cleaned),
-            params
-        )),
-        serializedName: entry.serializedName,
-        key: key_cleaned,
+    if (!data_cleaned2) {
+        throw Error('no data to decrypt provided')
     }
+    return await decrypt(key, data_cleaned2, {
+        params,
+        algorithm: entry.serializedName,
+    })
 }
 export async function sign(
     key: MaybePromise<any>,

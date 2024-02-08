@@ -29,6 +29,7 @@ import {
     hashToken,
 } from '@secretgraph/misc/utils/hashing'
 import {
+    DEFAULT_ASYMMETRIC_ENCRYPTION_ALGORITHM,
     DEFAULT_SIGNATURE_ALGORITHM,
     findWorkingAlgorithms,
 } from '@secretgraph/misc/utils/crypto'
@@ -317,6 +318,7 @@ const ClusterIntern = ({
                         ] = []
                         configUpdate.certificates[digestCert] = {
                             data: await privPromise,
+                            algorithm: DEFAULT_ASYMMETRIC_ENCRYPTION_ALGORITHM,
                             note: `certificate of ${newNode.id}`,
                         }
                         configUpdate.signWith = {

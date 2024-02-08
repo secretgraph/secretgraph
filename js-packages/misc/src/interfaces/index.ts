@@ -38,6 +38,7 @@ interface ConfigTokenValue {
 }
 interface ConfigCertificateValue {
     data: string
+    algorithm: string
     note: string
 }
 

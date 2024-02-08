@@ -16,6 +16,7 @@ const actionMatcher = /:(.*)/
 
 export interface CertificateMapperEntry {
     type: 'certificate'
+    algorithm: string
     signWith: boolean
     newHash: string
     oldHash: null | string
@@ -25,7 +26,7 @@ export interface CertificateMapperEntry {
     validFor: string[]
 }
 export interface ActionMapperEntry
-    extends Omit<CertificateMapperEntry, 'type' | 'signWith'> {
+    extends Omit<CertificateMapperEntry, 'type' | 'algorithm' | 'signWith'> {
     type: 'action'
     // name, is cluster (unknown is also false)
     actions: Set<`${string},${'true' | 'false'}`>
@@ -33,6 +34,7 @@ export interface ActionMapperEntry
 }
 export interface CertificateInputEntry {
     type: 'certificate'
+    algorithm: string
     data: string
     newHash: string
     oldHash?: string
@@ -46,7 +48,10 @@ export interface CertificateInputEntry {
 }
 
 export interface ActionInputEntry
-    extends Omit<CertificateInputEntry, 'type' | 'locked' | 'signWith'> {
+    extends Omit<
+        CertificateInputEntry,
+        'type' | 'algorithm' | 'locked' | 'signWith'
+    > {
     type: 'action'
     start: Date | ''
     stop: Date | ''
@@ -278,6 +283,7 @@ export async function generateActionMapper({
                     oldHash: hash,
                     note: data.note,
                     data: data.data,
+                    algorithm: data.algorithm,
                     signWith: signWithHashes.has(upgradeHash[hash]),
                     hasUpdate,
                     validFor: [],
@@ -290,6 +296,7 @@ export async function generateActionMapper({
                     oldHash: hash,
                     note: data.note,
                     data: data.data,
+                    algorithm: data.algorithm,
                     signWith: signWithHashes.has(hash),
                     hasUpdate,
                     validFor: [],
@@ -482,6 +489,7 @@ export function mapperToArray(
             elements.push({
                 type: 'certificate',
                 data: value.data,
+                algorithm: value.algorithm,
                 newHash: value.newHash,
                 oldHash: value.oldHash || undefined,
                 note: value.note,
@@ -679,6 +687,8 @@ export async function transformActions({
                     configUpdate.certificates[activeHash] = {
                         data: val.data,
                         note: val.note,
+                        // TODO: fix this
+                        algorithm: 'rsa-sha512',
                     }
                 }
                 if (

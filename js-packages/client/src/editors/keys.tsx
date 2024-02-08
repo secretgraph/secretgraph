@@ -1170,6 +1170,8 @@ const KeysUpdate = ({
                                 ? {
                                       data: await serializeToBase64(privKey),
                                       note: '',
+                                      // FIXME: detect algorithm from key
+                                      algorithm: 'rsa-sha512',
                                   }
                                 : null,
                         }

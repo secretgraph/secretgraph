@@ -297,6 +297,8 @@ export async function initializeCluster({
         // private key is serialized
         data: await serializeToBase64(privateKey),
         note: noteCertificate,
+        // TODO: fixme, detect algorithm from key
+        algorithm: 'rsa-sha512',
     }
     if (!config.signWith[config.slots[0]]) {
         config.signWith[config.slots[0]] = []
