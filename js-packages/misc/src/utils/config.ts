@@ -1118,18 +1118,17 @@ async function loadConfigUrl_helper(
             const response = await fallback_fetch(new URL(link, url), {
                 headers: { Authorization: tokens.join(',') },
             })
-            const nonce = response.headers.get('X-NONCE')
-            if (!nonce) {
-                throw Error('Missing nonce')
+            const crypto_params = response.headers.get('X-CRYPTO-PARAMETERS')
+            if (!crypto_params) {
+                throw Error('Missing crypto parameters')
             }
             const blob = await response.blob()
             return await Promise.any(
                 keys.map(async (key) => {
                     // decrypt private key
                     const privkey = (
-                        await decrypt(key, blob.arrayBuffer(), {
-                            params: { nonce },
-                            algorithm: 'AESGCM',
+                        await decryptString(key, crypto_params, {
+                            data2: blob.arrayBuffer(),
                         })
                     ).data
                     // with the private key decrypt shared key

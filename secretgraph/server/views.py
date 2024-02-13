@@ -143,9 +143,7 @@ class ContentView(View):
 
     def get(self, request: HttpRequest, *args, **kwargs):
         authset = set(
-            request.headers.get("Authorization", "")
-            .replace(" ", "")
-            .split(",")
+            request.headers.get("Authorization", "").replace(" ", "").split(",")
         )
         authset.update(request.GET.getlist("token"))
         # authset can contain: ""
@@ -167,9 +165,7 @@ class ContentView(View):
             authset=authset,
         )
         if request.GET.get("key") or request.headers.get("X-KEY"):
-            return self.handle_decrypt(
-                request, authset=authset, *args, **kwargs
-            )
+            return self.handle_decrypt(request, authset=authset, *args, **kwargs)
         # raw interface
         if kwargs.get("id"):
             content = get_object_or_404(
@@ -178,38 +174,23 @@ class ContentView(View):
         else:
             content = get_object_or_404(self.result["objects_without_public"])
         if "X-KEY-HASH" in request.headers or "key_hash" in request.GET:
-            return self.handle_content_key_hashes(
-                request, content, *args, **kwargs
-            )
+            return self.handle_content_key_hashes(request, content, *args, **kwargs)
         else:
-            return self.handle_raw_singlecontent(
-                request, content, *args, **kwargs
-            )
+            return self.handle_raw_singlecontent(request, content, *args, **kwargs)
 
     def handle_decrypt(self, request: HttpRequest, id, *args, **kwargs):
-        content = get_object_or_404(
-            self.result["objects_with_public"], downloadId=id
-        )
+        content = get_object_or_404(self.result["objects_with_public"], downloadId=id)
         try:
-            response = self.handle_decrypt_inner(
-                request, content, *args, **kwargs
-            )
+            response = self.handle_decrypt_inner(request, content, *args, **kwargs)
         except ratelimit.DISABLED:
-            return HttpResponse(
-                reason="Disabled functionality", status_code=503
-            )
+            return HttpResponse(reason="Disabled functionality", status_code=503)
 
-        if (
-            not getattr(settings, "SECRETGRAPH_CACHE_DECRYPTED", False)
-            and content
-        ):
+        if not getattr(settings, "SECRETGRAPH_CACHE_DECRYPTED", False) and content:
             add_never_cache_headers(response)
         return response
 
     @method_decorator(last_modified(calc_content_modified_decrypted))
-    def handle_decrypt_inner(
-        self, request: HttpRequest, content, *args, **kwargs
-    ):
+    def handle_decrypt_inner(self, request: HttpRequest, content, *args, **kwargs):
         serverside_decryption_rate = settings.SECRETGRAPH_RATELIMITS.get(
             "DECRYPT_SERVERSIDE"
         )
@@ -237,9 +218,7 @@ class ContentView(View):
             id=content.id
         )
 
-        decryptset = set(
-            request.headers.get("X-KEY", "").replace(" ", "").split(",")
-        )
+        decryptset = set(request.headers.get("X-KEY", "").replace(" ", "").split(","))
         decryptset.update(self.request.GET.getlist("key"))
         decryptset.discard("")
         if settings.DEBUG:
@@ -268,9 +247,7 @@ class ContentView(View):
                         names[0].replace("\\", "\\\\").replace('"', r"\"")
                     )
                 except UnicodeEncodeError:
-                    header = "attachment; filename*=utf-8''{}".format(
-                        quote(names[0])
-                    )
+                    header = "attachment; filename*=utf-8''{}".format(quote(names[0]))
                 response["Content-Disposition"] = header
             # encrypted contents may not be indexed or followed
             response["X-Robots-Tag"] = "noindex,nofollow"
@@ -288,9 +265,7 @@ class ContentView(View):
         response["X-DOWNLOAD-ID"] = content.downloadId
         return response
 
-    def handle_content_key_hashes(
-        self, request, content: Content, *args, **kwargs
-    ):
+    def handle_content_key_hashes(self, request, content: Content, *args, **kwargs):
         # this is the only way without content id (and only download id) to verify
         # here we can extract private keys when allowed to do so
 
@@ -343,9 +318,7 @@ class ContentView(View):
 
     @method_decorator(vary_on_headers("RANGE", "Authorization"))
     @method_decorator(last_modified(calc_content_modified_raw))
-    def handle_raw_singlecontent(
-        self, request, content: Content, *args, **kwargs
-    ):
+    def handle_raw_singlecontent(self, request, content: Content, *args, **kwargs):
         try:
             name = content.tags.filter(tag__startswith="name=").first()
             if name:
@@ -361,7 +334,7 @@ class ContentView(View):
         response["X-TYPE"] = content.type
         verifiers = content.references.filter(group="signature")
         response["X-IS-SIGNED"] = json.dumps(verifiers.exists())
-        response["X-NONCE"] = content.nonce
+        response["X-CRYPTO-PARAMETERS"] = content.cryptoParameters
         response["X-DOWNLOAD-ID"] = content.downloadId
         response["X-Robots-Tag"] = "noindex,nofollow"
         if content.type == "PrivateKey":

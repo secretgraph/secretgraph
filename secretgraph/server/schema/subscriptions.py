@@ -50,7 +50,7 @@ def poll_flexids_for_nodes(ids, timestamp):
             "flexid_cached",
             "updateId",
             "contentHash",
-            "nonce",
+            "cryptoParameters",
             "type",
             "state",
             "link",
@@ -61,9 +61,7 @@ def poll_flexids_for_nodes(ids, timestamp):
 
 async def wait_for_update(ids: set[str], channel: "InMemoryChannelLayer"):
     while True:
-        updated_ids = await channel.receive("content_or_cluster.update")[
-            "relay_ids"
-        ]
+        updated_ids = await channel.receive("content_or_cluster.update")["relay_ids"]
         if not ids.isdisjoint(updated_ids):
             break
 

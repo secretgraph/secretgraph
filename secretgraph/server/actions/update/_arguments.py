@@ -43,7 +43,7 @@ class ContentKeyInput:
     publicTags: Optional[List[str]] = None
     privateActions: Optional[List[ActionInput]] = None
     publicActions: Optional[List[ActionInput]] = None
-    nonce: Optional[Union[str, bytes]] = None
+    cryptoParameters: Optional[str] = None
     references: Optional[List[ReferenceInput]] = None
     publicState: Optional[str] = None
 
@@ -52,7 +52,7 @@ class ContentKeyInput:
 class ContentKeyInputStrict:
     publicKey: Optional[bytes] = None
     privateKey: Optional[bytes] = None
-    nonce: Optional[str] = None
+    cryptoParameters: Optional[str] = None
 
 
 @dataclass
@@ -60,7 +60,7 @@ class ContentValueInput:
     value: Optional[Union[str, bytes, File]] = None
     state: Optional[str] = None
     type: Optional[str] = None
-    nonce: Optional[str] = None
+    cryptoParameters: Optional[str] = None
     tags: Optional[List[str]] = None
     references: Optional[List[ReferenceInput]] = None
     actions: Optional[List[ActionInput]] = None
@@ -88,7 +88,7 @@ class ContentMergedInput:
     value: Optional[File] = None
     state: Optional[str] = None
     type: Optional[str] = None
-    nonce: Optional[str] = None
+    cryptoParameters: Optional[str] = None
     tags: Optional[List[str]] = None
     actions: Optional[List[ActionInput]] = None
     additionalNets: Optional[Union[list[Net], tuple[Net]]] = None

@@ -34,9 +34,7 @@ class ReadStatistic:
     async def last(self) -> Optional[datetime]:
         try:
             action = await (
-                self.query.filter(used__isnull=False)
-                .only("used")
-                .alatest("used")
+                self.query.filter(used__isnull=False).only("used").alatest("used")
             )
         except Action.DoesNotExist:
             return None
@@ -47,9 +45,7 @@ class ReadStatistic:
     async def first(self) -> Optional[datetime]:
         try:
             action = await (
-                self.query.filter(used__isnull=False)
-                .only("used")
-                .aearliest("used")
+                self.query.filter(used__isnull=False).only("used").aearliest("used")
             )
         except Action.DoesNotExist:
             return None
@@ -70,7 +66,7 @@ class ContentNode(SBaseTypesMixin, strawberry.relay.Node):
     # we cannot define Node classes without NodeID yet
     flexid: strawberry.relay.NodeID[str]
 
-    nonce: str
+    cryptoParameters: str
     type: str
     state: str
     link: str
@@ -109,9 +105,7 @@ class ContentNode(SBaseTypesMixin, strawberry.relay.Node):
             excl_filters |= Q(tag__startswith=i)
         tags = self.tags.filter(~excl_filters & incl_filters)
         if self.limited:
-            tags.filter(
-                Q(tag__startswith="key_hash=") | Q(tag__startswith="name=")
-            )
+            tags.filter(Q(tag__startswith="key_hash=") | Q(tag__startswith="name="))
         return list(tags.values_list("tag", flat=True))
 
     @strawberry_django.field()
@@ -121,9 +115,7 @@ class ContentNode(SBaseTypesMixin, strawberry.relay.Node):
         # we are in the 2nd level, block
         if self.limited or self.reduced:
             return None
-        results = get_cached_result(
-            info.context["request"], ensureInitialized=True
-        )
+        results = get_cached_result(info.context["request"], ensureInitialized=True)
         if self.state not in public_states:
             query = results["Cluster"]["objects_without_public"]
         else:
@@ -135,9 +127,7 @@ class ContentNode(SBaseTypesMixin, strawberry.relay.Node):
             self.cluster.limited = True
         return self.cluster
 
-    @strawberry_django.connection(
-        strawberry.relay.ListConnection[ContentReferenceNode]
-    )
+    @strawberry_django.connection(strawberry.relay.ListConnection[ContentReferenceNode])
     def references(
         self, info: Info, filters: ContentReferenceFilter
     ) -> Iterable[ContentReferenceNode]:
@@ -170,9 +160,7 @@ class ContentNode(SBaseTypesMixin, strawberry.relay.Node):
             **filterob,
         )
 
-    @strawberry_django.connection(
-        strawberry.relay.ListConnection[ContentReferenceNode]
-    )
+    @strawberry_django.connection(strawberry.relay.ListConnection[ContentReferenceNode])
     def referencedBy(
         self, info: Info, filters: ContentReferenceFilter
     ) -> Iterable[ContentReferenceNode]:
@@ -217,9 +205,9 @@ class ContentNode(SBaseTypesMixin, strawberry.relay.Node):
         if len(node_ids) > settings.SECRETGRAPH_STRAWBERRY_MAX_RESULTS:
             raise ValueError("too many nodes requested")
 
-        if not (
-            await aget_cached_net_properties(info.context["request"])
-        ).isdisjoint({"manage_update", "allow_view"}):
+        if not (await aget_cached_net_properties(info.context["request"])).isdisjoint(
+            {"manage_update", "allow_view"}
+        ):
             query = Content.objects.all()
         else:
             query = (
@@ -281,9 +269,9 @@ class ContentNode(SBaseTypesMixin, strawberry.relay.Node):
             hidden = UseCriteria.FALSE
         if hidden != UseCriteria.IGNORE:
             queryset = queryset.filter(hidden=hidden == UseCriteria.TRUE)
-        assert fixedCluster or hasattr(
-            filters, "featured"
-        ), "wrong type for fixed cluster: %s" % type(filters)
+        assert fixedCluster or hasattr(filters, "featured"), (
+            "wrong type for fixed cluster: %s" % type(filters)
+        )
         if not fixedCluster and filters.featured != UseCriteria.IGNORE:
             queryset = queryset.filter(
                 cluster__featured=filters.featured == UseCriteria.TRUE
@@ -306,9 +294,7 @@ class ContentNode(SBaseTypesMixin, strawberry.relay.Node):
         elif filters.public == UseCriteriaPublic.FALSE:
             # safest way and future proof
             if filters.states:
-                filters.states = list(
-                    set(filters.states).difference(public_states)
-                )
+                filters.states = list(set(filters.states).difference(public_states))
             else:
                 # no states, so we can just exclude public states
                 queryset = queryset.exclude(state__in=public_states)
@@ -324,9 +310,7 @@ class ContentNode(SBaseTypesMixin, strawberry.relay.Node):
                 cacheName="secretgraphDeleteResult",
             )["Content"]
             queryset = queryset.filter(
-                id__in=Subquery(
-                    del_result["objects_without_public"].values("id")
-                )
+                id__in=Subquery(del_result["objects_without_public"].values("id"))
             )
 
         if filters.deleted != UseCriteria.IGNORE:

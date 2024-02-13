@@ -12,7 +12,7 @@ export const createKeysMutation = gql`
         $publicState: String
         $publicKey: Upload!
         $privateKey: Upload
-        $nonce: String
+        $cryptoParameters: String
         $authorization: [String!]
     ) {
         secretgraph {
@@ -24,7 +24,7 @@ export const createKeysMutation = gql`
                         key: {
                             publicKey: $publicKey
                             privateKey: $privateKey
-                            nonce: $nonce
+                            cryptoParameters: $cryptoParameters
                             privateTags: $privateTags
                             privateActions: $privateActions
                             publicTags: $publicTags
@@ -38,7 +38,7 @@ export const createKeysMutation = gql`
             ) {
                 content {
                     id
-                    nonce
+                    cryptoParameters
                     link
                     state
                     type
@@ -60,7 +60,7 @@ export const updateKeyMutation = gql`
         $privateTags: [String!]
         $references: [ReferenceInput!]
         $key: Upload
-        $nonce: String
+        $cryptoParameters: String
         $contentHash: String
         $authorization: [String!]
     ) {
@@ -72,7 +72,7 @@ export const updateKeyMutation = gql`
                         net: $net
                         key: {
                             privateKey: $key
-                            nonce: $nonce
+                            cryptoParameters: $cryptoParameters
                             privateTags: $privateTags
                             publicTags: $publicTags
                             publicState: $publicState
@@ -88,7 +88,7 @@ export const updateKeyMutation = gql`
             ) {
                 content {
                     id
-                    nonce
+                    cryptoParameters
                     link
                     type
                     state
@@ -154,7 +154,7 @@ export const keysRetrievalQuery = gql`
                                     id
                                     deleted
                                     link
-                                    nonce
+                                    cryptoParameters
                                     updateId
                                     state
                                     type

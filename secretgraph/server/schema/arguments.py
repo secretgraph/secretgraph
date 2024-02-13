@@ -48,7 +48,7 @@ class ContentKeyInput:
     )
     # encrypted!
     privateKey: Optional[Upload] = strawberry.field(
-        description=("Encrypted private key (requires nonce)"), default=None
+        description=("Encrypted private key (requires cryptoParameters)"), default=None
     )
     privateTags: Optional[List[str]] = strawberry.field(
         description="Metadata tags for private key", default=None
@@ -60,13 +60,11 @@ class ContentKeyInput:
     privateActions: Optional[List[ActionInput]] = None
     publicActions: Optional[List[ActionInput]] = None
     references: Optional[List[ReferenceInput]] = strawberry.field(
-        description=(
-            "automagically distributed between PublicKey and PrivateKey"
-        ),
+        description=("automagically distributed between PublicKey and PrivateKey"),
         default=None,
     )
-    nonce: Optional[str] = strawberry.field(
-        description="Nonce for private key (base64, 13 bytes)", default=None
+    cryptoParameters: Optional[str] = strawberry.field(
+        description="Crypto parameters for private key", default=None
     )
     publicState: Optional[str] = None
 
@@ -76,7 +74,7 @@ class ContentValueInput:
     value: Optional[Upload] = None
     state: Optional[str] = None
     type: Optional[str] = None
-    nonce: Optional[str] = None
+    cryptoParameters: Optional[str] = None
     tags: Optional[List[str]] = None
     actions: Optional[List[ActionInput]] = None
     references: Optional[List[ReferenceInput]] = None
@@ -99,7 +97,7 @@ class PushContentValueInput:
     value: Upload
     state: Optional[str] = None
     type: str
-    nonce: str
+    cryptoParameters: str
     tags: List[str] = strawberry.field(default_factory=list)
     actions: strawberry.Private[List[ActionInput]] = dataclasses.field(
         default_factory=list

@@ -46,7 +46,7 @@ contentFeedQuery = """
                 edges {
                     node {
                         id
-                        nonce
+                        cryptoParameters
                         link
                         updateId
                         deleted
@@ -101,7 +101,7 @@ transferMutation = """
             ) {
                 content {
                     id
-                    nonce
+                    cryptoParameters
                     link
                     type
                     state
@@ -119,7 +119,7 @@ createContentMutation = """
         $tags: [String!]
         $references: [ReferenceInput!]
         $value: Upload!
-        $nonce: String
+        $cryptoParameters: String
         $state: String!
         $type: String!
         $contentHash: String
@@ -137,7 +137,7 @@ createContentMutation = """
                             type: $type
                             tags: $tags
                             value: $value
-                            nonce: $nonce
+                            cryptoParameters: $cryptoParameters
                             actions: $actions
                             references: $references
                         }
@@ -149,7 +149,7 @@ createContentMutation = """
                 content {
                     id
                     updateId
-                    nonce
+                    cryptoParameters
                     link
                     state
                     type
@@ -173,7 +173,7 @@ updateContentMutation = """
         $actions: [ActionInput!]
         $references: [ReferenceInput!]
         $value: Upload
-        $nonce: String
+        $cryptoParameters: String
         $contentHash: String
         $authorization: [String!]
     ) {
@@ -187,7 +187,7 @@ updateContentMutation = """
                         value: {
                             tags: $tags
                             value: $value
-                            nonce: $nonce
+                            cryptoParameters: $cryptoParameters
                             type: $type
                             state: $state
                             actions: $actions
@@ -202,7 +202,7 @@ updateContentMutation = """
                 content {
                     id
                     updateId
-                    nonce
+                    cryptoParameters
                     link
                     type
                     state
@@ -238,7 +238,7 @@ contentRetrievalQuery = """
                 ... on Content {
                     id
                     deleted
-                    nonce
+                    cryptoParameters
                     link
                     state
                     type
@@ -377,7 +377,7 @@ getContentConfigurationQuery = """
                         type
                         allowedTags
                     }
-                    nonce
+                    cryptoParameters
                     link
                     type
                     cluster {

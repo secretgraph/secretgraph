@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import base64
-import json
 import logging
 import posixpath
 import secrets
@@ -459,7 +458,9 @@ class Content(FlexidModel):
     # has active transfer, doesn't appear in searches
     locked: dt = models.DateTimeField(null=True, blank=True)
 
-    nonce: str = models.CharField(max_length=48, null=False, blank=True, default="")
+    cryptoParameters: str = models.CharField(
+        max_length=100, null=False, blank=True, default=""
+    )
     # can decrypt = correct key
     file: File = models.FileField(upload_to=get_content_file_path)
     # internal field for orphan calculation and storage priorization
@@ -700,10 +701,14 @@ class Content(FlexidModel):
                         params={"state": self.state},
                     )
                 )
-        if self.state not in constants.public_states and not self.nonce:
+        if self.state not in constants.public_states and not self.cryptoParameters:
             errors.setdefault(
-                NON_FIELD_ERRORS if "nonce" in exclude else "nonce"
-            ).append(ValidationError("nonce empty", code="nonce_empty"))
+                NON_FIELD_ERRORS
+                if "cryptoParameters" in exclude
+                else "cryptoParameters"
+            ).append(
+                ValidationError("cryptoParameters empty", code="cryptoParameters_empty")
+            )
         if errors:
             raise ValidationError(errors)
 
@@ -790,16 +795,8 @@ class Action(models.Model):
     def decrypt(self, key: str | bytes):
         if isinstance(key, str):
             key = base64.b64decode(key)
+        raise NotImplementedError
         return self.decrypt_aesgcm(AESGCM(key))
-
-    def decrypt_aesgcm(self, aesgcm: AESGCM):
-        action_value = self.value
-        # cryptography doesn't support memoryview
-        if isinstance(action_value, memoryview):
-            action_value = action_value.tobytes()
-        return json.loads(
-            aesgcm.decrypt(base64.b64decode(self.nonce), action_value, None)
-        )
 
     def __str__(self) -> str:
         return self.keyHash

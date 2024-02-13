@@ -25,9 +25,7 @@ class ActionKeyHashValidator(RegexValidator):
         super().__init__(ActionKeyHash_regex)
 
 
-ContentHash_regex = re.compile(
-    r"^[^:\s]*:[-a-zA-Z0-9_/]+:[a-zA-Z0-9+/]+={0,2}$"
-)
+ContentHash_regex = re.compile(r"^[^:\s]*:[-a-zA-Z0-9_/]+:[a-zA-Z0-9+/]+={0,2}$")
 
 
 @deconstructible
@@ -36,6 +34,17 @@ class ContentHashValidator(RegexValidator):
         self,
     ) -> None:
         super().__init__(ContentHash_regex)
+
+
+CryptoParams_regex = re.compile(r"^[^:\s]+:[^\s]+$")
+
+
+@deconstructible
+class CryptoParams(RegexValidator):
+    def __init__(
+        self,
+    ) -> None:
+        super().__init__(CryptoParams_regex)
 
 
 # comma is used for templatetag seperation, so disallow it here

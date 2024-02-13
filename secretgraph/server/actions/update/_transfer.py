@@ -35,9 +35,7 @@ def _create_info_content(request, content: Content, signatures):
         contentHash__in=map(lambda x: f"Key:{x}", signatures.keys()),
     ):
         found_references = True
-        signature = signatures[key.contentHash.removeprefix("Key:")][
-            "signature"
-        ]
+        signature = signatures[key.contentHash.removeprefix("Key:")]["signature"]
         references.append(
             ContentReference(
                 group="signature",
@@ -55,12 +53,8 @@ def _create_info_content(request, content: Content, signatures):
     else:
         for chash in signatures.keys():
             signature = signatures[chash]
-            tags.append(
-                ContentTag(tag=f"signature={chash}={signature['signature']}")
-            )
-            tags.append(
-                ContentTag(tag=f"key_link={chash}={signature['link']}")
-            )
+            tags.append(ContentTag(tag=f"signature={chash}={signature['signature']}"))
+            tags.append(ContentTag(tag=f"key_link={chash}={signature['link']}"))
         size_before = content.size_tags
         content.tags.bulk_create(tags, ignore_conflicts=True)
         size_diff = content.size_tags - size_before
@@ -140,9 +134,7 @@ async def transfer_value(
         s = session
     else:
         s = httpx.AsyncClient(
-            app=import_string(settings.ASGI_APPLICATION)
-            if inline_domain
-            else None,
+            app=import_string(settings.ASGI_APPLICATION) if inline_domain else None,
             verify=_verify,
             proxies=proxies,
         )
@@ -159,23 +151,10 @@ async def transfer_value(
         orig_size = content.file.size
     except Exception as exc:
         logger.warning("Could not determinate file size", exc_info=exc)
-    # should be only one nonce
-    checknonce = response.headers.get("X-NONCE", "")
-    if checknonce != "":
-        if len(checknonce) < 20:
-            logger.error("Invalid nonce (not at least 13 bytes)")
-            # if transfer, fail, otherwise ignore
-            if is_transfer:
-                await content.adelete()
-                return TransferResult.NONRECOVERABLE_ERROR
-        if len(checknonce) > 48:
-            logger.error("Invalid nonce (too big)")
-            # if transfer, fail, otherwise ignore
-            if is_transfer:
-                await content.adelete()
-                return TransferResult.NONRECOVERABLE_ERROR
-        else:
-            content.nonce = checknonce
+    # should be only one crypto parameters
+    crypto_params = response.headers.get("X-CRYPTO-PARAMETERS", "")
+    if crypto_params != "":
+        content.cryptoParameters = crypto_params
     net = await Net.objects.aget(contents=content)
     size_limit = net.quota
     if size_limit is not None:
@@ -270,7 +249,7 @@ async def transfer_value(
                 content.updateId = uuid4()
                 content.locked = None
                 await content.asave(
-                    update_fields=["locked", "updateId", "nonce"]
+                    update_fields=["locked", "updateId", "cryptoParameters"]
                 )
 
         if not session:

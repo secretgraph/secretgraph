@@ -45,7 +45,7 @@ export const contentFeedQuery = gql`
                 edges {
                     node {
                         id
-                        nonce
+                        cryptoParameters
                         link
                         updateId
                         deleted
@@ -100,7 +100,7 @@ export const transferMutation = gql`
             ) {
                 content {
                     id
-                    nonce
+                    cryptoParameters
                     link
                     type
                     state
@@ -118,7 +118,7 @@ export const createContentMutation = gql`
         $tags: [String!]
         $references: [ReferenceInput!]
         $value: Upload!
-        $nonce: String
+        $cryptoParameters: String
         $state: String!
         $type: String!
         $contentHash: String
@@ -136,7 +136,7 @@ export const createContentMutation = gql`
                             type: $type
                             tags: $tags
                             value: $value
-                            nonce: $nonce
+                            cryptoParameters: $cryptoParameters
                             actions: $actions
                             references: $references
                         }
@@ -148,7 +148,7 @@ export const createContentMutation = gql`
                 content {
                     id
                     updateId
-                    nonce
+                    cryptoParameters
                     link
                     state
                     type
@@ -172,7 +172,7 @@ export const updateContentMutation = gql`
         $actions: [ActionInput!]
         $references: [ReferenceInput!]
         $value: Upload
-        $nonce: String
+        $cryptoParameters: String
         $contentHash: String
         $authorization: [String!]
     ) {
@@ -186,7 +186,7 @@ export const updateContentMutation = gql`
                         value: {
                             tags: $tags
                             value: $value
-                            nonce: $nonce
+                            cryptoParameters: $cryptoParameters
                             type: $type
                             state: $state
                             actions: $actions
@@ -201,7 +201,7 @@ export const updateContentMutation = gql`
                 content {
                     id
                     updateId
-                    nonce
+                    cryptoParameters
                     link
                     type
                     state
@@ -237,7 +237,7 @@ export const contentRetrievalQuery = gql`
                 ... on Content {
                     id
                     deleted
-                    nonce
+                    cryptoParameters
                     link
                     state
                     type
@@ -376,7 +376,7 @@ export const getContentConfigurationQuery = gql`
                         type
                         allowedTags
                     }
-                    nonce
+                    cryptoParameters
                     link
                     type
                     cluster {

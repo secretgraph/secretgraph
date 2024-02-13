@@ -39,7 +39,7 @@ updateConfigQuery = """
                             type
                             allowedTags
                         }
-                        nonce
+                        cryptoParameters
                         link
                         type
                         tags(includeTags: ["slot=", "key_hash="])
@@ -160,7 +160,7 @@ findConfigQuery = """
                 edges {
                     node {
                         id
-                        nonce
+                        cryptoParameters
                         link
                         tags
                         updateId
@@ -192,7 +192,7 @@ findConfigQuery = """
                                                                 "key_hash="
                                                             ]
                                                         )
-                                                        nonce
+                                                        cryptoParameters
                                                         link
                                                     }
                                                 }

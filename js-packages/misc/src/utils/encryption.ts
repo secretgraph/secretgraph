@@ -51,13 +51,12 @@ export async function finalizeTag(options: {
     }
 
     if (tag.startsWith('~')) {
-        const nonce = crypto.getRandomValues(new Uint8Array(13))
         try {
             data = await encryptString(options.key, utf8encoder.encode(data), {
                 algorithm: options.symmetricEncryptionAlgorithm,
             })
         } catch (e) {
-            console.debug('error encrypting tag', data, nonce)
+            console.debug('error encrypting tag', data)
             throw e
         }
     }

@@ -40,7 +40,7 @@ export const updateConfigQuery = gql`
                             type
                             allowedTags
                         }
-                        nonce
+                        cryptoParameters
                         link
                         type
                         tags(includeTags: ["slot=", "key_hash="])
@@ -161,7 +161,7 @@ export const findConfigQuery = gql`
                 edges {
                     node {
                         id
-                        nonce
+                        cryptoParameters
                         link
                         tags
                         updateId
@@ -193,7 +193,7 @@ export const findConfigQuery = gql`
                                                                 "key_hash="
                                                             ]
                                                         )
-                                                        nonce
+                                                        cryptoParameters
                                                         link
                                                     }
                                                 }

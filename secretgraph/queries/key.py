@@ -12,7 +12,7 @@ createKeysMutation = """
         $publicState: String
         $publicKey: Upload!
         $privateKey: Upload
-        $nonce: String
+        $cryptoParameters: String
         $authorization: [String!]
     ) {
         secretgraph {
@@ -24,7 +24,7 @@ createKeysMutation = """
                         key: {
                             publicKey: $publicKey
                             privateKey: $privateKey
-                            nonce: $nonce
+                            cryptoParameters: $cryptoParameters
                             privateTags: $privateTags
                             privateActions: $privateActions
                             publicTags: $publicTags
@@ -38,7 +38,7 @@ createKeysMutation = """
             ) {
                 content {
                     id
-                    nonce
+                    cryptoParameters
                     link
                     state
                     type
@@ -61,7 +61,7 @@ updateKeyMutation = """
         $privateTags: [String!]
         $references: [ReferenceInput!]
         $key: Upload
-        $nonce: String
+        $cryptoParameters: String
         $contentHash: String
         $authorization: [String!]
     ) {
@@ -73,7 +73,7 @@ updateKeyMutation = """
                         net: $net
                         key: {
                             privateKey: $key
-                            nonce: $nonce
+                            cryptoParameters: $cryptoParameters
                             privateTags: $privateTags
                             publicTags: $publicTags
                             publicState: $publicState
@@ -89,7 +89,7 @@ updateKeyMutation = """
             ) {
                 content {
                     id
-                    nonce
+                    cryptoParameters
                     link
                     type
                     state
@@ -153,7 +153,7 @@ keysRetrievalQuery = """
                                     id
                                     deleted
                                     link
-                                    nonce
+                                    cryptoParameters
                                     updateId
                                     state
                                     type

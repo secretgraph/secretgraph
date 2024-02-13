@@ -62,11 +62,11 @@ def _transform_key_into_dataobj(
         key_obj.privateKey = base64.b64decode(key_obj.privateKey)
     if isinstance(key_obj.publicKey, str):
         key_obj.publicKey = base64.b64decode(key_obj.publicKey)
-    if isinstance(key_obj.nonce, str):
-        key_obj.nonce = base64.b64decode(key_obj.nonce)
+    if isinstance(key_obj.cryptoParameters, str):
+        key_obj.cryptoParameters = base64.b64decode(key_obj.cryptoParameters)
     if key_obj.privateKey:
-        if not key_obj.nonce:
-            raise ValueError("encrypted private key requires nonce")
+        if not key_obj.cryptoParameters:
+            raise ValueError("encrypted private key requires cryptoParameters")
     has_public_key = True
     if not key_obj.publicKey:
         if not publicKeyContent:
@@ -138,7 +138,7 @@ def _transform_key_into_dataobj(
             references=publicReferences,
         ),
         ContentMergedInput(
-            nonce=key_obj.nonce,
+            cryptoParameters=key_obj.cryptoParameters,
             value=key_obj.privateKey,
             type="PrivateKey",
             hidden=False,
@@ -307,32 +307,15 @@ def _update_or_create_content_or_key(
 
     # if create checked in parent function
     if objdata.value:
-        # normalize nonce and check constraints
         if content.state in constants.public_states:
-            objdata.nonce = ""
-            checknonce = b""
-        elif isinstance(objdata.nonce, bytes):
-            checknonce = objdata.nonce
-            objdata.nonce = base64.b64encode(checknonce).decode("ascii")
-        elif not objdata.nonce:
-            checknonce = b""
-        else:
-            checknonce = base64.b64decode(objdata.nonce)
-        assert isinstance(checknonce, bytes), "checknonce should be bytes, %s" % type(
-            checknonce
-        )  # noqa E502
-        # is public key or public? then ignore nonce checks
+            objdata.cryptoParameters = ""
+        # is public key or public? then ignore cryptoParameters checks
         if not content.type == "PublicKey" and content.state != "public":
-            if not checknonce:
-                raise ValueError("Content must be encrypted and nonce specified")
-            if len(checknonce) < 13 or len(checknonce) > 36:
-                raise ValueError("invalid nonce size: %s" % len(checknonce))
-            if checknonce.count(b"\0") == len(checknonce):
-                raise ValueError("weak nonce")
-        assert isinstance(objdata.nonce, str), (
-            "nonce should be here a base64 string or public, %s" % type(objdata.nonce)
-        )  # noqa E502
-        content.nonce = objdata.nonce
+            if not objdata.cryptoParameters:
+                raise ValueError(
+                    "Content must be encrypted and cryptoParameters specified"
+                )
+        content.cryptoParameters = objdata.cryptoParameters
         # otherwise file size calculation causes error
         if objdata.value is sys.stdin:
             objdata.value = ContentFile(objdata.value.read())
@@ -589,7 +572,7 @@ def create_key_fn(request, objdata: ContentInput, authset=None):
     # note: public has objdata format for _update_or_create_content_or_key
     if publickey_content.id:
         public.value = None
-        public.nonce = None
+        public.cryptoParameters = None
         if public["actions"]:
             raise ValueError("Key already exists and actions specified")
     # distribute references automagically

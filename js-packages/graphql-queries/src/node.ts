@@ -131,7 +131,7 @@ export const authQuery = gql`
                         type
                         allowedTags
                     }
-                    nonce
+                    cryptoParameters
                     link
                     type
                     auth {

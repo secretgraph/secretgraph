@@ -132,7 +132,7 @@ authQuery = """
                         type
                         allowedTags
                     }
-                    nonce
+                    cryptoParameters
                     link
                     type
                     auth {
