@@ -14,7 +14,7 @@ export function createOnChangeFn<
         AutocompleteValue<T, Multiple, DisableClearable, FreeSolo>
     >
 ) {
-    return function onChangeFn(
+    return async function onChangeFn(
         ...[event, value, reason, details]: Parameters<
             NonNullable<
                 AutocompleteProps<
@@ -26,7 +26,7 @@ export function createOnChangeFn<
             >
         >
     ) {
-        helpers.setValue(value)
+        await helpers.setValue(value)
     }
 }
 

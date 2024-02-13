@@ -52,9 +52,7 @@ def _condMergeKeyTags(
 
 # work around problems with upload
 def _value_to_dict(obj):
-    return dict(
-        (field.name, getattr(obj, field.name)) for field in fields(obj)
-    )
+    return dict((field.name, getattr(obj, field.name)) for field in fields(obj))
 
 
 def _transform_key_into_dataobj(
@@ -191,11 +189,7 @@ def _update_or_create_content_or_key(
     # when changed
     old_cluster = None
     if objdata.cluster:
-        if (
-            not create
-            and content.cluster
-            and objdata.cluster != content.cluster
-        ):
+        if not create and content.cluster and objdata.cluster != content.cluster:
             old_cluster = content.cluster
         content.cluster = objdata.cluster
 
@@ -238,9 +232,7 @@ def _update_or_create_content_or_key(
                 )["Cluster"]
                 content.net = (
                     net_result["objects_without_public"]
-                    .get(
-                        Q(primaryFor__isnull=False) | Q(id=content.cluster.id)
-                    )
+                    .get(Q(primaryFor__isnull=False) | Q(id=content.cluster.id))
                     .net
                 )
         if getattr(content, "net", None):
@@ -280,9 +272,7 @@ def _update_or_create_content_or_key(
             key_hashes_tags,
             tags_transfer_type,
             size_new_tags,
-        ) = transform_tags(
-            content.type, objdata.tags, early_size_limit=early_op_limit
-        )
+        ) = transform_tags(content.type, objdata.tags, early_size_limit=early_op_limit)
         size_new += size_new_tags
     elif create:
         raise ValueError("Content tags are missing")
@@ -328,25 +318,19 @@ def _update_or_create_content_or_key(
             checknonce = b""
         else:
             checknonce = base64.b64decode(objdata.nonce)
-        assert isinstance(
-            checknonce, bytes
-        ), "checknonce should be bytes, %s" % type(
+        assert isinstance(checknonce, bytes), "checknonce should be bytes, %s" % type(
             checknonce
         )  # noqa E502
         # is public key or public? then ignore nonce checks
         if not content.type == "PublicKey" and content.state != "public":
             if not checknonce:
-                raise ValueError(
-                    "Content must be encrypted and nonce specified"
-                )
+                raise ValueError("Content must be encrypted and nonce specified")
             if len(checknonce) < 13 or len(checknonce) > 36:
                 raise ValueError("invalid nonce size: %s" % len(checknonce))
             if checknonce.count(b"\0") == len(checknonce):
                 raise ValueError("weak nonce")
-        assert isinstance(
-            objdata.nonce, str
-        ), "nonce should be here a base64 string or public, %s" % type(
-            objdata.nonce
+        assert isinstance(objdata.nonce, str), (
+            "nonce should be here a base64 string or public, %s" % type(objdata.nonce)
         )  # noqa E502
         content.nonce = objdata.nonce
         # otherwise file size calculation causes error
@@ -388,11 +372,7 @@ def _update_or_create_content_or_key(
     final_references = None
     encryption_target_ref = set()
     verifiers_ref = set()
-    if (
-        old_cluster
-        or objdata.references is not None
-        or objdata.tags is not None
-    ):
+    if old_cluster or objdata.references is not None or objdata.tags is not None:
         if objdata.references is None:
             refs = (
                 content.references.all()
@@ -432,9 +412,7 @@ def _update_or_create_content_or_key(
             if content.cluster.id and not content.cluster.contents.filter(
                 type="PublicKey", state__in=constants.publickey_states
             ):
-                raise ValueError(
-                    "Not signed by a cluster key - cluster has no keys"
-                )
+                raise ValueError("Not signed by a cluster key - cluster has no keys")
 
             raise ValueError("Not signed by a cluster key")
         size_new += size_refs
@@ -445,9 +423,7 @@ def _update_or_create_content_or_key(
         size_new += content.size_references
 
     if not create and (tags_transfer_type != 0 or refs_is_transfer):
-        raise ValueError(
-            "Cannot transform an existing content to a transfer target"
-        )
+        raise ValueError("Cannot transform an existing content to a transfer target")
     elif tags_transfer_type != 2 and refs_is_transfer:
         raise ValueError("Missing transfer url")
     elif tags_transfer_type == 2 and not refs_is_transfer:
@@ -461,9 +437,7 @@ def _update_or_create_content_or_key(
             content.type == "PublicKey"
             and content.contentHash.removeprefix("Key:") not in key_hashes_tags
         ):
-            raise ValueError(
-                ">=1 key_hash info tags required for PublicKey (own hash)"
-            )
+            raise ValueError(">=1 key_hash info tags required for PublicKey (own hash)")
         elif not key_hashes_tags.issuperset(required_keys):
             raise ValueError("missing required keys")
         final_tags = []
@@ -473,9 +447,7 @@ def _update_or_create_content_or_key(
             else:
                 for subval in val:
                     final_tags.append(
-                        ContentTag(
-                            content=content, tag="%s=%s" % (prefix, subval)
-                        )
+                        ContentTag(content=content, tag="%s=%s" % (prefix, subval))
                     )
 
     if final_references is not None:
@@ -546,9 +518,7 @@ def _update_or_create_content_or_key(
     def save_fn():
         # first net in case of net is not persisted yet
         content.net.save(
-            update_fields=["bytes_in_use", "last_used"]
-            if content.net.id
-            else None
+            update_fields=["bytes_in_use", "last_used"] if content.net.id else None
         )
         save_fn_value()
         # only save a persisted old_net
@@ -557,9 +527,7 @@ def _update_or_create_content_or_key(
             old_net.save(update_fields=["bytes_in_use"])
         if final_tags is not None:
             if create:
-                ContentTag.objects.bulk_create(
-                    refresh_fields(final_tags, "content")
-                )
+                ContentTag.objects.bulk_create(refresh_fields(final_tags, "content"))
             else:
                 content.tags.all().delete()
                 ContentTag.objects.bulk_create(final_tags)
@@ -646,10 +614,13 @@ def create_key_fn(request, objdata: ContentInput, authset=None):
             [],
         )
 
-    def func():
+    def save_fn():
         return {"public": public(), "private": private() if private else None}
 
-    return func
+    save_fn.public_key = public.content
+    save_fn.private_key = private.content if private else None
+
+    return save_fn
 
 
 def create_content_fn(
@@ -666,14 +637,14 @@ def create_content_fn(
         raise ValueError("Can only specify one of value or key")
     if key_obj:
         # has removed key argument for only allowing complete key
-        _save_fn = create_key_fn(request, objdata, authset=authset)
+        _inner_save_fn = create_key_fn(request, objdata, authset=authset)
 
         def save_fn(context=nullcontext):
             if callable(context):
                 context = context()
             with context:
                 return {
-                    "content": _save_fn()["public"],
+                    "content": _inner_save_fn()["public"],
                     "writeok": True,
                 }
 
@@ -685,7 +656,7 @@ def create_content_fn(
             **_value_to_dict(value_obj),
         )
         content_obj = Content()
-        _save_fn = _update_or_create_content_or_key(
+        _inner_save_fn = _update_or_create_content_or_key(
             request, content_obj, newdata, authset, False, required_keys or []
         )
 
@@ -693,7 +664,7 @@ def create_content_fn(
             if callable(context):
                 context = context()
             with context:
-                return {"content": _save_fn(), "writeok": True}
+                return {"content": _inner_save_fn(), "writeok": True}
 
     return save_fn
 
@@ -779,7 +750,7 @@ def update_content_fn(
             hidden=objdata.hidden,
             **(_value_to_dict(objdata.value) if objdata.value else {}),
         )
-    func = _update_or_create_content_or_key(
+    inner_save_fn = _update_or_create_content_or_key(
         request, content, newdata, authset, is_key, required_keys or []
     )
 
@@ -794,6 +765,6 @@ def update_content_fn(
                     "content": Content.objects.filter(id=content.id).first(),
                     "writeok": False,
                 }
-            return {"content": func(), "writeok": True}
+            return {"content": inner_save_fn(), "writeok": True}
 
     return save_fn

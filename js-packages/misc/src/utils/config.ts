@@ -492,7 +492,6 @@ export function extractPrivKeys({
 }
 
 // also handles key= tags
-// TODO: remove legacy, it bloates the logic
 export function findCertCandidatesForRefs(
     config: Interfaces.ConfigInterface,
     nodeData: any,
@@ -500,31 +499,17 @@ export function findCertCandidatesForRefs(
 ) {
     const found: {
         hash: string
-        hashAlgorithm: string
         sharedKey: string
     }[] = []
     // extract tag key from private key
     if (nodeData.type == 'PrivateKey' && group == 'key') {
-        const hashes = []
+        const hashes = new Set<string>()
         for (const tag_value of nodeData.tags) {
             if (tag_value.startsWith('key_hash=')) {
-                const [_, hashAlgorithm, cleanhash] = tag_value.match(
-                    /=(?:([^:]*?):)?([^:]*)/
-                )
-                if (cleanhash) {
-                    if (
-                        hashAlgorithm &&
-                        config.certificates[`${hashAlgorithm}:${cleanhash}`]
-                    ) {
-                        hashes.push({
-                            hash: `${hashAlgorithm}:${cleanhash}`,
-                            hashAlgorithm,
-                        })
-                    } else if (config.certificates[cleanhash]) {
-                        hashes.push({
-                            hash: cleanhash,
-                            hashAlgorithm: undefined,
-                        })
+                const [_, hash] = tag_value.match(/=(.*)/)
+                if (hash) {
+                    if (config.certificates[`${hash}`]) {
+                        hashes.add(hash)
                     }
                 }
             }
@@ -532,11 +517,10 @@ export function findCertCandidatesForRefs(
         // find the only key tag
         for (const tag_value of nodeData.tags) {
             if (tag_value.startsWith('key=')) {
-                for (const { hash, hashAlgorithm } of hashes) {
+                for (const hash of hashes) {
                     const [_, shared] = tag_value.match(/=(.*)/)
                     found.push({
                         hash,
-                        hashAlgorithm,
                         sharedKey: shared,
                     })
                 }
@@ -553,20 +537,11 @@ export function findCertCandidatesForRefs(
             continue
         }
         for (const tag_value of refnode.target.tags) {
-            const [_, hashAlgorithm, cleanhash] = tag_value.match(
-                /^[^=]+=(?:([^:]*?):)?([^:]*)/
-            )
-            if (cleanhash) {
-                if (config.certificates[`${hashAlgorithm}:${cleanhash}`]) {
+            const [_, hash] = tag_value.match(/key_hash=(.*)/)
+            if (hash) {
+                if (config.certificates[`${hash}`]) {
                     found.push({
-                        hash: `${hashAlgorithm}:${cleanhash}`,
-                        hashAlgorithm,
-                        sharedKey: refnode.extra,
-                    })
-                } else if (config.certificates[cleanhash]) {
-                    found.push({
-                        hash: cleanhash,
-                        hashAlgorithm,
+                        hash: `${hash}`,
                         sharedKey: refnode.extra,
                     })
                 }

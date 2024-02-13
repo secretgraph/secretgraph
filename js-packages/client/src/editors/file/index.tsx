@@ -67,7 +67,6 @@ const EditFile = ({ viewOnly = false }: { viewOnly?: boolean }) => {
             console.log('empty node, permissions?')
             return
         }
-        loading = true
         let active = true
         const f = async () => {
             const updateOb: Partial<Interfaces.MainContextInterface> = {
@@ -109,7 +108,7 @@ const EditFile = ({ viewOnly = false }: { viewOnly?: boolean }) => {
                 return
             }
 
-            let obj
+            let obj = undefined
             try {
                 obj = await decryptContentObject({
                     config,
@@ -126,9 +125,6 @@ const EditFile = ({ viewOnly = false }: { viewOnly?: boolean }) => {
             }
             if (!obj) {
                 console.error('failed decoding')
-                return
-            }
-            if (!active) {
                 return
             }
 
@@ -152,7 +148,6 @@ const EditFile = ({ viewOnly = false }: { viewOnly?: boolean }) => {
                 }),
                 key: `${new Date().getTime()}`,
             })
-            loading = false
         }
         f()
         return () => {

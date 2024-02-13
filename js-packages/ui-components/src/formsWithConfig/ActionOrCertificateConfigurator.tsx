@@ -94,39 +94,50 @@ const ActionFields = React.memo(function ActionFields({
     const { values, setValues } = useFormikContext<any>()
     const { value: action } = useField<any>(`${path}action`)[0]
     React.useEffect(() => {
-        const validFields =
-            Constants.validFields[
-                `${action || extraPrimes[`${path}action`]}${
-                    isContent ? 'Content' : 'Cluster'
-                }`
-            ]
+        async function f() {
+            const validFields =
+                Constants.validFields[
+                    `${action || extraPrimes[`${path}action`]}${
+                        isContent ? 'Content' : 'Cluster'
+                    }`
+                ]
 
-        if (!validFields) {
-            console.error(
-                'Invalid: ',
-                `${action}${isContent ? 'Content' : 'Cluster'}`
-            )
-            return
-        }
-        const newValues: any = Object.assign({}, values)
-        let hasChanges = false
-        for (const [key, primetype] of Object.entries(validFields)) {
-            if (
-                primeFields(newValues, `${path}${key}`.split('.'), primetype)
-            ) {
-                hasChanges = true
+            if (!validFields) {
+                console.error(
+                    'Invalid: ',
+                    `${action}${isContent ? 'Content' : 'Cluster'}`
+                )
+                return
+            }
+            const newValues: any = Object.assign({}, values)
+            let hasChanges = false
+            for (const [key, primetype] of Object.entries(validFields)) {
+                if (
+                    primeFields(
+                        newValues,
+                        `${path}${key}`.split('.'),
+                        primetype
+                    )
+                ) {
+                    hasChanges = true
+                }
+            }
+            for (const [key, primetype] of Object.entries(extraPrimes)) {
+                if (
+                    primeFields(
+                        newValues,
+                        `${path}${key}`.split('.'),
+                        primetype
+                    )
+                ) {
+                    hasChanges = true
+                }
+            }
+            if (hasChanges) {
+                await setValues(newValues, false)
             }
         }
-        for (const [key, primetype] of Object.entries(extraPrimes)) {
-            if (
-                primeFields(newValues, `${path}${key}`.split('.'), primetype)
-            ) {
-                hasChanges = true
-            }
-        }
-        if (hasChanges) {
-            setValues(newValues, false)
-        }
+        f()
     }, [action])
     if (!action) {
         return null

@@ -5,8 +5,6 @@ import TabContext from '@mui/lab/TabContext'
 import TabList from '@mui/lab/TabList'
 import TabPanel from '@mui/lab/TabPanel'
 import Button from '@mui/material/Button'
-import Checkbox from '@mui/material/Checkbox'
-import FormControlLabel from '@mui/material/FormControlLabel'
 import IconButton from '@mui/material/IconButton'
 import LinearProgress from '@mui/material/LinearProgress'
 import Stack from '@mui/material/Stack'
@@ -32,8 +30,6 @@ import {
     decryptContentObject,
     updateOrCreateContentWithConfig,
 } from '@secretgraph/misc/utils/operations'
-import { extractGroupKeys } from '@secretgraph/misc/utils/references'
-import DecisionFrame from '@secretgraph/ui-components/DecisionFrame'
 import FormikCheckboxWithLabel from '@secretgraph/ui-components/formik/FormikCheckboxWithLabel'
 import FormikTextField from '@secretgraph/ui-components/formik/FormikTextField'
 import SimpleSelect from '@secretgraph/ui-components/forms/SimpleSelect'
@@ -556,13 +552,17 @@ export function InnerFile({
                                                         value={
                                                             values.fileInput as Blob
                                                         }
-                                                        onChange={(blob) => {
-                                                            setFieldValue(
+                                                        onChange={async (
+                                                            blob
+                                                        ) => {
+                                                            await setFieldValue(
                                                                 'fileInput',
-                                                                blob
+                                                                blob,
+                                                                false
                                                             )
-                                                            setFieldTouched(
+                                                            await setFieldTouched(
                                                                 'fileInput',
+                                                                true,
                                                                 true
                                                             )
                                                         }}
@@ -605,26 +605,30 @@ export function InnerFile({
                                                                     minRows={
                                                                         10
                                                                     }
-                                                                    onChange={(
+                                                                    onChange={async (
                                                                         ev
                                                                     ) => {
-                                                                        formikFieldProps.form.setFieldValue(
+                                                                        // always data == null
+                                                                        if (
+                                                                            values.fileInput
+                                                                        ) {
+                                                                            await setFieldTouched(
+                                                                                'fileInput',
+                                                                                false,
+                                                                                false
+                                                                            )
+                                                                            await setFieldValue(
+                                                                                'fileInput',
+                                                                                null,
+                                                                                false
+                                                                            )
+                                                                        }
+                                                                        await formikFieldProps.form.setFieldValue(
                                                                             'htmlInput',
                                                                             ev
                                                                                 .target
-                                                                                .value
-                                                                        )
-                                                                        formikFieldProps.form.setFieldTouched(
-                                                                            'htmlInput',
+                                                                                .value,
                                                                             true
-                                                                        )
-                                                                        setFieldValue(
-                                                                            'fileInput',
-                                                                            null
-                                                                        )
-                                                                        setFieldTouched(
-                                                                            'fileInput',
-                                                                            false
                                                                         )
                                                                     }}
                                                                     helperText={
@@ -652,13 +656,17 @@ export function InnerFile({
                                                         value={
                                                             values.fileInput as Blob
                                                         }
-                                                        onChange={(blob) => {
-                                                            setFieldValue(
+                                                        onChange={async (
+                                                            blob
+                                                        ) => {
+                                                            await setFieldValue(
                                                                 'fileInput',
-                                                                blob
+                                                                blob,
+                                                                false
                                                             )
-                                                            setFieldTouched(
+                                                            await setFieldTouched(
                                                                 'fileInput',
+                                                                true,
                                                                 true
                                                             )
                                                         }}
@@ -698,7 +706,7 @@ export function InnerFile({
                                                         >
                                                             <UploadButton
                                                                 name="fileInput"
-                                                                onChange={(
+                                                                onChange={async (
                                                                     ev
                                                                 ) => {
                                                                     if (
@@ -718,7 +726,7 @@ export function InnerFile({
                                                                         if (
                                                                             !touched.name
                                                                         ) {
-                                                                            setFieldValue(
+                                                                            await setFieldValue(
                                                                                 'name',
                                                                                 ev
                                                                                     .target
@@ -726,25 +734,29 @@ export function InnerFile({
                                                                                     .name
                                                                             )
                                                                         }
-                                                                        setFieldValue(
+                                                                        await setFieldValue(
                                                                             'fileInput',
                                                                             ev
                                                                                 .target
-                                                                                .files[0]
-                                                                        )
-
-                                                                        setFieldTouched(
-                                                                            'fileInput',
+                                                                                .files[0],
                                                                             true
                                                                         )
-                                                                    } else {
-                                                                        setFieldValue(
+
+                                                                        await setFieldTouched(
                                                                             'fileInput',
-                                                                            null
-                                                                        )
-                                                                        setFieldTouched(
-                                                                            'fileInput',
+                                                                            true,
                                                                             false
+                                                                        )
+                                                                    } else {
+                                                                        await setFieldValue(
+                                                                            'fileInput',
+                                                                            null,
+                                                                            false
+                                                                        )
+                                                                        await setFieldTouched(
+                                                                            'fileInput',
+                                                                            false,
+                                                                            true
                                                                         )
                                                                     }
                                                                 }}

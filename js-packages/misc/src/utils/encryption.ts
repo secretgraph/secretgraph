@@ -9,6 +9,7 @@ import {
     splitFirstOnly,
     splitFirstTwoOnly,
     splitLastOnly,
+    utf8decoder,
 } from './encoding'
 import { hashObject, hashToken } from './hashing'
 import { MaybePromise } from '../typing'
@@ -52,7 +53,7 @@ export async function finalizeTag(options: {
     if (tag.startsWith('~')) {
         const nonce = crypto.getRandomValues(new Uint8Array(13))
         try {
-            data = await encryptString(options.key, data, {
+            data = await encryptString(options.key, utf8encoder.encode(data), {
                 algorithm: options.symmetricEncryptionAlgorithm,
             })
         } catch (e) {
@@ -157,9 +158,7 @@ export async function extractTags(options: {
                             key: options.key,
                             data,
                         })
-                        tags[tag].push(
-                            String.fromCharCode(...new Uint8Array(val))
-                        )
+                        tags[tag].push(utf8decoder.decode(val))
                     } catch (error) {
                         console.error(
                             'decrypting tag caused error',

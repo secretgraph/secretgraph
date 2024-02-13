@@ -763,7 +763,7 @@ function UpdateKeysForm({
                                                 'decrypt',
                                             ]
                                         )) as Required<CryptoKeyPair>
-                                    setValues(
+                                    await setValues(
                                         {
                                             ...values,
                                             publicKey: `-----BEGIN PUBLIC KEY-----\n${await serializeToBase64(

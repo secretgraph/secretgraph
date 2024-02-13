@@ -1,5 +1,10 @@
 import * as Interfaces from '../interfaces'
-import { unserializeToArrayBuffer, splitFirstOnly } from './encoding'
+import {
+    unserializeToArrayBuffer,
+    splitFirstOnly,
+    serializeToBase64,
+    splitLastOnly,
+} from './encoding'
 import { MaybePromise } from '../typing'
 import {
     mapDeriveAlgorithms,
@@ -290,7 +295,7 @@ export async function encryptString(
         : async () => ''
     return `${entry.serializedName}:${await serializeParams(
         result.params
-    )}:${await unserializeToArrayBuffer(data)}`
+    )}:${Buffer.from(result.data).toString('base64')}`
 }
 
 export async function decrypt(
@@ -319,7 +324,7 @@ export async function decrypt(
             key: key_cleaned,
         }
     } catch (exc) {
-        console.error('decrypt failed:', key_cleaned, data_cleaned, params)
+        // console.error('decrypt failed:', key_cleaned, data_cleaned, params)
 
         throw exc
     }
@@ -362,7 +367,8 @@ export async function decryptString(
         if (data2) {
             data_cleaned2 = await data2
         } else {
-            data_cleaned2 = await unserializeToArrayBuffer(data_cleaned)
+            const splitted = splitLastOnly(data_cleaned)
+            data_cleaned2 = await unserializeToArrayBuffer(splitted[1])
         }
     }
     if (!data_cleaned2) {

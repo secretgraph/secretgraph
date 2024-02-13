@@ -65,6 +65,7 @@ export const SunEditorWrapper = React.forwardRef<HTMLDivElement>(
                         }
                     }}
                     onBlur={() => {
+                        suneditor.current?.save()
                         if (suneditor.current && onBlur) {
                             onBlur({
                                 type: 'blur',

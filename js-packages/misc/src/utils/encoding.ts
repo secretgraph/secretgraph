@@ -15,7 +15,7 @@ export function b64tobuffer(inp: string) {
 
     // if smaller than lower limit, raise an exception
     if (inp.length && (Math.floor(tmp.byteLength / 3) + 1) * 4 < inp.length) {
-        throw new Base64Error('Not a base64 string')
+        throw new Base64Error('Not a base64 string: ' + inp)
     }
 
     // in case byteOffset is 0 just use tmp.buffer, otherwise slice

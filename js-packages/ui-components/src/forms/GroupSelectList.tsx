@@ -85,6 +85,7 @@ export default function GroupSelectList({
                     ) {
                         isDisabled = true
                         // force change to true
+                        // can be dangerous because of Promise
                         if (!meta.value.includes(group.name)) {
                             helpers.setValue(
                                 [...meta.value, group.name],
@@ -107,6 +108,7 @@ export default function GroupSelectList({
                     ) {
                         // force change to false
                         if (initial && meta.value.includes(group.name)) {
+                            // can be dangerous because of Promise
                             helpers.setValue(
                                 meta.value.filter(
                                     (val: string) => val != group.name
@@ -143,8 +145,12 @@ export default function GroupSelectList({
             <Table>
                 <TableHead>
                     <TableRow>
-                        <TableCell colSpan={2} align="left" width={0}>Name</TableCell>
-                        <TableCell align="left"  width="100%">Description</TableCell>
+                        <TableCell colSpan={2} align="left" width={0}>
+                            Name
+                        </TableCell>
+                        <TableCell align="left" width="100%">
+                            Description
+                        </TableCell>
                     </TableRow>
                 </TableHead>
                 <TableBody>{renderval}</TableBody>
