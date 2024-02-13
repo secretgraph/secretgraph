@@ -37,9 +37,7 @@ def tags_sanitizer(tag: str):
     if len(tag) > settings.SECRETGRAPH_TAG_LIMIT:
         raise ResourceLimitExceeded(f"Tag too big ({tag})")
     if tag.startswith("id"):
-        logger.warning(
-            "id is an invalid flag/tag, it is a special keyword, ignore"
-        )
+        logger.warning("id is an invalid flag/tag, it is a special keyword, ignore")
         return False
     eq_pos = tag.find("=")
     if eq_pos == 0:
@@ -90,8 +88,7 @@ def transform_tags(
             size_new += len(tag)
         if early_size_limit is not None and size_new > early_size_limit:
             raise ResourceLimitExceeded(
-                "tags specified exceed maximal operation"
-                "size (quota or global limit)"
+                "tags specified exceed maximal operation" "size (quota or global limit)"
             )
         splitted_tag = tag.split("=", 1)
         if splitted_tag[0] == "key_hash":
@@ -111,14 +108,10 @@ def transform_tags(
             raise ValueError("Tag and Flag name collision")
         if splitted_tag[0].startswith("~"):
             if splitted_tag[0][:1] in newtags:
-                raise ValueError(
-                    "encrypted and unencrypted tag/flag collision"
-                )
+                raise ValueError("encrypted and unencrypted tag/flag collision")
         else:
             if f"~{splitted_tag[0]}" in newtags:
-                raise ValueError(
-                    "encrypted and unencrypted tag/flag collision"
-                )
+                raise ValueError("encrypted and unencrypted tag/flag collision")
 
     if operation != MetadataOperations.REMOVE and oldtags:
         for tag in oldtags:
@@ -221,9 +214,7 @@ def transform_references(
                         )
                     )
 
-                targetob = allowed_targets.filter(
-                    q, markForDestruction=None
-                ).first()
+                targetob = allowed_targets.filter(q, markForDestruction=None).first()
                 injected_key = injectable_keys.filter(
                     q, markForDestruction=None
                 ).first()
@@ -238,9 +229,7 @@ def transform_references(
                     ),
                 )
             # injected_ref can only exist if no reference is last_used
-            if injected_key and (
-                not targetob or injected_key.id != targetob.id
-            ):
+            if injected_key and (not targetob or injected_key.id != targetob.id):
                 injected_ref = ContentReference(
                     source=content,
                     target=injected_key,
@@ -259,13 +248,9 @@ def transform_references(
             if len(injected_ref.extra) > settings.SECRETGRAPH_TAG_LIMIT:
                 raise ResourceLimitExceeded("Extra tag of ref too big")
             if early_size_limit is not None and size > early_size_limit:
-                raise ResourceLimitExceeded(
-                    "references exhausts resource limit "
-                )
+                raise ResourceLimitExceeded("references exhausts resource limit ")
             # must be target
-            encrypt_target_hashes.add(
-                injected_ref.contentHash.removeprefix("Key:")
-            )
+            encrypt_target_hashes.add(injected_ref.contentHash.removeprefix("Key:"))
             # is not required to be in tags
             if not no_final_refs:
                 final_references.append(injected_ref)
@@ -282,9 +267,7 @@ def transform_references(
                     "size (quota or global limit)"
                 )
             if refob.group == "signature":
-                sig_target_hashes.add(
-                    targetob.contentHash.removeprefix("Key:")
-                )
+                sig_target_hashes.add(targetob.contentHash.removeprefix("Key:"))
             if refob.group in {"key", "transfer"}:
                 chash = targetob.contentHash.removeprefix("Key:")
                 encrypt_target_hashes.add(chash)
@@ -358,9 +341,7 @@ def update_content_metadata_fn(
                     for subval in val:
                         composed = "%s=%s" % (prefix, subval)
                         remove_tags_q |= Q(tag__startswith=composed)
-                        final_tags.append(
-                            ContentTag(content=content, tag=composed)
-                        )
+                        final_tags.append(ContentTag(content=content, tag=composed))
         else:
             # immutable flag can only removed by admins as we filter in handler
             for prefix, val in tags_dict.items():
@@ -431,15 +412,10 @@ def update_content_metadata_fn(
 
     if required_keys and required_keys.isdisjoint(verifiers_ref):
         raise ValueError("Not signed by required keys")
-    if (
-        content.type not in {"PrivateKey", "PublicKey"}
-        and len(key_hashes_ref) < 1
-    ):
-        raise ValueError(
-            ">=1 key references required for content (except Keys)"
-        )
+    if content.type not in {"PrivateKey", "PublicKey"} and len(key_hashes_ref) < 1:
+        raise ValueError(">=1 key references required for content (except Keys)")
 
-    content.clean()
+    content.full_clean()
 
     if (
         content.net.quota is not None
@@ -461,9 +437,7 @@ def update_content_metadata_fn(
             content.updateId = uuid4()
             content.save(update_fields=["updateId"])
             content.net.save(
-                update_fields=["bytes_in_use", "last_used"]
-                if content.net.id
-                else None
+                update_fields=["bytes_in_use", "last_used"] if content.net.id else None
             )
             if final_tags is not None:
                 if operation in {
@@ -475,9 +449,7 @@ def update_content_metadata_fn(
                     MetadataOperations.APPEND,
                     MetadataOperations.REPLACE,
                 }:
-                    ContentTag.objects.bulk_create(
-                        final_tags, ignore_conflicts=True
-                    )
+                    ContentTag.objects.bulk_create(final_tags, ignore_conflicts=True)
             if final_references is not None:
                 if operation in {
                     MetadataOperations.REMOVE,

@@ -53,9 +53,7 @@ class BeautifyNetMixin:
 class FlexidMixin:
     actions = ["reset_flexid", "undelete", "purge_immediate"]
 
-    @admin.action(
-        permissions=["change"], description="Reset Flexid of selected"
-    )
+    @admin.action(permissions=["change"], description="Reset Flexid of selected")
     def reset_flexid(self, request, queryset):
         for obj in queryset:
             generateFlexidAndDownloadId(type(obj), obj, True)
@@ -68,9 +66,7 @@ class FlexidMixin:
                 markForDestruction=None
             )
 
-    @admin.action(
-        permissions=["delete"], description="Purge selected immediate"
-    )
+    @admin.action(permissions=["delete"], description="Purge selected immediate")
     def purge_immediate(self, request, queryset):
         self.delete_queryset(request, queryset, 0)
         async_to_sync(sweepOutdated)()
@@ -282,21 +278,14 @@ class ClusterAdmin(BeautifyNetMixin, FlexidMixin, admin.ModelAdmin):
     readonly_fields = ["id", "flexid_cached", "name_cached"]
 
     def get_form(self, request, obj=None, change=False, **kwargs):
-        form = super().get_form(
-            request=request, obj=obj, change=change, **kwargs
-        )
+        form = super().get_form(request=request, obj=obj, change=change, **kwargs)
 
         def clean_name(self):
             name = self.cleaned_data["name"]
             if not getattr(request.user, "is_superuser", False):
                 if name.startswith("@") and (not obj or obj.name != name):
                     if (
-                        "allow_global_name"
-                        not in (
-                            get_cached_net_properties(
-                                request
-                            )
-                        )
+                        "allow_global_name" not in (get_cached_net_properties(request))
                         and not (
                             obj.properties
                             if obj
@@ -410,7 +399,7 @@ class ContentAdmin(BeautifyNetMixin, FlexidMixin, admin.ModelAdmin):
     list_filter = ["hidden", "state", "type"]
     sortable_by = ["flexid", "id", "type", "state", "cluster", net_repr]
     search_fields = ["flexid", "tags__tag", "cluster__name"]
-    readonly_fields = ["flexid_cached"]
+    readonly_fields = ["flexid_cached", "file_accessed"]
 
     def get_queryset(self, request):
         async_to_sync(sweepOutdated)()

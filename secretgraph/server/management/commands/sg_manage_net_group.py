@@ -26,9 +26,7 @@ class Command(BaseCommand):
     def print_group(net_group):
         print(repr(net_group))
         print("  description:", net_group.description)
-        print(
-            "  user selectable:", UserSelectable(net_group.userSelectable).name
-        )
+        print("  user selectable:", UserSelectable(net_group.userSelectable).name)
         print(
             "  defined in settings:",
             net_group.name in settings.SECRETGRAPH_DEFAULT_NET_GROUPS,
@@ -68,7 +66,7 @@ class Command(BaseCommand):
                     UserSelectable, user_selectable
                 ).value
             if description is not None or user_selectable is not None:
-                net_group.clean()
+                net_group.full_clean()
                 net_group.save()
 
             if properties is not None:
@@ -79,9 +77,7 @@ class Command(BaseCommand):
                     )
                 net_group.properties.set(_properties)
             elif created:
-                net_group.properties.set(
-                    SGroupProperty.objects.defaultNetProperties()
-                )
+                net_group.properties.set(SGroupProperty.objects.defaultNetProperties())
 
             if description is not None or properties is not None:
                 print("Create or Update Group:", name)

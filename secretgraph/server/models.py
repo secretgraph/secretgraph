@@ -13,7 +13,7 @@ from uuid import UUID, uuid4
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.primitives.serialization import load_der_public_key
 from django.conf import settings
-from django.core.exceptions import ValidationError
+from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
 from django.core.files.base import File
 from django.core.files.storage import default_storage
 from django.core.validators import MinLengthValidator
@@ -91,9 +91,7 @@ class Key(TypedDict):
 
 class FlexidModel(models.Model):
     id: int = models.BigAutoField(primary_key=True, editable=False)
-    flexid: str = models.CharField(
-        max_length=36, blank=True, null=True, unique=True
-    )
+    flexid: str = models.CharField(max_length=36, blank=True, null=True, unique=True)
     flexid_cached: str = models.CharField(
         max_length=80, blank=True, null=True, unique=True, editable=False
     )
@@ -110,9 +108,7 @@ class Net(models.Model):
     # content or cluster was updated or created, deletions are not tracked
     last_used: dt = models.DateTimeField(
         default=timezone.now,
-        help_text=_(
-            "Last usage of net for creating or updating contents or clusters"
-        ),
+        help_text=_("Last usage of net for creating or updating contents or clusters"),
     )
     # if disabled: like a ban
     active: bool = models.BooleanField(blank=True, default=True, null=False)
@@ -194,9 +190,7 @@ class Net(models.Model):
         self.quota = default_net_limit(self, "SECRETGRAPH_QUOTA")
 
     def reset_max_upload_size(self):
-        self.max_upload_size = default_net_limit(
-            self, "SECRETGRAPH_MAX_UPLOAD"
-        )
+        self.max_upload_size = default_net_limit(self, "SECRETGRAPH_MAX_UPLOAD")
 
     def recalculate_bytes_in_use(self, context=transaction.atomic):
         if callable(context):
@@ -278,20 +272,14 @@ class Cluster(FlexidModel):
         blank=True,
     )
 
-    markForDestruction: Optional[dt] = models.DateTimeField(
-        null=True, blank=True
-    )
+    markForDestruction: Optional[dt] = models.DateTimeField(null=True, blank=True)
     # always None for @system, None for non global names
-    globalNameRegisteredAt: Optional[dt] = models.DateTimeField(
-        null=True, blank=True
-    )
+    globalNameRegisteredAt: Optional[dt] = models.DateTimeField(null=True, blank=True)
     featured: bool = models.BooleanField(default=False, blank=True, null=False)
     updated: dt = models.DateTimeField(auto_now=True, editable=False)
     updateId: UUID = models.UUIDField(blank=True, default=uuid4)
 
-    net: Net = models.ForeignKey(
-        Net, on_delete=models.CASCADE, related_name="clusters"
-    )
+    net: Net = models.ForeignKey(Net, on_delete=models.CASCADE, related_name="clusters")
 
     objects = ClusterManager()
     primaryFor: models.OneToOneRel[Net]
@@ -309,28 +297,26 @@ class Cluster(FlexidModel):
     @property
     def properties(self) -> list[str]:
         if not self.id:
-            return (
-                SGroupProperty.objects.defaultClusterProperties().values_list(
-                    "name", flat=True
-                )
+            return SGroupProperty.objects.defaultClusterProperties().values_list(
+                "name", flat=True
             )
-        return SGroupProperty.objects.filter(
-            clusterGroups__clusters=self
-        ).values_list("name", flat=True)
+        return SGroupProperty.objects.filter(clusterGroups__clusters=self).values_list(
+            "name", flat=True
+        )
 
     @property
     def nonhidden_properties(self) -> list[str]:
         if not self.id:
-            return (
-                SGroupProperty.objects.defaultClusterProperties().values_list(
-                    "name", flat=True
-                )
+            return SGroupProperty.objects.defaultClusterProperties().values_list(
+                "name", flat=True
             )
         return SGroupProperty.objects.filter(
             clusterGroups__in=self.groups.filter(hidden=False)
         ).values_list("name", flat=True)
 
-    def clean(self) -> None:
+    def clean(self):
+        super().clean()
+        errors = {}
         if not self.globalNameRegisteredAt and self.featured:
             self.featured = False
 
@@ -343,17 +329,26 @@ class Cluster(FlexidModel):
                 self.name_cached = None
         if self.globalNameRegisteredAt is None and self.name.startswith("@"):
             if self.name != "@system":
-                raise ValidationError({"globalNameRegisteredAt": "required"})
+                errors.setdefault("globalNameRegisteredAt", []).append(
+                    ValidationError(
+                        "globalNameRegisteredAt is required for non-system global clusters",
+                        code="required",
+                    )
+                )
         if self.globalNameRegisteredAt is not None and (
             not self.name.startswith("@") or self.name == "@system"
         ):
             self.globalNameRegisteredAt = None
         primary = getattr(self, "primaryFor", None)
         if primary and primary != self.net:
-            raise ValidationError(
-                {"net": "cannot move cluster with primary mark"}
+            errors.setdefault(NON_FIELD_ERRORS, []).append(
+                ValidationError(
+                    "cannot move cluster with primary mark between nets",
+                    code="move_primary_cluster",
+                )
             )
-        return super().clean()
+        if errors:
+            raise ValidationError(errors)
 
     def __str__(self) -> str:
         return self.name if self.name.startswith("@") else self.flexid
@@ -415,9 +410,7 @@ class ContentManager(models.Manager):
         groups: Optional[Union[Cluster, Content, str, Iterable[str]]] = None,
         states=None,
     ):
-        return self.consistent().filter(
-            self._get_q_injected_keys(groups, states)
-        )
+        return self.consistent().filter(self._get_q_injected_keys(groups, states))
 
     def required_keys(self, cluster: Cluster):
         return self.consistent().filter(self._get_q_required_keys(cluster))
@@ -440,9 +433,7 @@ class ContentManager(models.Manager):
                 type__in=("File", "Text"),
             )
             .annotate(
-                limited=models.Value(
-                    True
-                )  # no access to cluster for unprivileged
+                limited=models.Value(True)  # no access to cluster for unprivileged
             )
         )
         if not ignoreStates:
@@ -468,13 +459,11 @@ class Content(FlexidModel):
     # has active transfer, doesn't appear in searches
     locked: dt = models.DateTimeField(null=True, blank=True)
 
-    nonce: str = models.CharField(
-        max_length=48, null=False, blank=True, default=""
-    )
+    nonce: str = models.CharField(max_length=48, null=False, blank=True, default="")
     # can decrypt = correct key
     file: File = models.FileField(upload_to=get_content_file_path)
     # internal field for orphan calculation and storage priorization
-    file_accessed: dt = models.DateTimeField(null=True)
+    file_accessed: dt = models.DateTimeField(null=True, blank=True, editable=False)
     # unique hash for content, e.g. generated from some tags
     # null if multiple contents are allowed
     contentHash: str = models.CharField(
@@ -483,9 +472,7 @@ class Content(FlexidModel):
         null=True,
         validators=[ContentHashValidator()],
     )
-    net: Net = models.ForeignKey(
-        Net, on_delete=models.CASCADE, related_name="contents"
-    )
+    net: Net = models.ForeignKey(Net, on_delete=models.CASCADE, related_name="contents")
     cluster: Cluster = models.ForeignKey(
         Cluster,
         on_delete=models.RESTRICT,
@@ -612,9 +599,7 @@ class Content(FlexidModel):
         else:
             for k in keyhashes:
                 q |= models.Q(target__tags__tag=f"key_hash={k}")
-        refs = self.references.select_related("target").filter(
-            group="signature"
-        )
+        refs = self.references.select_related("target").filter(group="signature")
         refs = refs.filter(q).order_by("id")
         for ref in refs:
             yield {
@@ -664,47 +649,63 @@ class Content(FlexidModel):
                 or None,
             }
 
-    def clean(self) -> None:
+    def clean_fields(self, exclude=None):
+        super().clean_fields(exclude=exclude)
+        errors = {}
         if self.type == "PrivateKey":
             if self.state != "protected":
-                raise ValidationError(
-                    {
-                        "state": "%s is an invalid state for private key"
-                        % self.state
-                    }
+                errors.setdefault(
+                    NON_FIELD_ERRORS if "state" in exclude else "state"
+                ).append(
+                    ValidationError(
+                        "%(state)s is an invalid state for private key",
+                        params={"state": self.state},
+                    )
                 )
         elif self.type == "PublicKey":
             if self.state not in constants.publickey_states:
-                raise ValidationError(
-                    {
-                        "state": "%s is an invalid state for public key"
-                        % self.state
-                    }
+                errors.setdefault(
+                    NON_FIELD_ERRORS if "state" in exclude else "state"
+                ).append(
+                    ValidationError(
+                        "%(state)s is an invalid state for public key",
+                        params={"state": self.state},
+                    )
                 )
             if not self.contentHash or not self.contentHash.startswith("Key:"):
-                raise ValidationError(
-                    {
-                        "contentHash": (
-                            "%s is an invalid "
-                            "contentHash for public key. Needs domain: Key:"
-                        )
-                        % self.contentHash
-                    }
+                errors.setdefault(
+                    NON_FIELD_ERRORS if "contentHash" in exclude else "contentHash"
+                ).append(
+                    ValidationError(
+                        "%(contentHash)s is invalid contentHash for public key. Needs domain: Key:",
+                        params={"contentHash": self.contentHash},
+                    )
                 )
         else:
             if self.type == "Config" and self.state != "protected":
-                raise ValidationError(
-                    {"state": "%s is an invalid state for Config" % self.state}
+                errors.setdefault(
+                    NON_FIELD_ERRORS if "state" in exclude else "state"
+                ).append(
+                    ValidationError(
+                        "%(state)s is an invalid state for a Config",
+                        params={"state": self.state},
+                    )
                 )
             elif self.state not in constants.nonkey_content_states:
-                raise ValidationError(
-                    {
-                        "state": "%s is an invalid state for content"
-                        % self.state
-                    }
+                errors.setdefault(
+                    NON_FIELD_ERRORS if "state" in exclude else "state"
+                ).append(
+                    ValidationError(
+                        "%(state)s is an invalid state for a content",
+                        params={"state": self.state},
+                    )
                 )
         if self.state not in constants.public_states and not self.nonce:
-            raise ValidationError({"nonce": "nonce empty"})
+            errors.setdefault(
+                NON_FIELD_ERRORS if "nonce" in exclude else "nonce"
+            ).append(ValidationError("nonce empty", code="nonce_empty"))
+        if errors:
+            raise ValidationError(errors)
 
     def __str__(self) -> str:
         return self.flexid
@@ -769,9 +770,7 @@ class Action(models.Model):
     )
     nonce: str = models.CharField(max_length=48)
     # value returns json with required encrypted aes key
-    value: Union[bytes, memoryview] = models.BinaryField(
-        null=False, blank=False
-    )
+    value: Union[bytes, memoryview] = models.BinaryField(null=False, blank=False)
     start: dt = models.DateTimeField(default=timezone.now, blank=True)
     stop: dt = models.DateTimeField(blank=True, null=True)
 
@@ -783,8 +782,7 @@ class Action(models.Model):
                 name="%(class)s_order",
             ),
             models.CheckConstraint(
-                check=models.Q(start__isnull=False)
-                | models.Q(stop__isnull=False),
+                check=models.Q(start__isnull=False) | models.Q(stop__isnull=False),
                 name="%(class)s_exist",
             ),
         ]
@@ -916,9 +914,7 @@ class SGroupPropertyManager(models.Manager):
         if queryset is None:
             queryset = self.get_queryset()
 
-        dProperty = SGroupProperty.objects.get_or_create(
-            name="default", defaults={}
-        )[0]
+        dProperty = SGroupProperty.objects.get_or_create(name="default", defaults={})[0]
         default_ngroups = dProperty.netGroups.all()
         return queryset.filter(netGroups__in=default_ngroups)
 
@@ -926,9 +922,7 @@ class SGroupPropertyManager(models.Manager):
         if queryset is None:
             queryset = self.get_queryset()
 
-        dProperty = SGroupProperty.objects.get_or_create(
-            name="default", defaults={}
-        )[0]
+        dProperty = SGroupProperty.objects.get_or_create(name="default", defaults={})[0]
         default_cgroups = dProperty.clusterGroups.all()
         return queryset.filter(clusterGroups__in=default_cgroups)
 
@@ -982,13 +976,11 @@ class NetGroup(models.Model):
         Net,
         blank=True,
         related_name="groups",
-        help_text=_(
-            "net groups: groups for user permissions including admin access"
-        ),
+        help_text=_("net groups: groups for user permissions including admin access"),
     )
-    properties: models.ManyToManyField[
-        SGroupProperty
-    ] = models.ManyToManyField(SGroupProperty, related_name="netGroups")
+    properties: models.ManyToManyField[SGroupProperty] = models.ManyToManyField(
+        SGroupProperty, related_name="netGroups"
+    )
 
     def __str__(self) -> str:
         return self.name
@@ -1004,9 +996,7 @@ class NetGroup(models.Model):
     @property
     def is_managed(self) -> bool:
         return bool(
-            settings.SECRETGRAPH_DEFAULT_NET_GROUPS.get(self.name, {}).get(
-                "managed"
-            )
+            settings.SECRETGRAPH_DEFAULT_NET_GROUPS.get(self.name, {}).get("managed")
         )
 
 
@@ -1036,9 +1026,7 @@ class ClusterGroup(models.Model):
         Cluster,
         blank=True,
         related_name="groups",
-        help_text=_(
-            "cluster groups: groups for cluster permissions and injected keys"
-        ),
+        help_text=_("cluster groups: groups for cluster permissions and injected keys"),
     )
     injectedKeys: models.ManyToManyField[Content] = models.ManyToManyField(
         Content,
@@ -1049,9 +1037,7 @@ class ClusterGroup(models.Model):
             "cluster_id": 0,
         },
     )
-    properties: models.ManyToManyField[
-        SGroupProperty
-    ] = models.ManyToManyField(
+    properties: models.ManyToManyField[SGroupProperty] = models.ManyToManyField(
         SGroupProperty,
         blank=True,
         related_name="clusterGroups",
@@ -1062,9 +1048,8 @@ class ClusterGroup(models.Model):
         errors = {}
         if self.hidden:
             if self.injectedKeys.exists():
-                errors[
-                    "injectedKeys"
-                ] = "injectedKeys and hidden are mutual exclusive"
+                errors["injectedKeys"] = "injectedKeys and hidden are mutual exclusive"
+                errors["hidden"] = "injectedKeys and hidden are mutual exclusive"
         if errors:
             raise ValidationError(errors)
 

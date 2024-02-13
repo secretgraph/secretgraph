@@ -110,8 +110,7 @@ def _update_or_create_cluster(
                 ignore_restrictions=True,
             )["objects_without_public"].exists():
                 raise ValueError(
-                    "not allowed - net disabled or "
-                    "not in actions time range"
+                    "not allowed - net disabled or " "not in actions time range"
                 )
             user = getattr(request, "user", None)
             if user and not user.is_authenticated:
@@ -128,15 +127,11 @@ def _update_or_create_cluster(
             else:
                 if getattr(settings, "SECRETGRAPH_REQUIRE_USER", False):
                     raise ValueError("Must be logged in")
-                elif not getattr(
-                    settings, "SECRETGRAPH_ALLOW_REGISTER", False
-                ):
+                elif not getattr(settings, "SECRETGRAPH_ALLOW_REGISTER", False):
                     raise ValueError("Cannot register")
         if not net:
             if not user:
-                rate = settings.SECRETGRAPH_RATELIMITS.get(
-                    "ANONYMOUS_REGISTER"
-                )
+                rate = settings.SECRETGRAPH_RATELIMITS.get("ANONYMOUS_REGISTER")
                 if rate:
                     r = ratelimit.get_ratelimit(
                         request=request,
@@ -182,8 +177,7 @@ def _update_or_create_cluster(
             objdata.primary = False
         else:
             objdata.primary = True
-
-    cluster.clean()
+    cluster.full_clean(["net"])
     assert size_new > 0, "Every cluster should have a size > 0"
     if old_net is None:
         size_diff = size_new - size_old
@@ -237,9 +231,7 @@ def _update_or_create_cluster(
             initial=create_net,
         )
         assert isinstance(clusterGroups_qtuple, tuple)
-    dProperty = SGroupProperty.objects.get_or_create(
-        name="default", defaults={}
-    )[0]
+    dProperty = SGroupProperty.objects.get_or_create(name="default", defaults={})[0]
 
     def cluster_save_fn():
         update_fields = None
@@ -289,9 +281,7 @@ def _update_or_create_cluster(
             request, cluster, objdata.actions, authset=authset
         )
 
-        m_actions = filter(
-            lambda x: x.action_type == "manage", action_save_fn.actions
-        )
+        m_actions = filter(lambda x: x.action_type == "manage", action_save_fn.actions)
         m_actions = set(map(lambda x: x.keyHash, m_actions))
 
         if create_cluster and "manage" not in action_save_fn.action_types:
@@ -325,9 +315,7 @@ def create_cluster_fn(
     if objdata.keys:
         for key_ob in objdata.keys[:2]:
             contentdata = ContentInput(key=key_ob, cluster=cluster)
-            content_fns.append(
-                create_key_fn(request, contentdata, authset=authset)
-            )
+            content_fns.append(create_key_fn(request, contentdata, authset=authset))
 
     def save_fn(context: AbstractContextManager = nullcontext):
         if callable(context):
@@ -352,9 +340,7 @@ def update_cluster_fn(request, cluster, objdata, updateId, authset=None):
         except Exception:
             raise ValueError("updateId is not an uuid")
 
-    cluster_fn = _update_or_create_cluster(
-        request, cluster, objdata, authset=authset
-    )
+    cluster_fn = _update_or_create_cluster(request, cluster, objdata, authset=authset)
 
     def save_fn(
         context: AbstractContextManager = nullcontext,

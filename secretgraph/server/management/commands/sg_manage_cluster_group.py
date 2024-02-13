@@ -49,9 +49,7 @@ class Command(BaseCommand):
         print(
             "  managed:",
             (
-                settings.SECRETGRAPH_DEFAULT_CLUSTER_GROUPS.get(
-                    cluster_group.name
-                )
+                settings.SECRETGRAPH_DEFAULT_CLUSTER_GROUPS.get(cluster_group.name)
                 or {"managed": False}
             ).get("managed", False),
         )
@@ -117,7 +115,7 @@ class Command(BaseCommand):
                 or user_selectable is not None
                 or hidden is not None
             ):
-                cluster_group.clean()
+                cluster_group.full_clean()
                 cluster_group.save()
 
             if properties is not None:

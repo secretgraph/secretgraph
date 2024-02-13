@@ -367,7 +367,7 @@ def _update_or_create_content_or_key(
         else:
             content.contentHash = chash
     del chash
-    content.clean()
+    content.full_clean(exclude=["file", "net", "cluster"])
 
     final_references = None
     encryption_target_ref = set()
