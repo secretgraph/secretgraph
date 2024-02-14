@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import base64
+import json
 import logging
 import posixpath
 import secrets
@@ -795,8 +796,16 @@ class Action(models.Model):
     def decrypt(self, key: str | bytes):
         if isinstance(key, str):
             key = base64.b64decode(key)
-        raise NotImplementedError
         return self.decrypt_aesgcm(AESGCM(key))
+
+    def decrypt_aesgcm(self, aesgcm: AESGCM):
+        action_value = self.value
+        # cryptography doesn't support memoryview
+        if isinstance(action_value, memoryview):
+            action_value = action_value.tobytes()
+        return json.loads(
+            aesgcm.decrypt(base64.b64decode(self.nonce), action_value, None)
+        )
 
     def __str__(self) -> str:
         return self.keyHash
