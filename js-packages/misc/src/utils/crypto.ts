@@ -290,12 +290,33 @@ export async function encryptString(
 ): Promise<string> {
     const result = await encrypt(key, data, options)
     const entry = mapEncryptionAlgorithms[result.serializedName]
+    if (!entry) {
+        throw Error('invalid algorithm: ' + result.serializedName)
+    }
     const serializeParams = entry.serializeParams
         ? entry.serializeParams
         : async () => ''
     return `${entry.serializedName}:${await serializeParams(
         result.params
     )}:${Buffer.from(result.data).toString('base64')}`
+}
+
+export async function serializeEncryptionParams({
+    params,
+    serializedName,
+}: {
+    params: any
+    serializedName: string
+}) {
+    const entry = mapEncryptionAlgorithms[serializedName]
+    if (!entry) {
+        throw Error('invalid algorithm: ' + serializedName)
+    }
+    if (entry.serializeParams) {
+        return `${serializedName}:${await entry.serializeParams(params)}`
+    } else {
+        return `${serializedName}:`
+    }
 }
 
 export async function decrypt(

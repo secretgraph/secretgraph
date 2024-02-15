@@ -8,6 +8,7 @@ import {
     DEFAULT_ASYMMETRIC_ENCRYPTION_ALGORITHM,
     DEFAULT_SYMMETRIC_ENCRYPTION_ALGORITHM,
     encrypt,
+    serializeEncryptionParams,
 } from '../crypto'
 import * as Interfaces from '../../interfaces'
 import { serializeToBase64, unserializeToArrayBuffer } from '../encoding'
@@ -44,12 +45,15 @@ export async function createKeys({
 }): Promise<FetchResult<any>> {
     const nonce = crypto.getRandomValues(new Uint8Array(13))
     const sharedkey = crypto.getRandomValues(new Uint8Array(32))
-    const encryptedPrivateKeyPromise = privateKey
-        ? encrypt(sharedkey, unserializeToArrayBuffer(privateKey), {
-              algorithm: 'AESGCM',
-              params: { nonce },
-          }).then((data) => new Blob([data.data]))
-        : null
+    const { data: encryptedPrivateKey, params: cryptoParameters } =
+        await (privateKey
+            ? encrypt(sharedkey, unserializeToArrayBuffer(privateKey), {
+                  algorithm:
+                      symmetricEncryptionAlgorithm ||
+                      DEFAULT_SYMMETRIC_ENCRYPTION_ALGORITHM,
+                  params: { nonce },
+              })
+            : { data: null, params: null })
 
     if (!pubkeys) {
         pubkeys = []
@@ -108,9 +112,9 @@ export async function createKeys({
             publicTags,
             privateTags,
             publicState,
-            nonce: await serializeToBase64(nonce),
+            cryptoParameters,
             publicKey: new Blob([publicKeyArray]),
-            privateKey: await encryptedPrivateKeyPromise,
+            privateKey: encryptedPrivateKey,
             privateActions: options.privateActions
                 ? [...options.privateActions]
                 : undefined,
@@ -190,10 +194,9 @@ export async function updateKey({
             throw Error('Tags are missing encrypted shared key (key=)')
         }
     }
-    let completedKey = null
-    let nonce = undefined
+    let completedKey = undefined
+    let cryptoParameters = undefined
     if (updatedKey && updatedKey.type == 'private') {
-        nonce = crypto.getRandomValues(new Uint8Array(13))
         if (!options.hashAlgorithm) {
             throw Error('hashAlgorithm required for key updates')
         }
@@ -204,10 +207,12 @@ export async function updateKey({
             sharedKey as ArrayBuffer,
             unserializeToArrayBuffer(updatedKey),
             {
-                params: { nonce },
-                algorithm: 'AESGCM',
+                algorithm:
+                    options.symmetricEncryptionAlgorithm ||
+                    DEFAULT_SYMMETRIC_ENCRYPTION_ALGORITHM,
             }
         )
+        cryptoParameters = serializeEncryptionParams(completedKey)
 
         const [[specialRef, ...publicKeyReferences], privateTags] =
             await Promise.all(
@@ -233,6 +238,7 @@ export async function updateKey({
             throw Error('hashAlgorithm required for key resigning')
         }
         completedKey = { data: await unserializeToArrayBuffer(updatedKey) }
+        cryptoParameters = ''
         const signatureReferencesPromise = createSignatureReferences(
             completedKey.data,
             options.privkeys ? options.privkeys : [],
@@ -270,7 +276,7 @@ export async function updateKey({
                           })
                       )
                     : privateTags,
-            nonce: nonce ? await serializeToBase64(nonce) : undefined,
+            cryptoParameters,
             key: completedKey ? new Blob([completedKey.data]) : undefined,
             actions: options.actions ? [...options.actions] : undefined,
             contentHash: options.contentHash ? options.contentHash : undefined,

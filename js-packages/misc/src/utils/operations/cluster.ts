@@ -58,7 +58,7 @@ export async function createCluster(options: {
               privateKey: Blob
               privateTags: string[]
               publicTags: string[]
-              nonce: string
+              cryptoParameters: string
               publicState: 'protected' | 'public' | 'required' | 'trusted'
           }
         | {
@@ -101,7 +101,7 @@ export async function createCluster(options: {
                         privateKey: Blob
                         privateTags: string[]
                         publicTags: string[]
-                        nonce: string
+                        cryptoParameters: string
                         publicState:
                             | 'protected'
                             | 'public'
@@ -123,7 +123,10 @@ export async function createCluster(options: {
                         ).then((obj) => new Blob([obj.data])),
                         privateTags: [],
                         publicTags: k2.publicTags || [],
-                        nonce: await serializeToBase64(nonce),
+                        cryptoParameters: `${
+                            options.symmetricEncryptionAlgorithm ||
+                            DEFAULT_SYMMETRIC_ENCRYPTION_ALGORITHM
+                        }:${await serializeToBase64(nonce)}`,
                         publicState: k2.publicState,
                     }
                     if (k2.privateTags) {

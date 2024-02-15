@@ -92,12 +92,11 @@ def create_key_maps(contents, keyset):
     ):
         split = ref.extra.split(":", 1)
         if len(split) == 1:
-            logger.warning(
-                "Invalid key reference, does not contain hash algorithm"
-            )
+            logger.warning("Invalid key reference, does not contain hash algorithm")
             continue
         else:
             esharedkey = base64.b64decode(split[1])
+            # TODO: will crash
             algo = mapHashNames[split[0]].algorithm
             key_padding = padding.OAEP(
                 mgf=padding.MGF1(algorithm=algo),
@@ -110,13 +109,13 @@ def create_key_maps(contents, keyset):
             matching_key = key_map_key[ref.matching_tag]
             if not matching_key:
                 continue
-            for key in key_query.filter(references__target=ref.target):
+            for key in key_query.filter(
+                references__target=ref.target, cryptoParameters__startswith="AESGCM:"
+            ):
                 try:
-                    nonce = base64.b64decode(key.nonce)
+                    nonce = base64.b64decode(key.cryptoParameters.split(":", 1)[1])
                     aesgcm = AESGCM(matching_key)
-                    privkey = aesgcm.decrypt(
-                        nonce, key.file.open("rb").read(), None
-                    )
+                    privkey = aesgcm.decrypt(nonce, key.file.open("rb").read(), None)
                     privkey = load_der_private_key(privkey, None)
                 except Exception as exc:
                     logger.warning(
@@ -130,9 +129,7 @@ def create_key_maps(contents, keyset):
                         key_padding,
                     )
                 except Exception as exc:
-                    logger.warning(
-                        "Could not decrypt shared key", exc_info=exc
-                    )
+                    logger.warning("Could not decrypt shared key", exc_info=exc)
                     continue
                 if shared_key:
                     break
@@ -236,9 +233,7 @@ class ProxyTags:
         self._decryptor = AESGCM(key) if key else None
 
     def __getattr__(self, attr):
-        q = self._query.filter(
-            Q(tag__startswith=attr) | Q(tag__startswith=f"~{attr}=")
-        )
+        q = self._query.filter(Q(tag__startswith=attr) | Q(tag__startswith=f"~{attr}="))
         return ProxyTag(q, self._decryptor)
 
     def __contains__(self, attr):
@@ -257,14 +252,10 @@ def iter_decrypt_contents(
     content_map, transfer_map = create_key_maps(content_query, decryptset)
     # main query, restricted to PublicKeys and decoded contents
     query = content_query.filter(
-        Q(type="PublicKey")
-        | Q(state__in=public_states)
-        | Q(id__in=content_map.keys())
+        Q(type="PublicKey") | Q(state__in=public_states) | Q(id__in=content_map.keys())
     ).annotate(
         is_transfer=Exists(
-            ContentReference.objects.filter(
-                source=OuterRef("pk"), group="transfer"
-            )
+            ContentReference.objects.filter(source=OuterRef("pk"), group="transfer")
         ),
     )
 
@@ -311,16 +302,14 @@ def iter_decrypt_contents(
             try:
                 decryptor = Cipher(
                     algorithms.AES(content_map[content.id]),
-                    modes.GCM(base64.b64decode(content.nonce)),
+                    modes.GCM(
+                        base64.b64decode(content.cryptoParameters.split(":", 1)[1])
+                    ),
                 ).decryptor()
             except Exception as exc:
-                logger.warning(
-                    "creating decrypting context failed", exc_info=exc
-                )
+                logger.warning("creating decrypting context failed", exc_info=exc)
                 continue
-            content.tags_proxy = ProxyTags(
-                content.tags, content_map[content.id]
-            )
+            content.tags_proxy = ProxyTags(content.tags, content_map[content.id])
 
             def _read_decrypt() -> Iterable[bytes]:
                 if content.start_transfer:

@@ -24,6 +24,7 @@ import {
     decrypt,
     decryptString,
     encrypt,
+    serializeEncryptionParams,
 } from '../crypto'
 
 export async function createContent({
@@ -54,37 +55,36 @@ export async function createContent({
 }): Promise<FetchResult<any>> {
     const tagsOptions = await Promise.all(tagsIntern)
     const isPublic = Constants.public_states.has(options.state)
-    let nonce: Uint8Array | undefined, key: Uint8Array | undefined
+    let key: Uint8Array | undefined
     if (isPublic) {
-        nonce = undefined
         key = undefined
     } else {
-        nonce = crypto.getRandomValues(new Uint8Array(13))
         key = crypto.getRandomValues(new Uint8Array(32))
     }
     if (!isPublic && options.pubkeys.length == 0) {
         throw Error('No public keys provided')
     }
 
-    const encryptedContentPromise = isPublic
-        ? unserializeToArrayBuffer(value)
+    const { data: finalizedContent, cryptoParameters } = await (isPublic
+        ? unserializeToArrayBuffer(value).then((data) => {
+              return { data, cryptoParameters: '' }
+          })
         : encrypt(key as NonNullable<typeof key>, value, {
-              algorithm: 'AESGCM',
-              params: { nonce },
+              algorithm:
+                  options.symmetricEncryptionAlgorithm ||
+                  DEFAULT_SYMMETRIC_ENCRYPTION_ALGORITHM,
           }).then(
-              (data) => {
-                  return data.data
+              async (data) => {
+                  return {
+                      data: data.data,
+                      cryptoParameters: await serializeEncryptionParams(data),
+                  }
               },
               (reason) => {
-                  console.error(
-                      'encrypting content failed',
-                      key,
-                      nonce,
-                      reason
-                  )
+                  console.error('encrypting content failed', key, reason)
                   throw reason
               }
-          )
+          ))
 
     const [publicKeyReferencesPromise, tagsPromise] = isPublic
         ? [[], []]
@@ -95,13 +95,11 @@ export async function createContent({
               options.asymmetricEncryptionAlgorithm ||
                   DEFAULT_ASYMMETRIC_ENCRYPTION_ALGORITHM
           )
-    const signatureReferencesPromise = encryptedContentPromise.then((data) =>
-        createSignatureReferences(
-            data,
-            options.privkeys ? options.privkeys : [],
-            options.hashAlgorithm,
-            options.signatureAlgorithm || DEFAULT_SIGNATURE_ALGORITHM
-        )
+    const signatureReferencesPromise = createSignatureReferences(
+        finalizedContent,
+        options.privkeys ? options.privkeys : [],
+        options.hashAlgorithm,
+        options.signatureAlgorithm || DEFAULT_SIGNATURE_ALGORITHM
     )
     let tags: string[]
     if (isPublic) {
@@ -139,11 +137,10 @@ export async function createContent({
             tags,
             state: options.state,
             type: options.type,
-            nonce: nonce ? await serializeToBase64(nonce) : undefined,
-            value: await encryptedContentPromise.then(
-                (data) =>
-                    new Blob([data], { type: 'application/octet-stream' })
-            ),
+            cryptoParameters,
+            value: new Blob([finalizedContent], {
+                type: 'application/octet-stream',
+            }),
             actions: options.actions ? [...options.actions] : null,
             contentHash: options.contentHash ? options.contentHash : null,
             authorization: options.authorization,
@@ -213,11 +210,12 @@ export async function updateContent({
             })
         })
     }
-    let encryptedContent = null
-    let nonce = undefined
+    let finalizedContent = undefined
+    let cryptoParameters = undefined
     if (options.value) {
         if (isPublic) {
-            encryptedContent = await unserializeToArrayBuffer(options.value)
+            finalizedContent = await unserializeToArrayBuffer(options.value)
+            cryptoParameters = ''
 
             if (
                 options.privkeys &&
@@ -236,16 +234,14 @@ export async function updateContent({
             if (options.pubkeys.length == 0) {
                 throw Error('No public keys provided')
             }
-            nonce = crypto.getRandomValues(new Uint8Array(13))
+            const result = await encrypt(sharedKey, options.value, {
+                algorithm:
+                    options.symmetricEncryptionAlgorithm ||
+                    DEFAULT_SYMMETRIC_ENCRYPTION_ALGORITHM,
+            })
+            finalizedContent = result.data
+            cryptoParameters = await serializeEncryptionParams(result)
 
-            encryptedContent = (
-                await encrypt(sharedKey, options.value, {
-                    algorithm:
-                        options.symmetricEncryptionAlgorithm ||
-                        DEFAULT_SYMMETRIC_ENCRYPTION_ALGORITHM,
-                    params: { nonce },
-                })
-            ).data
             const [publicKeyReferencesPromise, tagsPromise2] =
                 encryptSharedKey(
                     sharedKey as ArrayBuffer,
@@ -260,7 +256,7 @@ export async function updateContent({
         if (options.privkeys && options.privkeys.length) {
             references.push(
                 ...(await createSignatureReferences(
-                    encryptedContent,
+                    finalizedContent,
                     options.privkeys,
                     options.hashAlgorithm as NonNullable<
                         typeof options.hashAlgorithm
@@ -285,9 +281,9 @@ export async function updateContent({
             cluster: options.cluster ? options.cluster : undefined,
             references,
             tags: tags ? await Promise.all(tags) : undefined,
-            nonce: nonce ? await serializeToBase64(nonce) : undefined,
-            value: encryptedContent
-                ? new Blob([encryptedContent], {
+            cryptoParameters,
+            value: finalizedContent
+                ? new Blob([finalizedContent], {
                       type: 'application/octet-stream',
                   })
                 : undefined,
@@ -501,9 +497,8 @@ export async function decryptContentObject({
     // if this fails, it means shared key and encrypted object doesn't match
     try {
         return {
-            ...(await decrypt(key, arrPromise, {
-                params: { nonce: _node.nonce },
-                algorithm: 'AESGCM',
+            ...(await decryptString(key, _node.cryptoParameters, {
+                data2: arrPromise,
             })),
             tags: await extractTags({ key, tags: nodeData.tags }),
             updateId: nodeData.updateId,
