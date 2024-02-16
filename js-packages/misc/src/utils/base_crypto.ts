@@ -16,20 +16,53 @@ export let DEFAULT_ASYMMETRIC_ENCRYPTION_ALGORITHM = 'rsa-sha512'
 export let DEFAULT_SYMMETRIC_ENCRYPTION_ALGORITHM = 'AESGCM'
 export let DEFAULT_DERIVE_ALGORITHM = 'PBKDF2-sha512'
 
+export type ParamsType = any
+export type KeyType = any
+
+export interface CryptoResult {
+    data: ArrayBuffer
+    params: ParamsType
+}
+
+export interface KeyResult {
+    key: KeyType
+    params: ParamsType
+}
+
+export interface OptionalCryptoResult {
+    data?: ArrayBuffer
+    params: ParamsType
+}
+
+export async function defaultDeserialize(
+    inp: string,
+    params?: ParamsType
+): Promise<CryptoResult> {
+    return {
+        data: await unserializeToArrayBuffer(inp),
+        params: params || {},
+    }
+}
+
+export async function defaultSerializeParams(
+    params: ParamsType
+): Promise<string> {
+    return ''
+}
 // argon1id, pkb
 export const mapDeriveAlgorithms: {
     [algo: string]: {
         readonly derive: (
             inp: ArrayBuffer,
-            params: any
-        ) => Promise<{ data: ArrayBuffer; params: any }>
-        readonly deserialize?: (
+            params?: ParamsType
+        ) => Promise<CryptoResult>
+        readonly deserialize: (
             inp: string,
-            params?: any
-        ) => Promise<{ data: ArrayBuffer; params: any }>
+            params?: ParamsType
+        ) => Promise<CryptoResult>
         readonly serialize: (inp: {
             data: ArrayBuffer
-            params: any
+            params: ParamsType
         }) => Promise<string>
         readonly serializedName: string
         readonly type: 'hash' | 'derive'
@@ -40,23 +73,21 @@ export const mapEncryptionAlgorithms: {
     [algo: string]: {
         // encrypt serializes
         readonly encrypt: (
-            key: any,
+            key: KeyType,
             data: ArrayBuffer,
-            params?: any
-        ) => Promise<{ data: ArrayBuffer; params: any }>
+            params: ParamsType
+        ) => Promise<CryptoResult>
         readonly decrypt: (
-            key: any,
+            key: KeyType,
             data: ArrayBuffer,
-            params?: any
-        ) => Promise<{ data: ArrayBuffer; params: any }>
-        readonly generateKey: (
-            params: any
-        ) => Promise<{ key: any; params: any }>
-        readonly serializeParams?: (inp: any) => Promise<string>
-        readonly deserialize?: (
+            params: ParamsType
+        ) => Promise<CryptoResult>
+        readonly generateKey: (params: ParamsType) => Promise<KeyResult>
+        readonly serializeParams: (params: ParamsType) => Promise<string>
+        readonly deserialize: (
             inp: string,
-            params: any
-        ) => Promise<{ data?: ArrayBuffer; params: any }>
+            params?: ParamsType
+        ) => Promise<OptionalCryptoResult>
         readonly serializedName: string
         readonly keyParams: any
         readonly type: 'symmetric' | 'asymmetric'
@@ -65,15 +96,13 @@ export const mapEncryptionAlgorithms: {
 export const mapSignatureAlgorithms: {
     [algo: string]: {
         // sign serializes
-        readonly sign: (key: any, data: ArrayBuffer) => Promise<string>
+        readonly sign: (key: KeyType, data: ArrayBuffer) => Promise<string>
         readonly verify: (
-            key: any,
+            key: KeyType,
             signature: string,
             data: ArrayBuffer
         ) => Promise<boolean>
-        readonly generateKey: (
-            params: any
-        ) => Promise<{ key: any; params: any }>
+        readonly generateKey: (params: ParamsType) => Promise<KeyResult>
         readonly serializedName: string
         readonly keyParams: any
     }
@@ -87,6 +116,7 @@ addWithVariants(
                 params: {},
             }
         },
+        deserialize: defaultDeserialize,
         serialize: async (inp) => {
             return await serializeToBase64(inp.data)
         },
@@ -104,6 +134,7 @@ addWithVariants(
                 params: {},
             }
         },
+        deserialize: defaultDeserialize,
         serialize: async (inp) => {
             return await serializeToBase64(inp.data)
         },
@@ -271,6 +302,7 @@ addWithVariants(
                 params: {},
             }
         },
+        serializeParams: defaultSerializeParams,
         decrypt: async (key, data) => {
             return {
                 data: await crypto.subtle.decrypt(
@@ -283,6 +315,7 @@ addWithVariants(
                 params: {},
             }
         },
+        deserialize: defaultDeserialize,
         generateKey: async ({ bits }: { bits: number } = { bits: 4096 }) => {
             return {
                 key: await crypto.subtle.generateKey(
@@ -335,6 +368,8 @@ addWithVariants(
                 params: {},
             }
         },
+        serializeParams: defaultSerializeParams,
+        deserialize: defaultDeserialize,
         generateKey: async ({ bits }: { bits: number } = { bits: 4096 }) => {
             return {
                 key: await crypto.subtle.generateKey(

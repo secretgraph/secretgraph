@@ -175,13 +175,9 @@ export async function derive(
         throw Error('invalid algorithm: ' + algorithm)
     }
     if (typeof inp_cleaned == 'string') {
-        if (entry.deserialize) {
-            const result = await entry.deserialize(inp_cleaned, params)
-            inp_cleaned = result.data
-            params = result.params
-        } else {
-            inp_cleaned = await unserializeToArrayBuffer(inp_cleaned)
-        }
+        const result = await entry.deserialize(inp_cleaned, params)
+        inp_cleaned = result.data
+        params = result.params
     }
     return {
         ...(await entry.derive(inp_cleaned, params)),
@@ -204,13 +200,9 @@ export async function deserializeDerivedString(
         throw Error('invalid algorithm: ' + algorithm)
     }
     let data
-    if (entry.deserialize) {
-        const result = await entry.deserialize(inp_cleaned, params)
-        data = result.data
-        params = result.params
-    } else {
-        data = await unserializeToArrayBuffer(inp_cleaned)
-    }
+    const result = await entry.deserialize(inp_cleaned, params)
+    data = result.data
+    params = result.params
     return { params: params || {}, data, serializedName: algorithm }
 }
 
@@ -293,10 +285,7 @@ export async function encryptString(
     if (!entry) {
         throw Error('invalid algorithm: ' + result.serializedName)
     }
-    const serializeParams = entry.serializeParams
-        ? entry.serializeParams
-        : async () => ''
-    return `${entry.serializedName}:${await serializeParams(
+    return `${entry.serializedName}:${await entry.serializeParams(
         result.params
     )}:${Buffer.from(result.data).toString('base64')}`
 }
@@ -380,18 +369,9 @@ export async function decryptString(
         throw Error('invalid algorithm: ' + algorithm)
     }
     let data_cleaned2: ArrayBuffer | undefined = undefined
-    if (entry.deserialize) {
-        const result = await entry.deserialize(data_cleaned, params)
-        data_cleaned2 = await (result.data || data2)
-        params = result.params
-    } else {
-        if (data2) {
-            data_cleaned2 = await data2
-        } else {
-            const splitted = splitLastOnly(data_cleaned)
-            data_cleaned2 = await unserializeToArrayBuffer(splitted[1])
-        }
-    }
+    const result = await entry.deserialize(data_cleaned, params)
+    data_cleaned2 = await (result.data || data2)
+    params = result.params
     if (!data_cleaned2) {
         throw Error('no data to decrypt provided')
     }
