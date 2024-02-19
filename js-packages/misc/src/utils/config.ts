@@ -1127,8 +1127,8 @@ async function loadConfigUrl_helper(
                 keys.map(async (key) => {
                     // decrypt private key
                     const privkey = (
-                        await decryptString(key, crypto_params, {
-                            data2: blob.arrayBuffer(),
+                        await decrypt(key, blob.arrayBuffer(), {
+                            params: crypto_params,
                         })
                     ).data
                     // with the private key decrypt shared key

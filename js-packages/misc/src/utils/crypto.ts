@@ -10,6 +10,7 @@ import {
     mapDeriveAlgorithms,
     mapEncryptionAlgorithms,
     mapSignatureAlgorithms,
+    ParamsType,
 } from './base_crypto'
 
 export {
@@ -161,7 +162,9 @@ export async function toPublicKey(
 
 export async function derive(
     inp: MaybePromise<string | ArrayBuffer>,
-    { params, algorithm }: { params?: any; algorithm?: string } = {}
+    { params, algorithm }: { params?: any; algorithm: string } = {
+        algorithm: '',
+    }
 ): Promise<{ data: ArrayBuffer; params: any; serializedName: string }> {
     let inp_cleaned: ArrayBuffer | string = await inp
     if (!algorithm && typeof inp_cleaned == 'string') {
@@ -172,7 +175,7 @@ export async function derive(
 
     const entry = mapDeriveAlgorithms['' + algorithm]
     if (!entry) {
-        throw Error('invalid algorithm: ' + algorithm)
+        throw new UnknownAlgorithm('invalid algorithm: ' + algorithm)
     }
     if (typeof inp_cleaned == 'string') {
         const result = await entry.deserialize(inp_cleaned, params)
@@ -187,7 +190,9 @@ export async function derive(
 
 export async function deserializeDerivedString(
     inp: MaybePromise<string>,
-    { params, algorithm }: { params?: any; algorithm?: string } = {} // params are here fallback?
+    { params, algorithm }: { params?: any; algorithm: string } = {
+        algorithm: '',
+    } // params are here fallback?
 ) {
     let inp_cleaned: string = await inp
     if (!algorithm) {
@@ -199,16 +204,13 @@ export async function deserializeDerivedString(
     if (!entry) {
         throw Error('invalid algorithm: ' + algorithm)
     }
-    let data
     const result = await entry.deserialize(inp_cleaned, params)
-    data = result.data
-    params = result.params
-    return { params: params || {}, data, serializedName: algorithm }
+    return { ...result, serializedName: entry.serializedName }
 }
 
 export async function deriveString(
     data: MaybePromise<string | ArrayBuffer>,
-    options: { params?: any; algorithm?: string } = {}
+    options: { params?: any; algorithm: string } = { algorithm: '' }
 ): Promise<string> {
     const result = await derive(data, options)
     const entry = mapDeriveAlgorithms[result.serializedName]
@@ -229,7 +231,7 @@ export async function serializeDerive(
 
 export async function generateKey(
     { params, algorithm }: { params?: any; algorithm: string } = {
-        algorithm: 'missing',
+        algorithm: '',
     }
 ): Promise<{
     params?: any
@@ -249,8 +251,8 @@ export async function generateKey(
 export async function encrypt(
     key: MaybePromise<any>,
     data: MaybePromise<string | ArrayBuffer>,
-    { params, algorithm }: { params?: any; algorithm: string } = {
-        algorithm: 'missing',
+    { params, algorithm }: { params?: ParamsType; algorithm: string } = {
+        algorithm: '',
     }
 ): Promise<{
     data: ArrayBuffer
@@ -261,7 +263,7 @@ export async function encrypt(
     let data_cleaned = await unserializeToArrayBuffer(data)
     const entry = mapEncryptionAlgorithms['' + algorithm]
     if (!entry) {
-        throw Error('invalid algorithm: ' + algorithm)
+        throw new UnknownAlgorithm('invalid algorithm: ' + algorithm)
     }
     const key_cleaned = await unserializeToCryptoKey(
         key,
@@ -278,12 +280,14 @@ export async function encrypt(
 export async function encryptString(
     key: MaybePromise<any>,
     data: MaybePromise<string | ArrayBuffer>,
-    options: { params?: any; algorithm: string }
+    options: { params?: ParamsType; algorithm: string }
 ): Promise<string> {
     const result = await encrypt(key, data, options)
     const entry = mapEncryptionAlgorithms[result.serializedName]
     if (!entry) {
-        throw Error('invalid algorithm: ' + result.serializedName)
+        throw new UnknownAlgorithm(
+            'invalid algorithm: ' + result.serializedName
+        )
     }
     return `${entry.serializedName}:${await entry.serializeParams(
         result.params
@@ -311,16 +315,22 @@ export async function serializeEncryptionParams({
 export async function decrypt(
     key: MaybePromise<any>,
     data: MaybePromise<string | ArrayBuffer>,
-    { params, algorithm }: { params: any; algorithm: string }
+    { params, algorithm }: { params: ParamsType | string; algorithm?: string }
 ): Promise<{
     data: ArrayBuffer
     params: any
     serializedName: string
     key: any
 }> {
+    if (!algorithm && typeof params == 'string') {
+        const splitted = splitFirstOnly(params)
+        algorithm = splitted[0]
+        const entry = mapEncryptionAlgorithms['' + algorithm]
+        params = (await entry.deserialize(splitted[1])).params
+    }
     const entry = mapEncryptionAlgorithms['' + algorithm]
     if (!entry) {
-        throw Error('invalid algorithm: ' + algorithm)
+        throw new UnknownAlgorithm('invalid algorithm: ' + algorithm)
     }
     const [key_cleaned, data_cleaned]: [CryptoKey, ArrayBuffer] =
         await Promise.all([
@@ -345,11 +355,9 @@ export async function decryptString(
     {
         params,
         algorithm,
-        data2,
     }: {
         params?: any
         algorithm?: string
-        data2?: MaybePromise<ArrayBuffer>
     } = {}
 ): Promise<{
     data: ArrayBuffer
@@ -366,16 +374,14 @@ export async function decryptString(
 
     const entry = mapEncryptionAlgorithms['' + algorithm]
     if (!entry) {
-        throw Error('invalid algorithm: ' + algorithm)
+        throw new UnknownAlgorithm('invalid algorithm: ' + algorithm)
     }
-    let data_cleaned2: ArrayBuffer | undefined = undefined
     const result = await entry.deserialize(data_cleaned, params)
-    data_cleaned2 = await (result.data || data2)
     params = result.params
-    if (!data_cleaned2) {
+    if (!result.data) {
         throw Error('no data to decrypt provided')
     }
-    return await decrypt(key, data_cleaned2, {
+    return await decrypt(key, result.data, {
         params,
         algorithm: entry.serializedName,
     })
@@ -424,7 +430,7 @@ export async function verify(
 
     const entry = mapSignatureAlgorithms['' + algorithm]
     if (!entry) {
-        throw Error('invalid algorithm: ' + algorithm)
+        throw new UnknownAlgorithm('invalid algorithm: ' + algorithm)
     }
     const [key_cleaned, data_cleaned]: [CryptoKey, ArrayBuffer] =
         await Promise.all([

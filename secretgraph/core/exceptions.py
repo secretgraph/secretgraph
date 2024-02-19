@@ -8,3 +8,7 @@ class LockedResourceError(Exception):
 
 class VerificationFailedError(Exception):
     """Resource verification failed"""
+
+
+class UnknownAlgorithm(Exception):
+    """unknown algorithm specification"""

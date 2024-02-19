@@ -1,5 +1,6 @@
 # TODO
 
+-   make ts base-crypto static classes and methods
 -   expand hashing to to general derive tool
 -   extract params from string (without decrypting/encrypting)
 -   create key fn for mapEncryption/mapSignature

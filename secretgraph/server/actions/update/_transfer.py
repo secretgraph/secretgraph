@@ -1,6 +1,5 @@
 __all__ = ["sync_transfer_value", "transfer_value"]
 
-import base64
 import json
 import logging
 from typing import Optional
@@ -8,7 +7,6 @@ from uuid import uuid4
 
 import httpx
 from asgiref.sync import async_to_sync, sync_to_async
-from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from django.conf import settings
 from django.db.models import F, Q
 from django.db.models.functions import Now
@@ -18,6 +16,7 @@ from django.utils.module_loading import import_string
 from secretgraph.core.exceptions import LockedResourceError
 
 from ....core.constants import TransferResult, public_states
+from ....core.utils.crypto import decryptString
 from ....core.utils.verification import verify
 from ...models import Content, ContentReference, ContentTag, Net
 from ...utils.conf import get_httpx_params
@@ -86,20 +85,16 @@ async def transfer_value(
         keepalive = bool(session)
     if key:
         assert not url, "can only specify key or url"
-        decryptor = AESGCM(key)
         try:
-            raw_bytes = base64.b64decode(
+            result = await decryptString(
+                key,
                 (
                     await content.tags.only("tag").aget(
                         tag__startswith="~transfer_url="
                     )
-                ).tag.split("=", 1)[1]
+                ).tag.split("=", 1)[1],
             )
-            url = decryptor.decrypt(
-                raw_bytes[:13],
-                raw_bytes[13:],
-                None,
-            ).decode()
+            url = result.data.decode()
         except Exception as exc:
             logger.error("Error while decoding url", exc_info=exc)
             return TransferResult.ERROR
@@ -107,13 +102,11 @@ async def transfer_value(
             async for tag in content.tags.only("tag").filter(
                 tag__startswith="~transfer_header="
             ):
-                raw_bytes = base64.b64decode(tag.tag.split("=", 1)[1])
-                # headers must be ascii
-                header = (
-                    decryptor.decrypt(raw_bytes[:13], raw_bytes[13:], None)
-                    .decode("ascii")
-                    .split("=", 1)
+                result = await decryptString(
+                    key,
+                    tag.tag.split("=", 1)[1],
                 )
+                header = result.data.decode().split("=", 1)
                 if len(header) == 2:
                     _headers[header[0]] = header[1]
         except Exception as exc:

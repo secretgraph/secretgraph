@@ -1,17 +1,15 @@
 import asyncio
-import base64
 import logging
 from typing import Callable, Iterable, Optional
 from urllib.parse import parse_qs, urljoin
 
 import httpx
-from cryptography.hazmat.primitives.asymmetric import padding
-from cryptography.hazmat.primitives.asymmetric.utils import Prehashed
-from cryptography.hazmat.primitives.hashes import Hash
 from cryptography.hazmat.primitives.serialization import load_der_public_key
 
 from ...queries.content import contentVerificationQuery
-from ..constants import HashNameItem, mapHashNames
+from ..constants import HashNameItem
+from .crypto import mapSignatureAlgorithms
+from .crypto import verify as crypto_verify
 from .hashing import (
     calculateHashesForHashAlgorithms,
     findWorkingHashAlgorithms,
@@ -27,9 +25,7 @@ async def _fetch_certificate(
     key_hashes: set[str],
     hashAlgorithms: Iterable[HashNameItem],
 ):
-    keyResponse = await session.get(
-        url, headers={"Authorization": authorization}
-    )
+    keyResponse = await session.get(url, headers={"Authorization": authorization})
     keyResponse.raise_for_status()
     if key_hashes:
         calced_hashes = calculateHashesForHashAlgorithms(
@@ -41,31 +37,24 @@ async def _fetch_certificate(
         calced_hashes = calculateHashesForHashAlgorithms(
             keyResponse.content, hashAlgorithms[:1]
         )
-    return calced_hashes, load_der_public_key(keyResponse.content), url
+    return calced_hashes, keyResponse.content, url
 
 
 async def _verify_helper(
     retmap,
-    hashes_key,
+    hashes_key_url,
     signature,
     signatureDigest: bytes,
-    signHashAlgorithm: HashNameItem,
 ):
-    _hashes_key = await hashes_key
-    _hashes_key[1].verify(
-        signature=signature,
-        data=signatureDigest,
-        padding=padding.PSS(
-            mgf=padding.MGF1(signHashAlgorithm.algorithm),
-            salt_length=padding.PSS.AUTO,
-        ),
-        algorithm=Prehashed(signHashAlgorithm.algorithm),
-    )
-    retmap[_hashes_key[0][0]] = {
-        "key": _hashes_key[1],
-        "signature": f"{signHashAlgorithm.serializedName}:{signature}",
-        "key_url": _hashes_key[2],
-    }
+    hashes, key, url = await hashes_key_url
+    if await crypto_verify(
+        key, signature=signature, data=signatureDigest, prehashed=True
+    ):
+        retmap[hashes[0]] = {
+            "key": key,
+            "signature": signature,
+            "key_url": url,
+        }
 
 
 async def verify(
@@ -83,9 +72,7 @@ async def verify(
         contentResponse = url
         url = str(contentResponse.request.url)
         splitted_url = url.split("?", 1)
-        authorization = (
-            contentResponse.request.headers.get("Authorization") or ""
-        )
+        authorization = contentResponse.request.headers.get("Authorization") or ""
         if len(splitted_url) == 2:
             qs = parse_qs(splitted_url[1])
             item_id = qs.get("item")
@@ -110,20 +97,17 @@ async def verify(
     raw_hashalgorithms = contentResponse.headers.get("X-HASH-ALGORITHMS") or ""
     raw_gqlpath = contentResponse.headers.get("X-GRAPHQL-PATH") or ""
 
+    retmap = {}
+    errors = []
     if raw_hashalgorithms and raw_gqlpath:
-        hashalgorithms = findWorkingHashAlgorithms(
-            raw_hashalgorithms.split(",")
-        )
-        graphqlurl = urljoin(splitted_url[0], raw_gqlpath)
-        retmap = {}
-
         ops = []
+        hashalgorithms = findWorkingHashAlgorithms(raw_hashalgorithms.split(","))
+        graphqlurl = urljoin(splitted_url[0], raw_gqlpath)
+
         url_map = {}
         signature_map = {}
         if item_id:
-            key_hashes_tags = set(
-                map(lambda x: f"key_hash={key_hashes}", key_hashes)
-            )
+            key_hashes_tags = set(map(lambda x: f"key_hash={key_hashes}", key_hashes))
             variables = {"id": item_id}
             if key_hashes_tags:
                 variables["includeTags"] = list(key_hashes_tags)
@@ -142,28 +126,29 @@ async def verify(
                 .json()
             )["data"]
 
-            for ref in verifyData["secretgraph"]["node"]["references"][
-                "edges"
-            ]:
+            for ref in verifyData["secretgraph"]["node"]["references"]["edges"]:
                 signature = ref["node"]["extra"]
                 link = ref["node"]["target"]["link"]
-                signature = signature.split(":", 1)
-                if signature[0] not in mapHashNames or len(signature) != 2:
+                signature_split = signature.split(":", 1)
+                if (
+                    signature_split[0] not in mapSignatureAlgorithms
+                    or len(signature_split) != 2
+                ):
                     continue
-                signHashAlgorithm = mapHashNames[signature[0]]
+                signHashAlgorithm = mapSignatureAlgorithms[signature_split[0]]
                 signature_map.setdefault(
                     signHashAlgorithm.serializedName,
                     {
                         "urls": {},
                         "signHashAlgorithm": signHashAlgorithm,
-                        "hashCtx": Hash(signHashAlgorithm.algorithm),
+                        "hashCtx": await signHashAlgorithm.getHasher(),
                     },
                 )
                 joined_link = urljoin(splitted_url[0], link)
                 url_map[joined_link] = None
                 signature_map[signHashAlgorithm.serializedName]["urls"][
                     joined_link
-                ] = base64.b64decode(signature[1])
+                ] = signature
         else:
             logger.debug("item unknown, use anonymous verification")
             verifyData = (
@@ -183,23 +168,26 @@ async def verify(
             for _hash, ref in verifyData["signatures"].items():
                 signature = ref["signature"]
                 link = ref["link"]
-                signature = signature.split(":", 1)
-                if signature[0] not in mapHashNames or len(signature) != 2:
+                signature_split = signature.split(":", 1)
+                if (
+                    signature_split[0] not in mapSignatureAlgorithms
+                    or len(signature_split) != 2
+                ):
                     continue
-                signHashAlgorithm = mapHashNames[signature[0]]
+                signHashAlgorithm = mapSignatureAlgorithms[signature_split[0]]
                 signature_map.setdefault(
                     signHashAlgorithm.serializedName,
                     {
                         "urls": {},
                         "signHashAlgorithm": signHashAlgorithm,
-                        "hashCtx": Hash(signHashAlgorithm.algorithm),
+                        "hashCtx": await signHashAlgorithm.getHasher(),
                     },
                 )
                 joined_link = urljoin(splitted_url[0], link)
                 url_map[joined_link] = None
                 signature_map[signHashAlgorithm.serializedName]["urls"][
                     joined_link
-                ] = base64.b64decode(signature[1])
+                ] = signature
 
         async for chunk in contentResponse.aiter_bytes(512):
             if write_chunk:
@@ -210,6 +198,7 @@ async def verify(
             chunk = write_finalize()
             for sig in signature_map.values():
                 sig["hashCtx"].update(chunk)
+        # fetch certs and get
         for url in url_map.keys():
             url_map[url] = _fetch_certificate(
                 session=session,
@@ -220,19 +209,18 @@ async def verify(
             )
 
         for sig in signature_map.values():
-            signatureDigest = sig["hashCtx"].finalize()
+            signatureDigest = sig["signHashAlgorithm"].finalize(sig["hashCtx"])
             for url_signature in sig["urls"].items():
                 ops.append(
                     _verify_helper(
                         retmap=retmap,
                         signatureDigest=signatureDigest,
                         signature=url_signature[1],
-                        hashes_key=url_map[url_signature[0]],
-                        signHashAlgorithm=sig["signHashAlgorithm"],
+                        # still a promise
+                        hashes_key_url=url_map[url_signature[0]],
                     )
                 )
 
-        errors = []
         for coro in asyncio.as_completed(ops):
             try:
                 await coro

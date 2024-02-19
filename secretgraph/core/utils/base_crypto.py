@@ -1,3 +1,4 @@
+import asyncio
 import copy
 import hashlib
 from base64 import b64decode, b64encode
@@ -9,10 +10,12 @@ from typing import Literal, Optional, TypeVar
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives import hashes, padding, serialization
 from cryptography.hazmat.primitives.asymmetric import rsa, utils
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+from cryptography.hazmat.primitives.hashes import Hash
 
 T = TypeVar("T")
-KeyType = TypeVar("KeyType")
+KeyType = TypeVar("KeyType", bytes)
 ParamsType = TypeVar("ParamsType", dict)
 
 
@@ -39,6 +42,7 @@ class KeyResult:
 class CryptoResult:
     data: bytes
     params: ParamsType = field(default_factory=dict)
+    key: Optional[bytes] = None
 
 
 @dataclass(frozen=True)
@@ -53,7 +57,7 @@ class DeriveAlgorithm(ABC):
     @classmethod
     @abstractmethod
     async def derive(
-        cls, inp: bytes, params: Optional[ParamsType] = None
+        cls, data: bytes, params: Optional[ParamsType] = None
     ) -> CryptoResult:
         pass
 
@@ -75,16 +79,24 @@ class EncryptionAlgorithm(ABC):
     @classmethod
     @abstractmethod
     async def encrypt(
-        cls, key: KeyType, inp: bytes, params: ParamsType
+        cls, key: KeyType, data: bytes, params: ParamsType
     ) -> CryptoResult:
         pass
 
     @classmethod
+    async def encryptor(cls, key: KeyType, params: ParamsType):
+        raise NotImplementedError()
+
+    @classmethod
     @abstractmethod
     async def decrypt(
-        cls, key: KeyType, inp: bytes, params: ParamsType
+        cls, key: KeyType, data: bytes, params: ParamsType
     ) -> CryptoResult:
         pass
+
+    @classmethod
+    async def decryptor(cls, key: KeyType, params: ParamsType) -> CryptoResult:
+        raise NotImplementedError()
 
     @classmethod
     @abstractmethod
@@ -96,8 +108,8 @@ class EncryptionAlgorithm(ABC):
         return ""
 
     @classmethod
-    async def deserialize(cls, inp: str, params: ParamsType) -> OptionalCryptoResult:
-        return OptionalCryptoResult(data=b64decode(inp), params=params or {})
+    async def deserialize(cls, data: str, params: ParamsType) -> OptionalCryptoResult:
+        return OptionalCryptoResult(data=b64decode(data), params=params or {})
 
 
 class SignatureAlgorithm(ABC):
@@ -116,6 +128,14 @@ class SignatureAlgorithm(ABC):
         pass
 
     @classmethod
+    async def getHasher(cls):
+        raise NotImplementedError()
+
+    @classmethod
+    async def finalize(cls) -> bytes:
+        raise NotImplementedError()
+
+    @classmethod
     @abstractmethod
     async def generateKey(cls, params: ParamsType) -> KeyType:
         pass
@@ -132,10 +152,16 @@ class SHA512Algo(DeriveAlgorithm):
     serializedName = "sha512"
 
     @classmethod
+    def _execute(cls, data):
+        return hashlib.new(cls.serializedName)(data).digest()
+
+    @classmethod
+    async def execute(cls, data):
+        return await asyncio.get_event_loop().run_in_executor(None, cls._execute, data)
+
+    @classmethod
     async def derive(cls, inp: bytes, params=None) -> CryptoResult:
-        return CryptoResult(
-            data=hashlib.new(cls.serializedName)(inp).digest(), params={}
-        )
+        return CryptoResult(data=await cls.execute(inp), params={})
 
     @classmethod
     async def serialize(cls, result: CryptoResult) -> str:
@@ -153,24 +179,59 @@ class PBKDF2sha512(DeriveAlgorithm):
     serializedName = "PBKDF2-sha512"
 
     @classmethod
+    def _execute(cls, iterations, salt, data):
+        return hashlib.pbkdf2_hmac(
+            cls.serializedName.split("-")[1],
+            data,
+            iterations=iterations,
+            salt=salt,
+            dklen=32,
+        ).digest()
+
+    @classmethod
+    async def execute(cls, iterations, salt, data):
+        return await asyncio.get_event_loop().run_in_executor(
+            None, cls._execute, iterations, salt, data
+        )
+
+    @classmethod
     async def derive(cls, inp: bytes, params=None) -> CryptoResult:
         if not params:
             params = {}
         else:
             params = copy.copy(params)
         params["iterations"] = int(params.get("iterations", 800000))
+        params["salt"] = params.get("salt", None)
+        if not params["salt"]:
+            params["salt"] = urandom(16)
+        if isinstance(params["salt"], str):
+            params["salt"] = b64decode(params["salt"])
 
         # for AESGCM compatibility cap at 32
         return CryptoResult(
-            data=hashlib.pbkdf2_hmac(
-                cls.serializedName.split("-")[1],
-                inp,
-                salt=params["salt"],
-                iterations=params["iterations"],
-                dklen=32,
-            ).digest(),
+            data=await cls.execute(params["iterations"], params["salt"], inp),
             params=params,
+            key=inp,
         )
+
+    @classmethod
+    async def deserialize(cls, inp: str, params=None):
+        if not params:
+            params = {}
+        else:
+            params = copy.copy(params)
+        splitted = inp.split(":")
+        if splitted.length >= 2:
+            splitted2 = splitted[0].split(",")
+            params["iterations"] = int(splitted2[0])
+            if splitted2.length > 2:
+                params["salt"] = splitted2[1]
+
+        if not params.get("salt"):
+            raise ValueError("no salt provided")
+        if isinstance(params["salt"], str):
+            params["salt"] = b64decode(params["salt"])
+        return CryptoResult(data=b64decode(splitted[-1]), params=params)
 
     @classmethod
     async def serialize(cls, result):
@@ -207,7 +268,11 @@ class OEAPsha512(EncryptionAlgorithm):
                     algorithm=hashalgo,
                     label=None,
                 ),
-            )
+            ),
+            key=key.public_bytes(
+                encoding=serialization.Encoding.DER,
+                format=serialization.PublicFormat.SubjectPublicKeyInfo,
+            ),
         )
 
     @classmethod
@@ -226,7 +291,11 @@ class OEAPsha512(EncryptionAlgorithm):
                     algorithm=hashalgo,
                     label=None,
                 ),
-            )
+            ),
+            key=key.private_bytes(
+                encoding=serialization.Encoding.DER,
+                format=serialization.PrivateFormat.PKCS8,
+            ),
         )
 
     @classmethod
@@ -240,6 +309,9 @@ class OEAPsha512(EncryptionAlgorithm):
             key=rsa.generate_private_key(
                 public_exponent=65537,
                 key_size=params["bits"],
+            ).private_bytes(
+                encoding=serialization.Encoding.DER,
+                format=serialization.PrivateFormat.PKCS8,
             ),
             params=params,
         )
@@ -274,6 +346,18 @@ class AESGCMAlgo(EncryptionAlgorithm):
         )
 
     @classmethod
+    async def encryptor(cls, key, params):
+        params = copy.copy(params)
+        if isinstance(params["nonce"], str):
+            params["nonce"] = b64decode(params["nonce"])
+        if isinstance(key, str):
+            key = b64decode(key)
+        return Cipher(
+            algorithms.AES(key),
+            modes.GCM(params["nonce"]),
+        ).encryptor()
+
+    @classmethod
     async def decrypt(cls, key, data, params):
         params = copy.copy(params)
         if isinstance(params["nonce"], str):
@@ -286,6 +370,18 @@ class AESGCMAlgo(EncryptionAlgorithm):
             data=key.decrypt(params["nonce"], data, None),
             params=params,
         )
+
+    @classmethod
+    async def decryptor(cls, key, params):
+        params = copy.copy(params)
+        if isinstance(params["nonce"], str):
+            params["nonce"] = b64decode(params["nonce"])
+        if isinstance(key, str):
+            key = b64decode(key)
+        return Cipher(
+            algorithms.AES(key),
+            modes.GCM(params["nonce"]),
+        ).decryptor()
 
     @classmethod
     async def serializeParams(params):
@@ -332,6 +428,16 @@ class RSASignsha512(SignatureAlgorithm):
                 hash2,
             )
         ).decode()
+
+    @classmethod
+    async def getHasher(cls):
+        hashalgo = cls.serializedName.split("-")[1].upper()
+        hashalgo = getattr(hashes, hashalgo)()
+        return Hash(hashalgo)
+
+    @classmethod
+    async def finalize(cls, hasher):
+        return hasher.finalize()
 
     @classmethod
     async def verify(cls, key, signature, data, prehashed=False):

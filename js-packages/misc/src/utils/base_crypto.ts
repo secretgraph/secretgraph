@@ -200,6 +200,9 @@ addWithVariants(
                     params.salt = splitted2[1]
                 }
             }
+            if (!params.salt) {
+                throw Error('no salt provided')
+            }
             const data = await unserializeToArrayBuffer(
                 splitted[splitted.length - 1]
             )

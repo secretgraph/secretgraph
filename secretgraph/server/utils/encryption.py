@@ -1,49 +1,24 @@
 import base64
 import logging
-import os
-import tempfile
-from io import BytesIO
 from typing import Iterable
 
 from cryptography import exceptions
-from cryptography.hazmat.primitives.asymmetric import padding
-from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-from cryptography.hazmat.primitives.ciphers.aead import AESGCM
-from cryptography.hazmat.primitives.serialization import load_der_private_key
-from django.conf import settings
 from django.db.models import Exists, F, OuterRef, Q, Subquery
 
-from ...core.constants import TransferResult, mapHashNames, public_states
+from ...core.constants import TransferResult, public_states
+from ...core.utils.crypto import (
+    decrypt,
+    decryptString,
+    deserializeEncryptedString,
+    encrypt,
+    getDecryptor,
+)
 from ..models import Content, ContentReference
 
 logger = logging.getLogger(__name__)
 
 
-def encrypt_into_file(infile, key=None, nonce=None, outfile=None):
-    if isinstance(infile, bytes):
-        infile = BytesIO(infile)
-    elif isinstance(infile, str):
-        infile = BytesIO(base64.b64decode(infile))
-    if not outfile:
-        outfile = tempfile.NamedTemporaryFile(
-            suffix=".encrypt", dir=settings.FILE_UPLOAD_TEMP_DIR
-        )
-    nonce = os.urandom(13)
-    if not key:
-        key = os.urandom(32)
-    encryptor = Cipher(algorithms.AES(key), modes.GCM(nonce)).encryptor()
-
-    chunk = infile.read(512)
-    while chunk:
-        assert isinstance(chunk, bytes)
-        outfile.write(encryptor.update(chunk))
-        chunk = infile.read(512)
-    outfile.write(encryptor.finalize())
-    outfile.write(encryptor.tag)
-    return outfile, nonce, key
-
-
-def create_key_maps(contents, keyset):
+async def create_key_maps(contents, keyset):
     """
     queries transfers and create content key map
     """
@@ -81,7 +56,7 @@ def create_key_maps(contents, keyset):
     )
     content_key_map = {}
     transfer_key_map = {}
-    for ref in reference_query.annotate(
+    async for ref in reference_query.annotate(
         matching_tag=Subquery(
             ContentTag.objects.filter(
                 content_id=OuterRef("target"), tag__in=key_map_key.keys()
@@ -90,33 +65,26 @@ def create_key_maps(contents, keyset):
         flexid=F("target__flexid"),
         flexid_cached=F("target__flexid_cached"),
     ):
-        split = ref.extra.split(":", 1)
-        if len(split) == 1:
-            logger.warning("Invalid key reference, does not contain hash algorithm")
+        try:
+            deserialized_result = await deserializeEncryptedString(ref.extra)
+        except Exception:
             continue
-        else:
-            esharedkey = base64.b64decode(split[1])
-            # TODO: will crash
-            algo = mapHashNames[split[0]].algorithm
-            key_padding = padding.OAEP(
-                mgf=padding.MGF1(algorithm=algo),
-                algorithm=algo,
-                label=None,
-            )
+        if not deserialized_result.data:
+            logger.warning("Invalid key reference, does not contain data")
+            continue
         shared_key = None
         matching_key = None
         if ref.matching_tag:
             matching_key = key_map_key[ref.matching_tag]
             if not matching_key:
                 continue
-            for key in key_query.filter(
-                references__target=ref.target, cryptoParameters__startswith="AESGCM:"
-            ):
+            async for key in key_query.filter(references__target=ref.target):
                 try:
-                    nonce = base64.b64decode(key.cryptoParameters.split(":", 1)[1])
-                    aesgcm = AESGCM(matching_key)
-                    privkey = aesgcm.decrypt(nonce, key.file.open("rb").read(), None)
-                    privkey = load_der_private_key(privkey, None)
+                    privkey_result = await decrypt(
+                        matching_key,
+                        key.file.open("rb").read(),
+                        params=key.cryptoParameters,
+                    )
                 except Exception as exc:
                     logger.warning(
                         "Could not decrypt privkey key (privkey)", exc_info=exc
@@ -124,9 +92,11 @@ def create_key_maps(contents, keyset):
                     continue
 
                 try:
-                    shared_key = privkey.decrypt(
-                        esharedkey,
-                        key_padding,
+                    shared_key = decrypt(
+                        privkey_result.key,
+                        deserialized_result.data,
+                        params=deserialized_result.params,
+                        algorithm=deserialized_result.serializedName,
                     )
                 except Exception as exc:
                     logger.warning("Could not decrypt shared key", exc_info=exc)
@@ -147,12 +117,17 @@ def create_key_maps(contents, keyset):
                 continue
 
             # try to decode shared key directly
-            aesgcm = None
             try:
-                aesgcm = AESGCM(matching_key)
-            except ValueError:
+                result = await deserializeEncryptedString(key.cryptoParameters)
+                encrypt(
+                    matching_key,
+                    b"a",
+                    params=result.params,
+                    algorithm=result.serializedName,
+                )
+            except Exception:
                 pass
-            if aesgcm:
+            else:
                 shared_key = matching_key
 
                 # prefer key from private key method
@@ -166,12 +141,12 @@ def create_key_maps(contents, keyset):
 
 
 class ProxyTag:
-    _decryptor = None
+    _key = None
     _query = None
 
-    def __init__(self, query, decryptor=None):
+    def __init__(self, query, key=None):
         self._query = query
-        self._decryptor = decryptor
+        self._key = key
 
     def _persist(self):
         if not isinstance(self._query, list):
@@ -190,20 +165,10 @@ class ProxyTag:
         # is tag
         if len(splitted) == 1:
             return True
-        if not self._decryptor or not splitted[0].startswith("~"):
+        if not self._key or not splitted[0].startswith("~"):
             return splitted[1]
         try:
-            m = base64.b64decode(splitted[1])
-        except Exception as exc:
-            logger.info(
-                "Cannot decrypt index: %s of content: %s",
-                index,
-                self._query[index].tag.content_id,
-                exc_info=exc,
-            )
-            return None
-        try:
-            return self._decryptor.decrypt(m[:13], m[13:])
+            return decryptString(self._key, splitted[1])
         except Exception as exc:
             logger.info(
                 "Cannot decrypt index: %s of content: %s",
@@ -225,16 +190,16 @@ class ProxyTag:
 
 
 class ProxyTags:
-    _decryptor = None
+    _key = None
     _query = None
 
     def __init__(self, query, key=None):
         self._query = query
-        self._decryptor = AESGCM(key) if key else None
+        self._key = key
 
     def __getattr__(self, attr):
         q = self._query.filter(Q(tag__startswith=attr) | Q(tag__startswith=f"~{attr}="))
-        return ProxyTag(q, self._decryptor)
+        return ProxyTag(q, self._key)
 
     def __contains__(self, attr):
         return len(getattr(self, attr)) > 0
@@ -300,12 +265,9 @@ def iter_decrypt_contents(
         # we can decrypt content now (transfers are also completed)
         if content.id in content_map:
             try:
-                decryptor = Cipher(
-                    algorithms.AES(content_map[content.id]),
-                    modes.GCM(
-                        base64.b64decode(content.cryptoParameters.split(":", 1)[1])
-                    ),
-                ).decryptor()
+                decryptor = getDecryptor(
+                    content_map[content.id], params=content.cryptoParameters
+                )
             except Exception as exc:
                 logger.warning("creating decrypting context failed", exc_info=exc)
                 continue
