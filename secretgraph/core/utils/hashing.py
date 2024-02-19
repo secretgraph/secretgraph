@@ -1,12 +1,14 @@
+import asyncio
 import base64
 from typing import Iterable, Optional
 
 import argon2
 from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.primitives.hashes import Hash
 
 from .. import constants
 from ..typings import PrivateCryptoKey, PublicCryptoKey
+from .base_crypto import DeriveAlgorithm
+from .crypto import findWorkingAlgorithms, mapDeriveAlgorithms
 
 
 class DuplicateSaltError(ValueError):
@@ -17,47 +19,12 @@ class MissingSaltError(ValueError):
     pass
 
 
-def findWorkingHashAlgorithms(
-    hashAlgorithms: Iterable[str] | str, failhard: bool = False
-) -> list[constants.HashNameItem]:
-    working_dict = {}
-    if isinstance(hashAlgorithms, str):
-        hashAlgorithms = hashAlgorithms.split(",")
-    for i in hashAlgorithms:
-        foundAlgo = constants.mapHashNames.get(i, None)
-        if foundAlgo:
-            working_dict[foundAlgo.serializedName] = foundAlgo
-        elif failhard:
-            raise ValueError("%s hash algorithm not found" % i)
-
-    return list(working_dict.values())
-
-
-def _hashObject(
-    inp: bytes | Iterable[bytes],
-    hashAlgorithm: constants.HashNameItem,
-) -> str:
-    hashCtx = Hash(hashAlgorithm.algorithm)
-    if isinstance(inp, bytes):
-        hashCtx.update(inp)
-        return "%s:%s" % (
-            hashAlgorithm.serializedName,
-            base64.b64encode(hashCtx.finalize()).decode(),
-        )
-    for chunk in inp:
-        hashCtx.update(chunk)
-    return "%s:%s" % (
-        hashAlgorithm.serializedName,
-        base64.b64encode(hashCtx.finalize()).decode(),
-    )
-
-
-def hashObject(
+async def hashObject(
     inp: bytes | PrivateCryptoKey | PublicCryptoKey | Iterable[bytes],
-    hashAlgorithm: constants.HashNameItem | str,
+    hashAlgorithm: DeriveAlgorithm | str,
 ) -> str:
     if isinstance(hashAlgorithm, str):
-        hashAlgorithm = constants.mapHashNames[hashAlgorithm]
+        hashAlgorithm = mapDeriveAlgorithms[hashAlgorithm]
 
     if isinstance(inp, str):
         inp = base64.b64decode(inp)
@@ -68,24 +35,23 @@ def hashObject(
             encoding=serialization.Encoding.DER,
             format=serialization.PublicFormat.SubjectPublicKeyInfo,
         )
-    return _hashObject(inp, hashAlgorithm)
+    result = await hashAlgorithm.derive(inp)
+    return base64.b64encode(result.data).decode()
 
 
-def hashObjectContentHash(
+async def hashObjectContentHash(
     obj: bytes | PrivateCryptoKey | PublicCryptoKey | Iterable[bytes],
     domain: str,
-    hashAlgorithm: constants.HashNameItem | str,
+    hashAlgorithm: DeriveAlgorithm | str,
 ) -> str:
-    return "%s:%s" % (domain, hashObject(obj, hashAlgorithm))
+    return "%s:%s" % (domain, await hashObject(obj, hashAlgorithm))
 
 
-def sortedHash(
+async def sortedHash(
     inp: Iterable[str], hashAlgorithm: constants.HashNameItem | str
 ) -> str:
-    if isinstance(hashAlgorithm, str):
-        hashAlgorithm = constants.mapHashNames[hashAlgorithm]
     obj = map(lambda x: x.encode("utf8"), sorted(inp))
-    return _hashObject(obj, hashAlgorithm)
+    return await hashObject(obj, hashAlgorithm)
 
 
 def generateArgon2RegistrySalt(
@@ -126,26 +92,26 @@ def sortedRegistryHashRaw(inp: Iterable[str], url: str) -> str:
     if not salt or not parameters:
         raise MissingSaltError("missing salt")
     obj = b"".join(sorted(obja))
-    return "argon2:%s" % argon2.PasswordHasher.from_parameters(
-        parameters
-    ).hash(obj, salt=salt)
+    return "argon2:%s" % argon2.PasswordHasher.from_parameters(parameters).hash(
+        obj, salt=salt
+    )
 
 
 def sortedRegistryHash(inp: Iterable[str], url: str, domain: str) -> str:
     return f"{domain}:{sortedRegistryHashRaw(inp, url)}"
 
 
-def hashTagsContentHash(
+async def hashTagsContentHash(
     inp: Iterable[str],
     domain: str,
     hashAlgorithm: constants.HashNameItem | str,
 ) -> str:
-    return "%s:%s" % (domain, sortedHash(inp, hashAlgorithm))
+    return "%s:%s" % (domain, await sortedHash(inp, hashAlgorithm))
 
 
-def calculateHashesForHashAlgorithms(
+async def calculateHashesForHashAlgorithms(
     inp: bytes | PrivateCryptoKey | PublicCryptoKey | Iterable[bytes],
-    hashAlgorithms: Iterable[constants.HashNameItem | str],
+    hashAlgorithms: Iterable[DeriveAlgorithm | str],
 ) -> list[str]:
     if isinstance(inp, str):
         inp = base64.b64decode(inp)
@@ -159,16 +125,14 @@ def calculateHashesForHashAlgorithms(
     hashes = []
     for hashAlgorithm in hashAlgorithms:
         if isinstance(hashAlgorithm, str):
-            hashAlgorithm = constants.mapHashNames[hashAlgorithm]
-        hashes.append(_hashObject(inp, hashAlgorithm))
-    return hashes
+            hashAlgorithm = mapDeriveAlgorithms[hashAlgorithm]
+        hashes.append(asyncio.create_task(hashAlgorithm.derive(inp)))
+    return (await asyncio.wait(hashes))[0]
 
 
-def calculateHashes(
-    inp, hashAlgorithms: Iterable[constants.HashNameItem | str], failhard=False
+async def calculateHashes(
+    inp, hashAlgorithms: Iterable[str], failhard=False
 ) -> list[str]:
-    hashAlgorithms = findWorkingHashAlgorithms(
-        hashAlgorithms, failhard=failhard
-    )
+    hashAlgorithms = findWorkingAlgorithms(hashAlgorithms, "hash", failhard=failhard)
     assert len(hashAlgorithms) > 0, "no working hash algorithms found"
-    return calculateHashesForHashAlgorithms(inp, hashAlgorithms)
+    return await calculateHashesForHashAlgorithms(inp, hashAlgorithms)

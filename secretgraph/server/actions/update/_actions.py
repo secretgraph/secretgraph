@@ -2,6 +2,7 @@ __all__ = ["manage_actions_fn"]
 
 
 import base64
+import hashlib
 import json
 import os
 from contextlib import nullcontext
@@ -18,7 +19,6 @@ from ...utils.auth import (
     retrieve_allowed_objects,
     stub_retrieve_allowed_objects,
 )
-from ...utils.hashing import hashObject
 from ...utils.misc import refresh_fields
 from ._arguments import ActionInput
 
@@ -110,7 +110,10 @@ def manage_actions_fn(
         if len(action_key) not in _valid_lengths:
             raise ValueError("Invalid key size")
 
-        action_key_hash = hashObject((b"secretgraph", action_key))
+        # FIXME: make configurable, would require to async all
+        hashCtx = hashlib.sha512(b"secretgraph")
+        hashCtx.update(action_key)
+        action_key_hash = f"sha512:{base64.b64encode(hashCtx.digest()).decode()}"
         action_value = ActionHandler.clean_action(
             action_value,
             request=request,
@@ -166,9 +169,7 @@ def manage_actions_fn(
                 allowed_and_existing_actions.filter(delete_q).delete()
             if add_actions:
                 if create:
-                    Action.objects.bulk_create(
-                        refresh_fields(add_actions, "cluster")
-                    )
+                    Action.objects.bulk_create(refresh_fields(add_actions, "cluster"))
                     if content:
                         ContentAction.objects.bulk_create(
                             map(

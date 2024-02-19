@@ -1,13 +1,18 @@
-# TODO
+# TODO urgent
+
+Currently the whole code is failing, why? New harmonized Crypto system. Fix this!
 
 -   make ts base-crypto static classes and methods
+-   asyncify manage_action_fn for allowing hash selection
 -   expand hashing to to general derive tool
--   extract params from string (without decrypting/encrypting)
--   create key fn for mapEncryption/mapSignature
--   add compatibility check for keys, or doesn't fail when a keys fails
+-   use key fn of mapEncryption/mapSignature
+-   add compatibility check for keys, or doesn't fail when a key fails
 -   remove mapKeyusages
 -   complete the crypto refactory of ts code
--   major refactory of python code to the new crypto system, add algorithm field or params field for Content
+-   major refactory of python code to the new crypto system
+
+# TODO
+
 -   goToNode document node change function
 -   document how to add elements, cannot use goToNode here
 -   editor for Personal Data (in progress)

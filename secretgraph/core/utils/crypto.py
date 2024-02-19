@@ -33,17 +33,17 @@ ParamsInputType2 = TypeVar(
 )
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, kw_only=True)
 class FullCryptoResult(CryptoResult):
     serializedName: str
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, kw_only=True)
 class FullOptionalCryptoResult(OptionalCryptoResult):
     serializedName: str
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, kw_only=True)
 class FullKeyResult(KeyResult):
     serializedName: str
 
@@ -56,6 +56,7 @@ def findWorkingAlgorithms(
     | Literal["asymmetric"]
     | Literal["signature"]
     | Literal["all"],
+    failhard=False,
 ) -> list[str]:
     # only dicts are insertion order stable
     algos = {}
@@ -89,6 +90,8 @@ def findWorkingAlgorithms(
             algo
         ]:
             found = mapSignatureAlgorithms[algo].serializedName
+        elif failhard:
+            raise UnknownAlgorithm("Unknown algorithm: " + algo)
         if found and not algos.has(found):
             algos.add(found)
     return algos.keys()

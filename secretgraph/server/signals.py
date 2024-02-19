@@ -1,7 +1,6 @@
 import logging
 import uuid
 from datetime import timedelta as td
-from itertools import islice, product
 
 from django.db import models, transaction
 from django.db.utils import IntegrityError
@@ -140,8 +139,7 @@ def deleteSizeCommitCb(sender, instance, **kwargs):
         # don't update last_used, as it is not an interaction
         # and can be triggered by everyone
         Net.objects.filter(id=instance.net_id).update(
-            bytes_in_use=models.F("bytes_in_use")
-            - instance._deletion_size_calc_cache
+            bytes_in_use=models.F("bytes_in_use") - instance._deletion_size_calc_cache
         )
 
 
@@ -149,16 +147,12 @@ def deleteContentCb(sender, instance, **kwargs):
     from .models import ContentReference
 
     references = ContentReference.objects.filter(target=instance)
-    other_references = ContentReference.objects.filter(
-        ~models.Q(target=instance)
-    )
+    other_references = ContentReference.objects.filter(~models.Q(target=instance))
     nogroup_references = references.filter(
         deleteRecursive=DeleteRecursive.NO_GROUP.value,
     )
 
-    recursive_references = references.filter(
-        deleteRecursive=DeleteRecursive.TRUE.value
-    )
+    recursive_references = references.filter(deleteRecursive=DeleteRecursive.TRUE.value)
     # delete recursive connected contents
     sender.objects.filter(references__in=recursive_references).delete()
 
@@ -204,9 +198,7 @@ def generateFlexidAndDownloadId(sender, instance, force=False, **kwargs):
             if i >= 99:
                 raise ValueError("A possible infinite loop was detected")
             instance.flexid = str(uuid.uuid4())
-            instance.flexid_cached = to_base64(
-                sender.__name__, instance.flexid
-            )
+            instance.flexid_cached = to_base64(sender.__name__, instance.flexid)
             try:
                 with transaction.atomic():
                     instance.save(update_fields=["flexid", "flexid_cached"])
@@ -287,11 +279,13 @@ def fillOldEmptyCb(**kwargs):
         generateFlexidAndDownloadId(Content, c, False)
 
 
-def regenerateKeyHash(force=False, **kwargs):
+async def regenerateKeyHash(force=False, **kwargs):
     from django.conf import settings
 
     from .models import Content, ContentTag
     from .utils.hashing import calculateHashes
+
+    batch_size = 1000
 
     contents = Content.objects.filter(type="PublicKey")
     current_prefix = f"Key:{settings.SECRETGRAPH_HASH_ALGORITHMS[0]}:"
@@ -300,8 +294,8 @@ def regenerateKeyHash(force=False, **kwargs):
         contents = contents.exclude(contentHash__startswith=current_prefix)
 
     # distinct on contentHash field currently only for postgresql
-    for content in contents:
-        chashes = calculateHashes(content.load_pubkey())
+    async for content in contents.aiterator(batch_size):
+        chashes = await calculateHashes(content.load_pubkey())
         until_index = 0
         strippedContentHash = content.contentHash.removeprefix("Key:")
         for i in chashes:
@@ -315,43 +309,32 @@ def regenerateKeyHash(force=False, **kwargs):
         if until_index == 0:
             continue
 
-        #
         tags = list(map(lambda x: "key_hash=%s" % x, chashes))
-        batch_size = 1000
         # exclude Contents with current key_hash
         contents_to_update = Content.objects.exclude(tags__tag=tags[0]).filter(
             models.Q(tags__tag__in=tags[until_index:])
         )
         while True:
-            batch = [
-                ContentTag(tag=tag, content=c)
-                for (tag, c) in product(
-                    tags[:until_index], islice(contents_to_update, batch_size)
-                )
-            ]
-            if not batch:
-                break
-            # ignore duplicate key_hash entries
-            ContentTag.objects.bulk_create(batch, ignore_conflicts=True)
-        Content.objects.filter(
+            async for content_to_update in contents_to_update.aiterator(batch_size):
+                batch = [ContentTag(tag=tag, content=content_to_update) for tag in tags]
+                await ContentTag.objects.abulk_create(batch, ignore_conflicts=True)
+        await Content.objects.filter(
             contentHash__in=map(lambda x: f"Key:{x}", chashes[1:]),
             type="PublicKey",
-        ).update(contentHash=f"Key:{chashes[0]}")
+        ).aupdate(contentHash=f"Key:{chashes[0]}")
 
 
 def rollbackUsedActionsAndFreeze(request, **kwargs):
     from .models import Action, Content, ContentTag
 
     if getattr(request, "secretgraphActionsToRollback", None):
-        Action.objects.filter(
-            id__in=request.secretgraphActionsToRollback
-        ).update(used=None)
+        Action.objects.filter(id__in=request.secretgraphActionsToRollback).update(
+            used=None
+        )
     if getattr(request, "secretgraphFreezeToRollback", None):
         for i in range(0, 1000):
             if i >= 999:
-                logger.error(
-                    "A possible infinite loop was detected, don't unfreeze"
-                )
+                logger.error("A possible infinite loop was detected, don't unfreeze")
             try:
                 with transaction.atomic():
                     contents = Content.objects.filter(
@@ -373,9 +356,9 @@ def autoUnlock(**kwargs):
     from .models import Content
 
     now = timezone.now()
-    Content.objects.filter(
-        locked__lt=now - td(days=2), locked__isnull=False
-    ).update(locked=None)
+    Content.objects.filter(locked__lt=now - td(days=2), locked__isnull=False).update(
+        locked=None
+    )
 
 
 async def sweepOutdated(ignoreTime=False, **kwargs):
@@ -388,28 +371,32 @@ async def sweepOutdated(ignoreTime=False, **kwargs):
     cas = ContentAction.objects.filter(group="fetch")
     cas_trigger = cas.filter(action__used__isnull=False)
     cas_disarm = cas.filter(action__used__isnull=True)
-    await Content.objects.alias(
-        latest_used=models.Subquery(
-            cas_trigger.filter(content_id=models.OuterRef("id"))
-            .order_by("-action__used")
-            .values("action__used")[:1],
+    await (
+        Content.objects.alias(
+            latest_used=models.Subquery(
+                cas_trigger.filter(content_id=models.OuterRef("id"))
+                .order_by("-action__used")
+                .values("action__used")[:1],
+            )
         )
-    ).filter(
-        ~models.Exists(cas_disarm.filter(content_id=models.OuterRef("id"))),
-        latest_used__isnull=False,  # no trigger
-    ).aupdate(
-        markForDestruction=models.F("latest_used") + td(hours=24)
+        .filter(
+            ~models.Exists(cas_disarm.filter(content_id=models.OuterRef("id"))),
+            latest_used__isnull=False,  # no trigger
+        )
+        .aupdate(markForDestruction=models.F("latest_used") + td(hours=24))
     )
     # update all non-destructing contents of clusters in destruction with
     # the markForDestruction of the cluster
-    await Content.objects.alias(
-        ClusterMarkForDestruction=models.Subquery(
-            Cluster.objects.filter(id=models.OuterRef("cluster_id")).values(
-                "markForDestruction"
+    await (
+        Content.objects.alias(
+            ClusterMarkForDestruction=models.Subquery(
+                Cluster.objects.filter(id=models.OuterRef("cluster_id")).values(
+                    "markForDestruction"
+                )
             )
         )
-    ).exclude(ClusterMarkForDestruction=None).aupdate(
-        markForDestruction=models.F("ClusterMarkForDestruction")
+        .exclude(ClusterMarkForDestruction=None)
+        .aupdate(markForDestruction=models.F("ClusterMarkForDestruction"))
     )
 
     # cleanup expired Contents

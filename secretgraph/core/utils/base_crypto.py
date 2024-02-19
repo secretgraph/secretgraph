@@ -1,11 +1,11 @@
 import asyncio
 import copy
 import hashlib
+from abc import ABC, abstractmethod
 from base64 import b64decode, b64encode
-from collections.abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from os import urandom
-from typing import Literal, Optional, TypeVar
+from typing import Iterable, Literal, Optional, TypeVar
 
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives import hashes, padding, serialization
@@ -15,8 +15,8 @@ from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.primitives.hashes import Hash
 
 T = TypeVar("T")
-KeyType = TypeVar("KeyType", bytes)
-ParamsType = TypeVar("ParamsType", dict)
+KeyType = TypeVar("KeyType", bound=bytes)
+ParamsType = TypeVar("ParamsType", bound=dict)
 
 
 def addWithVariants(
@@ -57,7 +57,7 @@ class DeriveAlgorithm(ABC):
     @classmethod
     @abstractmethod
     async def derive(
-        cls, data: bytes, params: Optional[ParamsType] = None
+        cls, data: bytes | Iterable[bytes], params: Optional[ParamsType] = None
     ) -> CryptoResult:
         pass
 
@@ -152,15 +152,21 @@ class SHA512Algo(DeriveAlgorithm):
     serializedName = "sha512"
 
     @classmethod
-    def _execute(cls, data):
-        return hashlib.new(cls.serializedName)(data).digest()
+    def _execute(cls, data: bytes | Iterable[bytes]):
+        hashCtx = hashlib.new(cls.serializedName)()
+        if isinstance(data, bytes):
+            hashCtx.update(data)
+        else:
+            for chunk in data:
+                hashCtx.update(chunk)
+        return hashCtx.digest()
 
     @classmethod
-    async def execute(cls, data):
+    async def execute(cls, data: bytes | Iterable[bytes]):
         return await asyncio.get_event_loop().run_in_executor(None, cls._execute, data)
 
     @classmethod
-    async def derive(cls, inp: bytes, params=None) -> CryptoResult:
+    async def derive(cls, inp: bytes | Iterable[bytes], params=None) -> CryptoResult:
         return CryptoResult(data=await cls.execute(inp), params={})
 
     @classmethod

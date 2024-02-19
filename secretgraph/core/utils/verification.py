@@ -4,15 +4,13 @@ from typing import Callable, Iterable, Optional
 from urllib.parse import parse_qs, urljoin
 
 import httpx
-from cryptography.hazmat.primitives.serialization import load_der_public_key
 
 from ...queries.content import contentVerificationQuery
 from ..constants import HashNameItem
-from .crypto import mapSignatureAlgorithms
+from .crypto import findWorkingAlgorithms, mapSignatureAlgorithms
 from .crypto import verify as crypto_verify
 from .hashing import (
     calculateHashesForHashAlgorithms,
-    findWorkingHashAlgorithms,
 )
 
 logger = logging.getLogger(__name__)
@@ -101,7 +99,7 @@ async def verify(
     errors = []
     if raw_hashalgorithms and raw_gqlpath:
         ops = []
-        hashalgorithms = findWorkingHashAlgorithms(raw_hashalgorithms.split(","))
+        hashalgorithms = findWorkingAlgorithms(raw_hashalgorithms.split(","), "hash")
         graphqlurl = urljoin(splitted_url[0], raw_gqlpath)
 
         url_map = {}

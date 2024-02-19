@@ -497,8 +497,8 @@ export async function decryptContentObject({
     // if this fails, it means shared key and encrypted object doesn't match
     try {
         return {
-            ...(await decryptString(key, _node.cryptoParameters, {
-                data2: arrPromise,
+            ...(await decrypt(key, arrPromise, {
+                params: _node.cryptoParameters,
             })),
             tags: await extractTags({ key, tags: nodeData.tags }),
             updateId: nodeData.updateId,
