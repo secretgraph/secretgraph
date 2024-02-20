@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import base64
 import logging
 from functools import partial, reduce
@@ -7,14 +8,13 @@ from itertools import chain, islice
 from operator import or_
 from typing import TYPE_CHECKING, Iterable, Optional, cast
 
-from asgiref.sync import sync_to_async
+from asgiref.sync import async_to_sync, sync_to_async
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from django.apps import apps
 from django.conf import settings
 from django.db import models
 from django.utils import timezone
 from strawberry import relay
-from strawberry_django import django_resolver
 
 from ...core import constants
 from ..actions.handler import ActionHandler
@@ -44,6 +44,7 @@ class LazyViewResult(object):
         self.request = request
         self.authset = authset
         self.fn = fn
+        self.sync_fn = async_to_sync(self.fn)
         for r in viewResults:
             self._result_dict[r["objects_with_public"].model.__name__] = r
         if self.authset is None:
@@ -59,41 +60,52 @@ class LazyViewResult(object):
         if item == "authset":
             return self.authset
         if item not in self._result_dict:
-            self._result_dict[item] = self.fn(
+            self._result_dict[item] = self.sync_fn(
                 self.request,
                 item,
                 authset=self.authset,
             )
         return self._result_dict[item]
 
-    @sync_to_async
-    def aat(self, item):
-        return self[item]
+    async def aat(self, item):
+        if item == "authset":
+            return self.authset
 
-    @django_resolver
-    def get(self, item, default=None):
-        try:
-            return self.__getitem__(item)
-        except KeyError:
-            return default
+        if item not in self._result_dict:
+            self._result_dict[item] = await self.fn(
+                self.request,
+                item,
+                authset=self.authset,
+            )
+        return self._result_dict[item]
 
     def refresh(self, *fields):
         for i in fields:
             if i in self._result_dict:
                 del self._result_dict[i]
 
-    @django_resolver
     def preinit(self, *fields, refresh=False):
+        try:
+            loop = asyncio.get_event_loop()
+        except RuntimeError:
+            loop = None
+        ops = []
         for i in fields:
             if refresh and i in self._result_dict:
                 del self._result_dict[i]
-            self[i]
+            if i not in self._result_dict:
+                if not loop:
+                    self[i]
+                else:
+                    ops.append(self.aat(i))
+        if loop:
+            return asyncio.gather(ops)
 
 
 _valid_lengths = {32, 50}
 
 
-def _parse_token(token: str):
+async def _parse_token(token: str):
     spitem = token.split(":", 1)
     if len(spitem) != 2:
         return None, None, None
@@ -102,19 +114,16 @@ def _parse_token(token: str):
     try:
         action_key = base64.b64decode(action_key)
     finally:
-        if (
-            not isinstance(action_key, bytes)
-            or len(action_key) not in _valid_lengths
-        ):
+        if not isinstance(action_key, bytes) or len(action_key) not in _valid_lengths:
             return None, None, None
     return (
         flexid_raw,
         AESGCM(action_key[-32:]),
-        calculateHashes((b"secretgraph", action_key)),
+        await calculateHashes((b"secretgraph", action_key)),
     )
 
 
-def _speedup_tokenparsing(
+async def _speedup_tokenparsing(
     request: HttpRequest, token: str
 ) -> tuple[str, AESGCM, list[str]]:
     if not token:
@@ -122,13 +131,13 @@ def _speedup_tokenparsing(
     if not hasattr(request, "_secretgraph_token_cache"):
         setattr(request, "_secretgraph_token_cache", {})
     if token not in request._secretgraph_token_cache:
-        result = _parse_token(token)
+        result = await _parse_token(token)
         request._secretgraph_token_cache[token] = result
         return result
     return request._secretgraph_token_cache[token]
 
 
-def stub_retrieve_allowed_objects(
+async def stub_retrieve_allowed_objects(
     request: HttpRequest,
     query: models.QuerySet | str,
     scope: Scope = "view",
@@ -147,14 +156,10 @@ def stub_retrieve_allowed_objects(
         authset = set(authset)
 
     if len(authset) > 100:
-        raise ValueError(
-            "Too many authorization tokens specified, limit is 100"
-        )
+        raise ValueError("Too many authorization tokens specified, limit is 100")
 
     if isinstance(query, str):
-        query = getattr(
-            apps.get_model("secretgraph", query).objects, query_call
-        )()
+        query = getattr(apps.get_model("secretgraph", query).objects, query_call)()
 
     return {
         "authset": authset,
@@ -172,7 +177,7 @@ def stub_retrieve_allowed_objects(
     }
 
 
-def retrieve_allowed_objects(
+async def retrieve_allowed_objects(
     request: HttpRequest,
     query: models.QuerySet | str,
     scope: Scope = "view",
@@ -192,9 +197,7 @@ def retrieve_allowed_objects(
         authset = set(authset)
 
     if len(authset) > 100:
-        raise ValueError(
-            "Too many authorization tokens specified, limit is 100"
-        )
+        raise ValueError("Too many authorization tokens specified, limit is 100")
     if isinstance(query, str):
         query = apps.get_model("secretgraph", query).objects.all()
         need_query_restriction = False
@@ -219,21 +222,15 @@ def retrieve_allowed_objects(
             pre_filtered_actions = pre_filtered_actions.filter(
                 models.Q(
                     contentAction__isnull=True,
-                    cluster_id__in=models.Subquery(
-                        related_cluster_query.values("id")
-                    ),
+                    cluster_id__in=models.Subquery(related_cluster_query.values("id")),
                 )
                 | models.Q(contentAction__content__in=query)
             )
         elif issubclass(query.model, Cluster):
-            pre_filtered_actions = pre_filtered_actions.filter(
-                cluster__in=query
-            )
+            pre_filtered_actions = pre_filtered_actions.filter(cluster__in=query)
     # only show non content actions
     if issubclass(query.model, Cluster):
-        pre_filtered_actions = pre_filtered_actions.filter(
-            contentAction__isnull=True
-        )
+        pre_filtered_actions = pre_filtered_actions.filter(contentAction__isnull=True)
 
     returnval = {
         "authset": authset,
@@ -250,20 +247,20 @@ def retrieve_allowed_objects(
     query_composing = {}
     passive_active_actions = set()
     for item in authset:
-        flexid_cached, aesgcm, keyhashes = _speedup_tokenparsing(request, item)
+        flexid_cached, aesgcm, keyhashes = await _speedup_tokenparsing(request, item)
         if not aesgcm:
             continue
 
-        q = models.Q(
-            contentAction__content__flexid_cached=flexid_cached
-        ) | models.Q(cluster__flexid_cached=flexid_cached)
+        q = models.Q(contentAction__content__flexid_cached=flexid_cached) | models.Q(
+            cluster__flexid_cached=flexid_cached
+        )
         if issubclass(query.model, Cluster):
             # don't block auth with encoded @system
             q |= models.Q(cluster__name_cached=flexid_cached)
         # execute every action only once
-        actions = pre_filtered_actions.filter(
-            q, keyHash__in=keyhashes
-        ).exclude(id__in=returnval["action_results"].keys())
+        actions = pre_filtered_actions.filter(q, keyHash__in=keyhashes).exclude(
+            id__in=returnval["action_results"].keys()
+        )
         if not actions:
             continue
 
@@ -274,9 +271,9 @@ def retrieve_allowed_objects(
         # 2 owner
         # 3 special
         accesslevel = 0
-        for action in actions:
+        async for action in actions:
             action_dict = action.decrypt_aesgcm(aesgcm)
-            action_result = ActionHandler.handle_action(
+            action_result = await ActionHandler.handle_action(
                 query.model,
                 action_dict,
                 scope=scope,
@@ -293,13 +290,13 @@ def retrieve_allowed_objects(
                 returnval["objects_without_public"] = query.none()
                 return returnval
             if hasattr(action, "contentAction"):
-                action_info_dict_ref = returnval[
-                    "action_info_contents"
-                ].setdefault(action.contentAction.content_id, {})
+                action_info_dict_ref = returnval["action_info_contents"].setdefault(
+                    action.contentAction.content_id, {}
+                )
             else:
-                action_info_dict_ref = returnval[
-                    "action_info_clusters"
-                ].setdefault(action.cluster_id, {})
+                action_info_dict_ref = returnval["action_info_clusters"].setdefault(
+                    action.cluster_id, {}
+                )
             returnval["action_results"].setdefault(action.id, action_result)
 
             newaccesslevel = action_result["accesslevel"]
@@ -307,9 +304,9 @@ def retrieve_allowed_objects(
                 accesslevel = newaccesslevel
                 filters = action_result.get("filters", models.Q())
 
-                action_info_dict_ref[
-                    (action_dict["action"], action.keyHash)
-                ] = [action.id]
+                action_info_dict_ref[(action_dict["action"], action.keyHash)] = [
+                    action.id
+                ]
                 returnval["active_actions"] = set()
             elif accesslevel == newaccesslevel:
                 filters &= action_result.get("filters", models.Q())
@@ -329,7 +326,7 @@ def retrieve_allowed_objects(
 
             # update hash to newest algorithm
             if action.keyHash != keyhashes[0]:
-                Action.objects.filter(keyHash=action.keyHash).update(
+                await Action.objects.filter(keyHash=action.keyHash).aupdate(
                     keyHash=keyhashes[0]
                 )
 
@@ -339,9 +336,7 @@ def retrieve_allowed_objects(
         if issubclass(query.model, Cluster):
             _query = query.filter(filters & models.Q(id=actions[0].cluster_id))
         else:
-            _query = query.filter(
-                filters & models.Q(cluster_id=actions[0].cluster_id)
-            )
+            _query = query.filter(filters & models.Q(cluster_id=actions[0].cluster_id))
         if returnval["accesslevel"] < accesslevel:
             returnval["accesslevel"] = accesslevel
         if actions[0].cluster.flexid in query_composing:
@@ -376,7 +371,7 @@ def retrieve_allowed_objects(
         request.secretgraphActionsToRollback.update(
             updatedActions.values_list("id", flat=True)
         )
-        updatedActions.update(used=now)
+        await updatedActions.aupdate(used=now)
 
     # extract subqueries union them
     all_query = reduce(
@@ -400,28 +395,20 @@ def retrieve_allowed_objects(
             _q_public = _q | models.Q(globalNameRegisteredAt__isnull=False)
 
         id_subquery = models.Subquery(query.filter(_q_public).values("id"))
-        id_subquery_without_public = models.Subquery(
-            query.filter(_q).values("id")
-        )
+        id_subquery_without_public = models.Subquery(query.filter(_q).values("id"))
     elif issubclass(query.model, Content):
         _q = models.Q(id__in=models.Subquery(all_query.values("id"))) & (
             models.Q(id__in=list(returnval["action_info_contents"].keys()))
-            | models.Q(
-                cluster_id__in=list(returnval["action_info_clusters"].keys())
-            )
+            | models.Q(cluster_id__in=list(returnval["action_info_clusters"].keys()))
         )
 
         _q_public = models.Q(state__in=constants.public_states)
         if scope != "view":
             _q_public &= ~models.Q(cluster__name="@system")
 
-        id_subquery = models.Subquery(
-            query.filter(_q_public | _q).values("id")
-        )
+        id_subquery = models.Subquery(query.filter(_q_public | _q).values("id"))
 
-        id_subquery_without_public = models.Subquery(
-            query.filter(_q).values("id")
-        )
+        id_subquery_without_public = models.Subquery(query.filter(_q).values("id"))
     else:
         assert issubclass(query.model, Action), "invalid type %r" % query.model
         id_subquery = models.Subquery(all_query.values("id"))
@@ -491,7 +478,7 @@ def fetch_by_id(
     )
 
 
-def ids_to_results(
+async def ids_to_results(
     request,
     ids,
     klasses,
@@ -523,15 +510,11 @@ def ids_to_results(
             type_name: str = type(id).__name__
         else:
             raise ValueError(
-                "Only for {}. Provided: {}".format(
-                    ",".join(klasses_d.keys()), id
-                )
+                "Only for {}. Provided: {}".format(",".join(klasses_d.keys()), id)
             )
 
         if type_name not in klasses_d:
-            raise ValueError(
-                "Only for {} (ids)".format(",".join(klasses_d.keys()))
-            )
+            raise ValueError("Only for {} (ids)".format(",".join(klasses_d.keys())))
         flexid_d.setdefault(type_name, set()).add(flexid)
     results = {}
     for type_name, klass in klasses_d.items():
@@ -539,9 +522,11 @@ def ids_to_results(
         if not initialize_missing and not flexids:
             pass
         elif cacheName:
-            results[type_name] = get_cached_result(
-                request, authset=authset, cacheName=cacheName
-            )[type_name].copy()
+            results[type_name] = (
+                await get_cached_result(
+                    request, authset=authset, cacheName=cacheName
+                ).aat(type_name)
+            ).copy()
             results[type_name]["objects_with_public"] = fetch_by_id_noconvert(
                 results[type_name]["objects_with_public"],
                 flexids,
@@ -549,9 +534,7 @@ def ids_to_results(
                 check_short_id=True,
                 check_short_name=True,
             )
-            results[type_name][
-                "objects_without_public"
-            ] = fetch_by_id_noconvert(
+            results[type_name]["objects_without_public"] = fetch_by_id_noconvert(
                 results[type_name]["objects_without_public"],
                 flexids,
                 check_long=False,
@@ -559,7 +542,7 @@ def ids_to_results(
                 check_short_name=True,
             )
         else:
-            results[type_name] = retrieve_allowed_objects(
+            results[type_name] = await retrieve_allowed_objects(
                 request,
                 fetch_by_id_noconvert(
                     klass.objects.all(),
@@ -608,9 +591,7 @@ def get_cached_result(
             request,
             cacheName,
             LazyViewResult(
-                partial(
-                    stub_retrieve_allowed_objects, scope=scope, query_call=stub
-                )
+                partial(stub_retrieve_allowed_objects, scope=scope, query_call=stub)
                 if stub
                 else partial(retrieve_allowed_objects, scope=scope),
                 request,
@@ -621,7 +602,7 @@ def get_cached_result(
     return getattr(request, cacheName)
 
 
-def get_cached_net_properties(
+async def aget_cached_net_properties(
     request,
     permissions_name="secretgraphNetProperties",
     result_name="secretgraphResult",
@@ -637,19 +618,17 @@ def get_cached_net_properties(
                 request,
                 cacheName=result_name,
             )["authset"]
-        query = retrieve_allowed_objects(
+        query = await retrieve_allowed_objects(
             request,
             Cluster.objects.filter(markForDestruction__isnull=True),
             scope="manage",
             authset=authset,
         )["objects_without_public"]
-        net_groups = NetGroup.objects.filter(
-            get_net_properties_q(request, query)
-        )
+        net_groups = NetGroup.objects.filter(get_net_properties_q(request, query))
         all_props = frozenset(
-            SGroupProperty.objects.filter(
-                netGroups__in=net_groups
-            ).values_list("name", flat=True)
+            await SGroupProperty.objects.filter(netGroups__in=net_groups).avalues_list(
+                "name", flat=True
+            )
         )
         setattr(
             request,
@@ -659,7 +638,7 @@ def get_cached_net_properties(
     return getattr(request, permissions_name)
 
 
-aget_cached_net_properties = sync_to_async(get_cached_net_properties)
+get_cached_net_properties = async_to_sync(aget_cached_net_properties)
 
 
 def update_cached_net_properties(
@@ -692,3 +671,6 @@ def update_cached_net_properties(
             )
         ),
     )
+
+
+aupdate_cached_net_properties = sync_to_async(update_cached_net_properties)

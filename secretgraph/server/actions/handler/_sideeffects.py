@@ -12,16 +12,14 @@ from ._shared import get_forbidden_content_ids, only_owned_helper
 
 class SideEffectsHandlers:
     @staticmethod
-    def do_inject(action_dict, scope, sender, accesslevel, **kwargs):
+    async def do_inject(action_dict, scope, sender, accesslevel, **kwargs):
         if scope in {"create", "update", "push"} and issubclass(
             sender, (Content, Cluster)
         ):
             if issubclass(sender, Content):
                 excl_filters_type = Q()
                 if action_dict["excludeTypes"]:
-                    excl_filters_type |= Q(
-                        type__in=action_dict["excludeTypes"]
-                    )
+                    excl_filters_type |= Q(type__in=action_dict["excludeTypes"])
                 excl_filters_tag = Q()
                 for i in action_dict["excludeTags"]:
                     if i.startswith("id="):
@@ -35,9 +33,7 @@ class SideEffectsHandlers:
 
                 incl_filters_type = Q()
                 if action_dict["includeTypes"]:
-                    incl_filters_type |= Q(
-                        type__in=action_dict["includeTypes"]
-                    )
+                    incl_filters_type |= Q(type__in=action_dict["includeTypes"])
                 incl_filters_state = Q()
                 if action_dict["states"]:
                     incl_filters_state |= Q(state__in=action_dict["states"])
@@ -63,9 +59,7 @@ class SideEffectsHandlers:
                     "allowedTypes": action_dict.get("allowedTypes", None),
                     "allowedStates": action_dict.get("allowedStates", None),
                     "injectedTags": action_dict.get("injectedTags", []),
-                    "injectedReferences": action_dict.get(
-                        "injectedReferences", []
-                    ),
+                    "injectedReferences": action_dict.get("injectedReferences", []),
                 }
             else:
                 return {
@@ -75,14 +69,12 @@ class SideEffectsHandlers:
                     "allowedTypes": action_dict.get("allowedTypes", None),
                     "allowedStates": action_dict.get("allowedStates", None),
                     "injectedTags": action_dict.get("injectedTags", []),
-                    "injectedReferences": action_dict.get(
-                        "injectedReferences", []
-                    ),
+                    "injectedReferences": action_dict.get("injectedReferences", []),
                 }
         return None
 
     @staticmethod
-    def clean_inject(action_dict, request, cluster, content, admin):
+    async def clean_inject(action_dict, request, cluster, content, admin):
         result = {
             "id": content.id if content and content.id else None,
             "injectedTags": [],
@@ -93,9 +85,7 @@ class SideEffectsHandlers:
         }
 
         if action_dict.get("includeTypes") and action_dict.get("excludeTypes"):
-            raise ValueError(
-                "Either includeTypes or excludeTypes should be specified"
-            )
+            raise ValueError("Either includeTypes or excludeTypes should be specified")
 
         if content:
             # ignore tags if specified for a content
@@ -106,7 +96,7 @@ class SideEffectsHandlers:
             result["excludeTypes"] = []
             result["excludeIds"] = []
         else:
-            result["excludeIds"] = list(get_forbidden_content_ids(request))
+            result["excludeIds"] = list(await get_forbidden_content_ids(request))
             exclude_tags = action_dict.get("excludeTags", [])
             result["excludeTags"] = list(map(str, exclude_tags))
             include_tags = action_dict.get("includeTags", [])
@@ -130,7 +120,7 @@ class SideEffectsHandlers:
         if references:
             if isinstance(references, list):
                 references = dict(map(lambda x: (x["target"], x), references))
-            for _flexid, _id in only_owned_helper(
+            for _flexid, _id in await only_owned_helper(
                 Content,
                 references.keys(),
                 request=request,
@@ -142,13 +132,9 @@ class SideEffectsHandlers:
                     "deleteRecursive", constants.DeleteRecursive.TRUE.value
                 )
                 # TODO: specify nicer
-                if (
-                    deleteRecursive
-                    not in constants.DeleteRecursive.valid_values
-                ):
+                if deleteRecursive not in constants.DeleteRecursive.valid_values:
                     raise ValueError(
-                        "invalid deleteRecursive specification "
-                        "in injected reference"
+                        "invalid deleteRecursive specification " "in injected reference"
                     )
                 result["injectedReferences"].append(
                     {
@@ -160,51 +146,49 @@ class SideEffectsHandlers:
         return result
 
     @staticmethod
-    def do_storedUpdate(action_dict, scope, **kwargs):
+    async def do_storedUpdate(action_dict, scope, **kwargs):
         now = timezone.now()
-        mintime = dt.strptime(
-            action_dict["minExpire"], r"%a, %d %b %Y %H:%M:%S %z"
-        )
+        mintime = dt.strptime(action_dict["minExpire"], r"%a, %d %b %Y %H:%M:%S %z")
         for klass in [Cluster, Content, Action]:
             type_name = klass.__name__
             if action_dict["delete"][type_name]:
                 if type_name == "Action" or now >= mintime:
-                    klass.objects.filter(
+                    await klass.objects.filter(
                         id__in=action_dict["delete"][type_name]
-                    ).delete()
+                    ).adelete()
                 elif type_name == "Content":
-                    Content.objects.filter(
+                    await Content.objects.filter(
                         Q(markForDestruction__isnull=True)
                         | Q(markForDestruction__gt=mintime),
                         id__in=action_dict["delete"][type_name],
-                    ).update(markForDestruction=mintime)
+                    ).aupdate(markForDestruction=mintime)
                 elif type_name == "Cluster":
-                    Content.objects.filter(
+                    await Content.objects.filter(
                         Q(markForDestruction__isnull=True)
                         | Q(markForDestruction__gt=mintime),
                         cluster_id__in=action_dict["delete"][type_name],
-                    ).update(markForDestruction=mintime)
-                    Cluster.objects.filter(
+                    ).aupdate(markForDestruction=mintime)
+                    await Cluster.objects.filter(
                         Q(markForDestruction__isnull=True)
                         | Q(markForDestruction__gt=mintime),
                         id__in=action_dict["delete"][type_name],
-                    ).update(markForDestruction=mintime)
+                    ).aupdate(markForDestruction=mintime)
             for _id, updatevalues in action_dict["update"][type_name].items():
                 for k in list(updatevalues.keys()):
                     if k not in constants.storedUpdateFields[type_name]:
                         updatevalues.pop(k, None)
-                klass.objects.filter(id=_id).update(updatevalues)
+                await klass.objects.filter(id=_id).aupdate(updatevalues)
         return None
 
     @staticmethod
-    def clean_storedUpdate(action_dict, request, cluster, content, admin):
-        from ...utils.auth import get_cached_net_properties
+    async def clean_storedUpdate(action_dict, request, cluster, content, admin):
+        from ...utils.auth import aget_cached_net_properties
 
         if content:
             raise ValueError("storedUpdate cannot be used as contentaction")
         if (
             "allow_dangerous_actions"
-            not in get_cached_net_properties(
+            not in await aget_cached_net_properties(
                 request, authset=request.secretgraphCleanResult.authset
             )
             and "allow_dangerous_actions" not in cluster.properties
@@ -231,7 +215,7 @@ class SideEffectsHandlers:
         for klass in [Cluster, Content, Action]:
             type_name = klass.__name__
             result["delete"][type_name] = list(
-                only_owned_helper(
+                await only_owned_helper(
                     klass,
                     result["delete"][type_name],
                     request,
@@ -251,9 +235,7 @@ class SideEffectsHandlers:
         for jsonob in action_dict.get("update") or {}:
             newob = {}
             type_name, idpart = relay.from_base64(jsonob["id"])
-            for name, field_type in constants.storedUpdateFields[
-                type_name
-            ].items():
+            for name, field_type in constants.storedUpdateFields[type_name].items():
                 if name in jsonob:
                     if not isinstance(jsonob[name], field_type):
                         raise ValueError(
@@ -265,19 +247,15 @@ class SideEffectsHandlers:
 
         for klass in [Cluster, Content, Action]:
             type_name = klass.__name__
-            for _flexid, _id in only_owned_helper(
+            for _flexid, _id in await only_owned_helper(
                 klass,
                 update_mapper[type_name].keys(),
                 request=request,
-                fields=(
-                    ("id", "id") if type_name == "Action" else ("flexid", "id")
-                ),
+                fields=(("id", "id") if type_name == "Action" else ("flexid", "id")),
                 admin=admin,
                 scope="update",
             ):
                 if _id in _del_sets[type_name]:
                     continue
-                result["update"][type_name][_id] = update_mapper[type_name][
-                    _flexid
-                ]
+                result["update"][type_name][_id] = update_mapper[type_name][_flexid]
         return result

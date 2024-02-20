@@ -7,17 +7,19 @@ from typing import TypedDict
 from uuid import UUID, uuid4
 
 import django_fast_ratelimit as ratelimit
+from asgiref.sync import sync_to_async
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import F
 from django.utils import timezone
+from strawberry_django import django_resolver
 
 from ....core import constants
 from ....core.exceptions import ResourceLimitExceeded
 from ...models import Cluster, ClusterGroup, Net, NetGroup, SGroupProperty
 from ...utils.auth import (
+    aget_cached_net_properties,
     fetch_by_id,
-    get_cached_net_properties,
     get_cached_result,
     retrieve_allowed_objects,
 )
@@ -34,7 +36,7 @@ class Result(TypedDict):
     writeok: bool
 
 
-def _update_or_create_cluster(
+async def _update_or_create_cluster(
     request, cluster: Cluster, objdata: ClusterInput, authset
 ):
     create_cluster = not cluster.id
@@ -74,17 +76,19 @@ def _update_or_create_cluster(
         or objdata.netGroups
         or isinstance(net, str)
     ):
-        manage = retrieve_allowed_objects(
-            request,
-            "Cluster",
-            scope="manage",
-            authset=authset,
+        manage = (
+            await retrieve_allowed_objects(
+                request,
+                "Cluster",
+                scope="manage",
+                authset=authset,
+            )
         )["objects_without_public"]
     if net:
         if isinstance(net, Net):
             cluster.net = net
         else:
-            cluster.net = (
+            cluster.net = await (
                 fetch_by_id(
                     manage,
                     [net],
@@ -92,15 +96,15 @@ def _update_or_create_cluster(
                     check_short_id=True,
                     check_short_name=True,
                     limit_ids=None,
-                )
-                .get(primaryFor__isnull=False)
-                .net
-            )
+                ).aget(primaryFor__isnull=False)
+            ).net
     elif create_cluster:
         user = None
 
         if manage:
-            net = manage.first().net
+            net = await manage.afirst()
+            if net:
+                net = net.net
         if not net:
             if retrieve_allowed_objects(
                 request,
@@ -116,8 +120,8 @@ def _update_or_create_cluster(
             if user and not user.is_authenticated:
                 user = None
             if user:
-                net = Net.objects.filter(user_name=user.get_username()).first()
-                if net and net.clusters.exists():
+                net = await Net.objects.filter(user_name=user.get_username()).afirst()
+                if net and await net.clusters.aexists():
                     logger.info(
                         "User '%s' has already registered some cluster, "
                         "but doesn't use them for registering new ones. "
@@ -133,7 +137,7 @@ def _update_or_create_cluster(
             if not user:
                 rate = settings.SECRETGRAPH_RATELIMITS.get("ANONYMOUS_REGISTER")
                 if rate:
-                    r = ratelimit.get_ratelimit(
+                    r = await ratelimit.aget_ratelimit(
                         request=request,
                         group="secretgraph_anonymous_register",
                         key="ip"
@@ -163,10 +167,10 @@ def _update_or_create_cluster(
     if objdata.primary or not cluster.net.primaryCluster:
         if cluster.net.primaryCluster and (
             "manage_update"
-            not in get_cached_net_properties(request, ensureInitialized=True)
+            not in await aget_cached_net_properties(request, ensureInitialized=True)
         ):
             try:
-                manage.get(id=cluster.net.primaryCluster.id)
+                await manage.aget(id=cluster.net.primaryCluster.id)
             except ObjectDoesNotExist:
                 raise ValueError("No permission to move primary mark")
         if old_net and old_net.primaryCluster == cluster:
@@ -177,7 +181,7 @@ def _update_or_create_cluster(
             objdata.primary = False
         else:
             objdata.primary = True
-    cluster.full_clean(["net"])
+    await sync_to_async(cluster.full_clean)(["net"])
     assert size_new > 0, "Every cluster should have a size > 0"
     if old_net is None:
         size_diff = size_new - size_old
@@ -216,7 +220,7 @@ def _update_or_create_cluster(
             groups=objdata.clusterGroups,
             operation=constants.MetadataOperations.REPLACE,
             admin="manage_cluster_groups"
-            in get_cached_net_properties(request, ensureInitialized=True),
+            in await aget_cached_net_properties(request, ensureInitialized=True),
             initial=create_cluster,
         )
         assert isinstance(clusterGroups_qtuple, tuple)
@@ -227,11 +231,13 @@ def _update_or_create_cluster(
             groups=objdata.netGroups,
             operation=constants.MetadataOperations.REPLACE,
             admin="manage_net_groups"
-            in get_cached_net_properties(request, ensureInitialized=True),
+            in await aget_cached_net_properties(request, ensureInitialized=True),
             initial=create_net,
         )
         assert isinstance(clusterGroups_qtuple, tuple)
-    dProperty = SGroupProperty.objects.get_or_create(name="default", defaults={})[0]
+    dProperty = await SGroupProperty.objects.aget_or_create(
+        name="default", defaults={}
+    )[0]
 
     def cluster_save_fn():
         update_fields = None
@@ -277,7 +283,7 @@ def _update_or_create_cluster(
 
     # path: actions are specified
     if getattr(objdata, "actions", None) is not None:
-        action_save_fn = manage_actions_fn(
+        action_save_fn = await manage_actions_fn(
             request, cluster, objdata.actions, authset=authset
         )
 
@@ -304,19 +310,20 @@ def _update_or_create_cluster(
     return save_fn
 
 
-def create_cluster_fn(
+async def create_cluster_fn(
     request, objdata: ClusterInput, authset=None
 ) -> Callable[[AbstractContextManager], Result]:
     if not getattr(objdata, "actions", None):
         raise ValueError('Requires "manage" Action - no actions found')
     cluster = Cluster()
-    cluster_fn = _update_or_create_cluster(request, cluster, objdata, authset)
+    cluster_fn = await _update_or_create_cluster(request, cluster, objdata, authset)
     content_fns = []
     if objdata.keys:
         for key_ob in objdata.keys[:2]:
             contentdata = ContentInput(key=key_ob, cluster=cluster)
             content_fns.append(create_key_fn(request, contentdata, authset=authset))
 
+    @django_resolver
     def save_fn(context: AbstractContextManager = nullcontext):
         if callable(context):
             context = context()
@@ -342,6 +349,7 @@ def update_cluster_fn(request, cluster, objdata, updateId, authset=None):
 
     cluster_fn = _update_or_create_cluster(request, cluster, objdata, authset=authset)
 
+    @django_resolver
     def save_fn(
         context: AbstractContextManager = nullcontext,
     ) -> Callable[[AbstractContextManager], Result]:

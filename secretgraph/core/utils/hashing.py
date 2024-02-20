@@ -8,7 +8,7 @@ from cryptography.hazmat.primitives import serialization
 from .. import constants
 from ..typings import PrivateCryptoKey, PublicCryptoKey
 from .base_crypto import DeriveAlgorithm
-from .crypto import findWorkingAlgorithms, mapDeriveAlgorithms
+from .crypto import deriveString, findWorkingAlgorithms, mapDeriveAlgorithms
 
 
 class DuplicateSaltError(ValueError):
@@ -35,8 +35,7 @@ async def hashObject(
             encoding=serialization.Encoding.DER,
             format=serialization.PublicFormat.SubjectPublicKeyInfo,
         )
-    result = await hashAlgorithm.derive(inp)
-    return base64.b64encode(result.data).decode()
+    return await deriveString(inp, algorithm=hashAlgorithm.serializedName)
 
 
 async def hashObjectContentHash(

@@ -7,7 +7,7 @@ import strawberry_django
 from strawberry.types import Info
 
 from ..models import Cluster, Content
-from ..utils.auth import get_cached_net_properties, get_cached_result
+from ..utils.auth import aget_cached_net_properties, get_cached_result
 from .arguments import AuthList
 from .definitions import (
     ClusterFilter,
@@ -50,9 +50,7 @@ from .subscriptions import NodeUpdateSubscription, subscribe_node_updates
 @strawberry.type
 class SecretgraphObject:
     node: Optional[strawberry.relay.Node] = strawberry.relay.node(default=None)
-    nodes: list[Optional[strawberry.relay.Node]] = strawberry.relay.node(
-        default=None
-    )
+    nodes: list[Optional[strawberry.relay.Node]] = strawberry.relay.node(default=None)
 
     @strawberry_django.connection(strawberry.relay.ListConnection[ClusterNode])
     def clusters(
@@ -74,16 +72,12 @@ class SecretgraphObject:
             filters=filters,
         )
 
-    config: SecretgraphConfig = strawberry.field(
-        default_factory=SecretgraphConfig
-    )
+    config: SecretgraphConfig = strawberry.field(default_factory=SecretgraphConfig)
 
     permissions: list[str] = strawberry.field(resolver=get_permissions)
     activeUser: Optional[str] = strawberry.field(resolver=get_active_user)
     languages: list[Language] = strawberry.field(resolver=get_languages)
-    activeLanguage: Optional[Language] = strawberry.field(
-        resolver=get_active_language
-    )
+    activeLanguage: Optional[Language] = strawberry.field(resolver=get_active_language)
 
 
 @strawberry.type
@@ -100,9 +94,7 @@ class SecretgraphMutations:
     )
     updateOrCreateCluster: ClusterMutation = strawberry_django.input_mutation(
         resolver=mutate_cluster,
-        description=(
-            "Create a cluster, optionally initialize with a key-(pair)"
-        ),
+        description=("Create a cluster, optionally initialize with a key-(pair)"),
         handle_django_errors=False,
     )
 
@@ -118,10 +110,8 @@ class SecretgraphMutations:
             handle_django_errors=False,
         )
     )
-    regenerateFlexid: RegenerateFlexidMutation = (
-        strawberry_django.input_mutation(
-            resolver=mutate_regenerate_flexid, handle_django_errors=False
-        )
+    regenerateFlexid: RegenerateFlexidMutation = strawberry_django.input_mutation(
+        resolver=mutate_regenerate_flexid, handle_django_errors=False
     )
     updateMetadata: MetadataUpdateMutation = strawberry_django.input_mutation(
         resolver=mutate_update_metadata, handle_django_errors=False
@@ -153,17 +143,17 @@ class SecretgraphSubscriptions:
 
 @strawberry.type
 class Query:
-    @strawberry_django.field
+    @strawberry.field
     @staticmethod
-    def secretgraph(
+    async def secretgraph(
         info: Info, authorization: Optional[AuthList] = None
     ) -> SecretgraphObject:
-        get_cached_result(
-            info.context["request"], authset=authorization
-        ).preinit("Content", "Cluster")
+        await get_cached_result(info.context["request"], authset=authorization).preinit(
+            "Content", "Cluster"
+        )
         # f["Content"]
         # f["Cluster"]
-        get_cached_net_properties(info.context["request"])
+        await aget_cached_net_properties(info.context["request"])
         return SecretgraphObject
 
 

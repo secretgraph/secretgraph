@@ -3,8 +3,9 @@ from typing import Iterable, Optional
 from django.conf import settings
 
 from ...core.typings import PrivateCryptoKey, PublicCryptoKey
-from ...core.utils.base_crypto import DeriveAlgorithm, mapDeriveAlgorithms
+from ...core.utils.base_crypto import mapDeriveAlgorithms
 from ...core.utils.hashing import calculateHashes as _calculateHashes
+from ...core.utils.hashing import hashObject as _hashObject
 from ...core.utils.hashing import hashTagsContentHash as _hashTagsContentHash
 
 
@@ -19,10 +20,20 @@ def getPrefix(domain: Optional[str] = None):
         return "%s:" % hashAlgorithm.serializedName
 
 
+async def hashObject(
+    inp: bytes | PrivateCryptoKey | PublicCryptoKey | Iterable[bytes],
+    hashAlgorithm: Optional[str] = None,
+) -> str:
+    assert len(settings.SECRETGRAPH_HASH_ALGORITHMS) > 0, "no hash algorithms specified"
+    if not hashAlgorithm:
+        hashAlgorithm = settings.SECRETGRAPH_HASH_ALGORITHMS[0]
+    return _hashObject(inp, hashAlgorithm)
+
+
 async def hashTagsContentHash(
     inp: Iterable[str],
     domain: str,
-    hashAlgorithm: Optional[DeriveAlgorithm | str] = None,
+    hashAlgorithm: Optional[str] = None,
 ) -> str:
     assert len(settings.SECRETGRAPH_HASH_ALGORITHMS) > 0, "no hash algorithms specified"
     if not hashAlgorithm:

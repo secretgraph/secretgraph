@@ -186,6 +186,8 @@ class PBKDF2sha512(DeriveAlgorithm):
 
     @classmethod
     def _execute(cls, iterations, salt, data):
+        if not isinstance(data, bytes):
+            data = b"".join(data)
         return hashlib.pbkdf2_hmac(
             cls.serializedName.split("-")[1],
             data,

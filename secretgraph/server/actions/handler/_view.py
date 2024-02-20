@@ -48,15 +48,11 @@ class ViewHandlers:
             raise ValueError("Missing requester (requester)")
         if not action_dict.get("signatures"):
             raise ValueError("Missing signatures (signatures)")
-        len_sigs = reduce(
-            lambda x, y: x + len(y), action_dict["signatures"], 0
-        )
+        len_sigs = reduce(lambda x, y: x + len(y), action_dict["signatures"], 0)
         if len_sigs == 0:
             raise ValueError("Empty signatures (signatures)")
         if (
-            len(action_dict["requester"])
-            + len_sigs
-            + len(action_dict["challenge"])
+            len(action_dict["requester"]) + len_sigs + len(action_dict["challenge"])
             > 10_000_000
         ):
             raise ValueError("auth too big")
@@ -68,7 +64,7 @@ class ViewHandlers:
             "action": "auth",
             "excludeIds": []
             if content
-            else list(get_forbidden_content_ids(request)),
+            else list(await get_forbidden_content_ids(request)),
             "maxLifetime": td(hours=1),
             "requester": str(action_dict["requester"]),
             "challenge": str(action_dict["challenge"]),
@@ -139,9 +135,7 @@ class ViewHandlers:
         result = {
             "action": "view",
             "contentActionGroup": "view",
-            "allowPeek": True
-            if action_dict.get("allowPeek", False)
-            else False,
+            "allowPeek": True if action_dict.get("allowPeek", False) else False,
         }
         if content:
             # ignore tags if specified for a content
@@ -154,14 +148,11 @@ class ViewHandlers:
             if action_dict.get("fetch"):
                 result["contentActionGroup"] = "fetch"
         else:
-            if action_dict.get("includeTypes") and action_dict.get(
-                "excludeTypes"
-            ):
+            if action_dict.get("includeTypes") and action_dict.get("excludeTypes"):
                 raise ValueError(
-                    "Only one of includeTypes or "
-                    "excludeTypes should be specified"
+                    "Only one of includeTypes or " "excludeTypes should be specified"
                 )
-            result["excludeIds"] = list(get_forbidden_content_ids(request))
+            result["excludeIds"] = list(await get_forbidden_content_ids(request))
             exclude_tags = action_dict.get("excludeTags", [])
             result["excludeTags"] = list(map(str, exclude_tags))
             include_tags = action_dict.get("includeTags", [])

@@ -3,6 +3,7 @@ from __future__ import annotations
 __all__ = [
     "transform_tags",
     "transform_references",
+    "atransform_references",
     "update_content_metadata_fn",
 ]
 
@@ -12,10 +13,12 @@ from contextlib import nullcontext
 from typing import TYPE_CHECKING, Iterable, Optional
 from uuid import uuid4
 
+from asgiref.sync import sync_to_async
 from django.conf import settings
 from django.db.models import F, Q
 from django.db.models.functions import Substr
 from django.utils.timezone import now
+from strawberry_django import django_resolver
 
 from ....core.constants import DeleteRecursive, MetadataOperations
 from ....core.exceptions import ResourceLimitExceeded
@@ -147,6 +150,9 @@ def transform_tags(
     if newtags.get("immutable"):
         newtags.pop("freeze")
     return newtags, key_hashes, transfer_type, size_new
+
+
+atransform_tags = sync_to_async(transform_tags)
 
 
 def clean_deleteRecursive(group, val):
@@ -286,7 +292,10 @@ def transform_references(
     )
 
 
-def update_content_metadata_fn(
+atransform_references = sync_to_async(transform_references)
+
+
+async def update_content_metadata_fn(
     request,
     content,
     *,
@@ -312,13 +321,13 @@ def update_content_metadata_fn(
         else content.net.quota
     )
     if tags:
-        oldtags = content.tags.values_list("tag", flat=True)
+        oldtags = await content.tags.avalues_list("tag", flat=True)
         (
             tags_dict,
             key_hashes_tags,
             tags_is_transfer_type,
             size_tags_new,
-        ) = transform_tags(
+        ) = await atransform_tags(
             content.type,
             tags,
             oldtags,
@@ -352,15 +361,15 @@ def update_content_metadata_fn(
                         composed = "%s=%s" % (prefix, subval)
                         remove_tags_q &= ~Q(tag__startswith=composed)
     else:
-        kl = (
+        kl = await (
             content.tags.filter(tag__startswith="key_hash=")
             .annotate(key_hash=Substr("tag", 10))
-            .values_list("key_hash", flat=True)
+            .avalues_list("key_hash", flat=True)
         )
         key_hashes_tags = set(kl)
 
     if references is None:
-        _refs = content.references.all()
+        _refs = await content.references.aall()
     elif operation in {MetadataOperations.REMOVE, MetadataOperations.REPLACE}:
         _refs = []
         if MetadataOperations.REPLACE:
@@ -392,7 +401,7 @@ def update_content_metadata_fn(
         verifiers_ref,
         refs_is_transfer,
         size_refs_new,
-    ) = transform_references(
+    ) = await atransform_references(
         content,
         _refs,
         key_hashes_tags,
@@ -415,7 +424,7 @@ def update_content_metadata_fn(
     if content.type not in {"PrivateKey", "PublicKey"} and len(key_hashes_ref) < 1:
         raise ValueError(">=1 key references required for content (except Keys)")
 
-    content.full_clean()
+    await sync_to_async(content.full_clean)()
 
     if (
         content.net.quota is not None
@@ -430,6 +439,7 @@ def update_content_metadata_fn(
         content.net.bytes_in_use = F("bytes_in_use") + size_diff
     content.net.last_used = now()
 
+    @django_resolver
     def save_fn(context=nullcontext):
         if callable(context):
             context = context()

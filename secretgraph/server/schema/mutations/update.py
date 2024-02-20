@@ -18,11 +18,11 @@ from ...actions.update import (
 from ...models import Cluster, Content, SGroupProperty
 from ...utils.arguments import pre_clean_content_spec
 from ...utils.auth import (
+    aget_cached_net_properties,
+    aupdate_cached_net_properties,
     fetch_by_id,
-    get_cached_net_properties,
     get_cached_result,
     ids_to_results,
-    update_cached_net_properties,
 )
 from ..arguments import AuthList, ClusterInput, ContentInput
 from ..definitions import ClusterNode, ContentNode
@@ -36,14 +36,14 @@ class ClusterMutation:
     writeok: bool
 
 
-def mutate_cluster(
+async def mutate_cluster(
     info: Info,
     cluster: ClusterInput,
     id: Optional[relay.GlobalID] = None,
     updateId: Optional[strawberry.ID] = None,
     authorization: Optional[AuthList] = None,
 ) -> ClusterMutation:
-    net_props = get_cached_net_properties(
+    net_props = await aget_cached_net_properties(
         info.context["request"], authset=authorization
     )
     if cluster.featured is not None:
@@ -53,24 +53,26 @@ def mutate_cluster(
     if id:
         if not updateId:
             raise ValueError("updateId required")
-        result = ids_to_results(
-            info.context["request"],
-            str(id),
-            Cluster,
-            scope="update",
-            authset=authorization,
-            cacheName=None,
+        result = (
+            await ids_to_results(
+                info.context["request"],
+                str(id),
+                Cluster,
+                scope="update",
+                authset=authorization,
+                cacheName=None,
+            )
         )["Cluster"]
         cluster_obj = result["objects_without_public"].get()
         if cluster.name is not None and cluster.name.startswith("@"):
             if (
                 "allow_global_name" not in net_props
-                and not cluster_obj.groups.filter(
+                and not await cluster_obj.groups.filter(
                     properties__name="allow_global_name"
-                ).exists()
+                ).aexists()
             ):
                 cluster.name = f"+@{cluster.name}"
-        _cluster_res = update_cluster_fn(
+        _cluster_res = await update_cluster_fn(
             info.context["request"],
             cluster_obj,
             cluster,
@@ -79,13 +81,13 @@ def mutate_cluster(
         )(transaction.atomic)
     else:
         if cluster.clusterGroups is None:
-            dProperty = SGroupProperty.objects.get_or_create(
+            dProperty = await SGroupProperty.objects.aget_or_create(
                 name="default", defaults={}
             )[0]
-            update_cached_net_properties(
+            await aupdate_cached_net_properties(
                 info.context["request"], groups=dProperty.netGroups.all()
             )
-            net_props = get_cached_net_properties(
+            net_props = await aget_cached_net_properties(
                 info.context["request"], ensureInitialized=True
             )
 
@@ -97,11 +99,13 @@ def mutate_cluster(
                     .exists()
                 ):
                     cluster.name = f"+@{cluster.name}"
-        _cluster_res = create_cluster_fn(
-            info.context["request"], cluster, authset=authorization
+        _cluster_res = await (
+            await create_cluster_fn(
+                info.context["request"], cluster, authset=authorization
+            )
         )(transaction.atomic)
     f = get_cached_result(info.context["request"], authset=authorization)
-    f.preinit("Content", "Cluster")
+    await f.preinit("Content", "Cluster")
     return ClusterMutation(**_cluster_res)
 
 
@@ -111,7 +115,7 @@ class ContentMutation:
     writeok: bool
 
 
-def mutate_content(
+async def mutate_content(
     info: Info,
     content: ContentInput,
     id: Optional[relay.GlobalID] = None,
@@ -122,30 +126,28 @@ def mutate_content(
     if id:
         if not updateId:
             raise ValueError("updateId required")
-        result = ids_to_results(
-            info.context["request"],
-            id,
-            Content,
-            scope="update",
-            authset=authorization,
-            cacheName=None,
+        result = (
+            await ids_to_results(
+                info.context["request"],
+                id,
+                Content,
+                scope="update",
+                authset=authorization,
+                cacheName=None,
+            )
         )["Content"]
         # allow admin updates
-        if "manage_update" in get_cached_net_properties(
-            info.context["request"]
-        ):
-            content_obj = Content.objects.filter(locked__isnull=True).get()
+        if "manage_update" in await aget_cached_net_properties(info.context["request"]):
+            content_obj = await Content.objects.filter(locked__isnull=True).aget()
 
         else:
-            content_obj = (
-                result["objects_without_public"]
-                .filter(locked__isnull=True)
-                .get()
+            content_obj = await (
+                result["objects_without_public"].filter(locked__isnull=True).aget()
             )
         if content.hidden is not None:
             if (
                 "allow_hidden"
-                not in get_cached_net_properties(
+                not in await aget_cached_net_properties(
                     info.context["request"], authset=authorization
                 )
                 and "allow_hidden" not in content_obj.properties
@@ -154,57 +156,54 @@ def mutate_content(
 
         if content.value:
             if content.cluster:
-                cluster_obj = fetch_by_id(
+                cluster_obj = await fetch_by_id(
                     Cluster.objects.all(),
                     [content.cluster],
                     check_short_id=True,
                     check_short_name=True,
-                ).first()
+                ).afirst()
                 if cluster_obj:
-                    required_keys = Content.objects.required_keys_full(
-                        cluster_obj
-                    )
+                    required_keys = Content.objects.required_keys_full(cluster_obj)
                 else:
                     # don't disclose cluster existence
                     required_keys = ["invalid"]
             else:
-                required_keys = Content.objects.required_keys_full(
-                    content_obj.cluster
-                )
+                required_keys = Content.objects.required_keys_full(content_obj.cluster)
             if isinstance(required_keys, QuerySet):
-                required_keys = required_keys.annotate(
+                required_keys = await required_keys.annotate(
                     keyHash=Substr("contentHash", 5)
-                ).values_list("keyHash", flat=True)
+                ).avalues_list("keyHash", flat=True)
             required_keys = set(required_keys)
         pre_clean_content_spec(False, content, result)
-
-        returnval = ContentMutation(
-            **update_content_fn(
-                info.context["request"],
-                content_obj,
-                content,
-                updateId=updateId,
-                required_keys=required_keys,
-                authset=authorization,
-            )(transaction.atomic)
-        )
-    else:
-        result = ids_to_results(
+        update_fn = await update_content_fn(
             info.context["request"],
-            content.cluster,
-            Cluster,
-            scope="create",
+            content_obj,
+            content,
+            updateId=updateId,
+            required_keys=required_keys,
             authset=authorization,
-            cacheName=None,
+        )
+
+        returnval = ContentMutation(**(await update_fn(transaction.atomic)))
+    else:
+        result = (
+            await ids_to_results(
+                info.context["request"],
+                content.cluster,
+                Cluster,
+                scope="create",
+                authset=authorization,
+                cacheName=None,
+            )
         )["Cluster"]
-        cluster_obj = result["objects_without_public"].first()
+        cluster_obj = await result["objects_without_public"].afirst()
         if not cluster_obj:
             raise ValueError("Cluster for Content not found")
 
         if content.hidden is not None:
             if (
                 "allow_hidden"
-                not in get_cached_net_properties(
+                not in await aget_cached_net_properties(
                     info.context["request"], authset=authorization
                 )
                 and "allow_hidden" not in cluster_obj.properties
@@ -214,22 +213,21 @@ def mutate_content(
         # is a key spec
         if not content.key:
             required_keys = set(
-                Content.objects.required_keys_full(cluster_obj).values_list(
+                await Content.objects.required_keys_full(cluster_obj).avalues_list(
                     "contentHash", flat=True
                 )
             )
         pre_clean_content_spec(True, content, result)
-
-        returnval = ContentMutation(
-            **create_content_fn(
-                info.context["request"],
-                content,
-                required_keys=required_keys,
-                authset=authorization,
-            )(transaction.atomic)
+        create_fn = await create_content_fn(
+            info.context["request"],
+            content,
+            required_keys=required_keys,
+            authset=authorization,
         )
+
+        returnval = ContentMutation(**(await create_fn(transaction.atomic)))
     f = get_cached_result(info.context["request"], authset=authorization)
-    f.preinit("Content", "Cluster")
+    await f.preinit("Content", "Cluster")
     return returnval
 
 

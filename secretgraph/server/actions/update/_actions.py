@@ -2,16 +2,16 @@ __all__ = ["manage_actions_fn"]
 
 
 import base64
-import hashlib
 import json
 import os
 from contextlib import nullcontext
 from typing import List
 
-from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from django.db.models import Q
 from django.utils import timezone
+from strawberry_django import django_resolver
 
+from ....core.utils.crypto import encrypt
 from ...actions.handler import ActionHandler
 from ...models import Action, Cluster, Content, ContentAction
 from ...utils.auth import (
@@ -19,13 +19,14 @@ from ...utils.auth import (
     retrieve_allowed_objects,
     stub_retrieve_allowed_objects,
 )
+from ...utils.hashing import hashObject
 from ...utils.misc import refresh_fields
 from ._arguments import ActionInput
 
 _valid_lengths = {32, 50}
 
 
-def manage_actions_fn(
+async def manage_actions_fn(
     request, obj, actionlist: List[ActionInput], authset=None, admin=False
 ):
     add_actions = []
@@ -47,42 +48,48 @@ def manage_actions_fn(
         # we have no Actions and so we need no filtering
         # and the related manager is maybe not initialized
         # so skip the other code pathes
-        allowed_and_existing_actions = get_cached_result(
-            request,
-            scope="manage",
-            cacheName="secretgraphCleanResult",
-            authset=authset,
-            stub="none",
-        )["Action"]["objects_without_public"]
+        allowed_and_existing_actions = (
+            await get_cached_result(
+                request,
+                scope="manage",
+                cacheName="secretgraphCleanResult",
+                authset=authset,
+                stub="none",
+            ).aat("Action")
+        )["objects_without_public"]
     elif admin:
         # we don't need to filter as admin
-        allowed_and_existing_actions = get_cached_result(
-            request,
-            stub_retrieve_allowed_objects(
+        allowed_and_existing_actions = await (
+            get_cached_result(
                 request,
-                cluster.actions.all(),
+                stub_retrieve_allowed_objects(
+                    request,
+                    cluster.actions.all(),
+                    scope="manage",
+                    authset=authset,
+                ),
                 scope="manage",
+                cacheName="secretgraphCleanResult",
                 authset=authset,
-            ),
-            scope="manage",
-            cacheName="secretgraphCleanResult",
-            authset=authset,
-            stub="all",
-        )["Action"]["objects_without_public"]
+                stub="all",
+            ).aat("Action")
+        )["objects_without_public"]
     else:
         # normal code path for existing contents/cluster
-        allowed_and_existing_actions = get_cached_result(
-            request,
-            retrieve_allowed_objects(
+        allowed_and_existing_actions = (
+            await get_cached_result(
                 request,
-                "Cluster",
+                retrieve_allowed_objects(
+                    request,
+                    "Cluster",
+                    scope="manage",
+                    authset=authset,
+                ),
                 scope="manage",
+                cacheName="secretgraphCleanResult",
                 authset=authset,
-            ),
-            scope="manage",
-            cacheName="secretgraphCleanResult",
-            authset=authset,
-        )["Action"]["objects_without_public"]
+            ).aat("Action")
+        )["objects_without_public"]
     for action in actionlist:
         # if already decoded by e.g. graphql
         if action.value == "delete":
@@ -110,11 +117,8 @@ def manage_actions_fn(
         if len(action_key) not in _valid_lengths:
             raise ValueError("Invalid key size")
 
-        # FIXME: make configurable, would require to async all
-        hashCtx = hashlib.sha512(b"secretgraph")
-        hashCtx.update(action_key)
-        action_key_hash = f"sha512:{base64.b64encode(hashCtx.digest()).decode()}"
-        action_value = ActionHandler.clean_action(
+        action_key_hash = await hashObject((b"secretgraph", action_key))
+        action_value = await ActionHandler.clean_action(
             action_value,
             request=request,
             cluster=cluster,
@@ -122,7 +126,6 @@ def manage_actions_fn(
         )
 
         # create Action object
-        aesgcm = AESGCM(action_key[-32:])
         nonce = os.urandom(13)
         # add contentAction
         group = action_value.pop("contentActionGroup", "")
@@ -133,8 +136,15 @@ def manage_actions_fn(
             actionObj = Action()
         if content:
             actionObj.contentAction.group = group
-        actionObj.value = aesgcm.encrypt(
-            nonce, json.dumps(action_value).encode("utf-8"), None
+        actionObj.value = base64.b64encode(
+            (
+                await encrypt(
+                    action_key[-32:],
+                    json.dumps(action_value).encode("utf-8"),
+                    algorithm="AESGCM",
+                    params={"nonce": nonce},
+                )
+            ).data
         )
         # reset used
         actionObj.used = None
@@ -160,6 +170,7 @@ def manage_actions_fn(
             contentAction__content=content,
         )
 
+    @django_resolver
     def save_fn(context=nullcontext):
         if callable(context):
             context = context()

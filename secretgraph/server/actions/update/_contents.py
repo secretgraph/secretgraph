@@ -17,6 +17,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.core.files.base import ContentFile, File
 from django.db.models import F, Q
 from django.utils.timezone import now
+from strawberry_django import django_resolver
 
 from ....core import constants
 from ....core.exceptions import ResourceLimitExceeded
@@ -35,7 +36,7 @@ from ._arguments import (
     ContentMergedInput,
     ReferenceInput,
 )
-from ._metadata import transform_references, transform_tags
+from ._metadata import atransform_references, atransform_tags
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +56,7 @@ def _value_to_dict(obj):
     return dict((field.name, getattr(obj, field.name)) for field in fields(obj))
 
 
-def _transform_key_into_dataobj(
+async def _transform_key_into_dataobj(
     key_obj, publicKeyContent=None
 ) -> tuple[list[str], ContentMergedInput, Optional[ContentMergedInput]]:
     if isinstance(key_obj.privateKey, str):
@@ -89,7 +90,7 @@ def _transform_key_into_dataobj(
     if publicKeyContent and has_public_key:
         if publicKeyContent.file.open("rb").read() != key_obj.publicKey:
             raise ValueError("Cannot change public key content")
-    hashes = calculateHashes(key_obj.publicKey)
+    hashes = await calculateHashes(key_obj.publicKey)
     hashes_tags = tuple(map(lambda x: f"key_hash={x}", hashes))
     if key_obj.privateKey:
         if not any(
@@ -155,7 +156,7 @@ def _transform_key_into_dataobj(
     )
 
 
-def _update_or_create_content_or_key(
+async def _update_or_create_content_or_key(
     request,
     content: Content,
     objdata: ContentMergedInput,
@@ -174,7 +175,7 @@ def _update_or_create_content_or_key(
 
     if isinstance(objdata.cluster, str):
         objdata.cluster = (
-            ids_to_results(
+            await ids_to_results(
                 request,
                 objdata.cluster,
                 Cluster,
@@ -183,8 +184,9 @@ def _update_or_create_content_or_key(
                 cacheName=None,
                 authset=authset,
             )["Cluster"]["objects_without_public"]
+            .select_related("net")
             .filter(markForDestruction=None)
-            .first()
+            .afirst()
         )
     # when changed
     old_cluster = None
@@ -203,7 +205,7 @@ def _update_or_create_content_or_key(
     net = objdata.net
     old_net = None
     if not create:
-        old_net = content.net
+        old_net = await Net.objects.aget(content.net_id)
     explicit_net = False
     if net:
         if isinstance(net, Net):
@@ -211,30 +213,32 @@ def _update_or_create_content_or_key(
         else:
             # first use simple query checking if in additionalNets
             if objdata.additionalNets:
-                content.net = Net.objects.filter(
+                content.net = await Net.objects.filter(
                     Q(clusters__flexid=net) | Q(clusters__flexid_cached=net),
                     id__in=objdata.additionalNets,
-                ).first()
+                ).afirst()
             else:
                 content.net = None
             # content.net is None or result of first()
             # then check if user has permission to use the selected net
             # there is no shortcut possible (why, because of update action)
             if not content.net:
-                net_result = ids_to_results(
-                    request,
-                    # Cluster
-                    objdata.net,
-                    Cluster,
-                    scope="create",
-                    cacheName=None,
-                    authset=authset,
+                net_result = (
+                    await ids_to_results(
+                        request,
+                        # Cluster
+                        objdata.net,
+                        Cluster,
+                        scope="create",
+                        cacheName=None,
+                        authset=authset,
+                    )
                 )["Cluster"]
-                content.net = (
-                    net_result["objects_without_public"]
-                    .get(Q(primaryFor__isnull=False) | Q(id=content.cluster.id))
-                    .net
-                )
+                content.net = await (
+                    net_result["objects_without_public"].aget(
+                        Q(primaryFor__isnull=False) | Q(id=content.cluster.id)
+                    )
+                ).net
         if getattr(content, "net", None):
             explicit_net = True
     if create and not getattr(content, "net", None):
@@ -272,7 +276,9 @@ def _update_or_create_content_or_key(
             key_hashes_tags,
             tags_transfer_type,
             size_new_tags,
-        ) = transform_tags(content.type, objdata.tags, early_size_limit=early_op_limit)
+        ) = await atransform_tags(
+            content.type, objdata.tags, early_size_limit=early_op_limit
+        )
         size_new += size_new_tags
     elif create:
         raise ValueError("Content tags are missing")
@@ -289,16 +295,16 @@ def _update_or_create_content_or_key(
         assert is_key is False, "Keys should not be affected by hidden"
         if content.state == "public":
             if create or oldstate not in constants.public_states:
-                content.hidden = objdata.cluster.groups.filter(
+                content.hidden = await objdata.cluster.groups.filter(
                     properties__name="auto_hide_global"
                     if content.cluster.name.startswith("@")
                     else "auto_hide_local"
-                ).exists()
-            elif objdata.cluster.groups.filter(
+                ).aexists()
+            elif await objdata.cluster.groups.filter(
                 properties__name="auto_hide_global_update"
                 if content.cluster.name.startswith("@")
                 else "auto_hide_local_update"
-            ).exists():
+            ).aexists():
                 content.hidden = True
         else:
             content.hidden = False
@@ -371,16 +377,18 @@ def _update_or_create_content_or_key(
             verifiers_ref,
             refs_is_transfer,
             size_refs,
-        ) = transform_references(
+        ) = await atransform_references(
             content,
             refs,
             key_hashes_tags,
-            get_cached_result(
-                request,
-                authset=authset,
-                cacheName="secretgraphLinkResult",
-                scope="link",
-            )["Content"]["objects_with_public"],
+            (
+                await get_cached_result(
+                    request,
+                    authset=authset,
+                    cacheName="secretgraphLinkResult",
+                    scope="link",
+                ).aat("Content")
+            )["objects_with_public"],
             no_final_refs=objdata.references is None,
             early_size_limit=early_op_limit,
         )
@@ -392,8 +400,11 @@ def _update_or_create_content_or_key(
         ):
             raise ValueError("Not encrypted for required keys")
         if not verifiers_ref and content.needs_signature:
-            if content.cluster.id and not content.cluster.contents.filter(
-                type="PublicKey", state__in=constants.publickey_states
+            if (
+                content.cluster.id
+                and not await content.cluster.contents.filter(
+                    type="PublicKey", state__in=constants.publickey_states
+                ).aexists()
             ):
                 raise ValueError("Not signed by a cluster key - cluster has no keys")
 
@@ -442,7 +453,7 @@ def _update_or_create_content_or_key(
         ):
             raise ValueError(">=1 key references required for non-key content")
     if objdata.actions is not None:
-        actions_save_fn = manage_actions_fn(
+        actions_save_fn = await manage_actions_fn(
             request, content, objdata.actions, authset=authset
         )
     else:
@@ -458,12 +469,14 @@ def _update_or_create_content_or_key(
             if (
                 not explicit_net
                 and content.net != content.cluster.net
-                and not retrieve_allowed_objects(
-                    request,
-                    content.net.clusters.all(),
-                    "create",
-                    authset=authset,
-                )["objects_without_public"].exists()
+                and not await (
+                    await retrieve_allowed_objects(
+                        request,
+                        content.net.clusters.all(),
+                        "create",
+                        authset=authset,
+                    )
+                )["objects_without_public"].aexists()
             ):
                 raise ResourceLimitExceeded(
                     "Cannot use more resources of a net not owned"
@@ -533,29 +546,31 @@ def _update_or_create_content_or_key(
     return save_fn
 
 
-def create_key_fn(request, objdata: ContentInput, authset=None):
+async def create_key_fn(request, objdata: ContentInput, authset=None):
     """creates or updates public key, creates private key if specified"""
     key_obj = objdata.key
     if not key_obj:
         raise ValueError("Requires key")
     if isinstance(objdata.cluster, str):
-        objdata.cluster = (
-            ids_to_results(
-                request,
-                objdata.cluster,
-                Cluster,
-                authset=authset,
-                # create includes move permission
-                scope="create",
-                cacheName=None,
+        objdata.cluster = await (
+            (
+                await ids_to_results(
+                    request,
+                    objdata.cluster,
+                    Cluster,
+                    authset=authset,
+                    # create includes move permission
+                    scope="create",
+                    cacheName=None,
+                )
             )["Cluster"]["objects_without_public"]
             .filter(markForDestruction=None)
-            .first()
+            .afirst()
         )
     if not objdata.cluster:
         raise ValueError("No cluster")
 
-    hashes, public, private = _transform_key_into_dataobj(key_obj)
+    hashes, public, private = await _transform_key_into_dataobj(key_obj)
 
     public.net = objdata.net
     if private:
@@ -576,7 +591,7 @@ def create_key_fn(request, objdata: ContentInput, authset=None):
         if public["actions"]:
             raise ValueError("Key already exists and actions specified")
     # distribute references automagically
-    public = _update_or_create_content_or_key(
+    public = await _update_or_create_content_or_key(
         request, publickey_content, public, authset, True, []
     )
     if private:
@@ -588,7 +603,7 @@ def create_key_fn(request, objdata: ContentInput, authset=None):
                 deleteRecursive=constants.DeleteRecursive.TRUE.value,
             )
         )
-        private = _update_or_create_content_or_key(
+        private = await _update_or_create_content_or_key(
             request,
             Content(cluster=objdata.cluster),
             private,
@@ -597,6 +612,7 @@ def create_key_fn(request, objdata: ContentInput, authset=None):
             [],
         )
 
+    @django_resolver
     def save_fn():
         return {"public": public(), "private": private() if private else None}
 
@@ -606,7 +622,7 @@ def create_key_fn(request, objdata: ContentInput, authset=None):
     return save_fn
 
 
-def create_content_fn(
+async def create_content_fn(
     request,
     objdata: ContentInput,
     authset: Optional[Iterable[str]] = None,
@@ -620,8 +636,9 @@ def create_content_fn(
         raise ValueError("Can only specify one of value or key")
     if key_obj:
         # has removed key argument for only allowing complete key
-        _inner_save_fn = create_key_fn(request, objdata, authset=authset)
+        _inner_save_fn = await create_key_fn(request, objdata, authset=authset)
 
+        @django_resolver
         def save_fn(context=nullcontext):
             if callable(context):
                 context = context()
@@ -639,10 +656,11 @@ def create_content_fn(
             **_value_to_dict(value_obj),
         )
         content_obj = Content()
-        _inner_save_fn = _update_or_create_content_or_key(
+        _inner_save_fn = await _update_or_create_content_or_key(
             request, content_obj, newdata, authset, False, required_keys or []
         )
 
+        @django_resolver
         def save_fn(context=nullcontext):
             if callable(context):
                 context = context()
@@ -652,7 +670,7 @@ def create_content_fn(
     return save_fn
 
 
-def update_content_fn(
+async def update_content_fn(
     request,
     content: Content,
     objdata: ContentInput,
@@ -679,11 +697,11 @@ def update_content_fn(
         key_obj = ContentKeyInput(**_value_to_dict(objdata.key))
 
         if not key_obj.publicTags:
-            key_obj.publicTags = content.tags.exclude(
+            key_obj.publicTags = await content.tags.exclude(
                 tag__startswith="key_hash="
-            ).values_list("tag", flat=True)
+            ).avalues_list("tag", flat=True)
         key_obj.privateTags = None
-        hashes, newdata, _private = _transform_key_into_dataobj(
+        hashes, newdata, _private = await _transform_key_into_dataobj(
             key_obj,
             publicKeyContent=content,
         )
@@ -697,9 +715,9 @@ def update_content_fn(
             raise ValueError("Cannot update cluster of key")
         # we don't see it or update it anyway so include all
         # without regard to state
-        publicKeyContent = Content.objects.filter(
+        publicKeyContent = await Content.objects.filter(
             type="PublicKey", referencedBy__source=content
-        ).first()
+        ).afirst()
 
         key_obj = ContentKeyInput(**_value_to_dict(objdata.key))
 
@@ -709,7 +727,7 @@ def update_content_fn(
             ).values_list("tag", flat=True)
         key_obj.publicTags = None
 
-        hashes, _public, newdata = _transform_key_into_dataobj(
+        hashes, _public, newdata = await _transform_key_into_dataobj(
             key_obj,
             publicKeyContent=publicKeyContent,
         )
@@ -733,10 +751,11 @@ def update_content_fn(
             hidden=objdata.hidden,
             **(_value_to_dict(objdata.value) if objdata.value else {}),
         )
-    inner_save_fn = _update_or_create_content_or_key(
+    inner_save_fn = await _update_or_create_content_or_key(
         request, content, newdata, authset, is_key, required_keys or []
     )
 
+    @django_resolver
     def save_fn(context=nullcontext):
         if callable(context):
             context = context()

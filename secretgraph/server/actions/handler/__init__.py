@@ -5,8 +5,8 @@ from ._view import ViewHandlers
 
 class ActionHandler(SideEffectsHandlers, UpdateHandlers, ViewHandlers):
     @classmethod
-    def handle_action(cls, sender, action_dict, /, **kwargs):
-        result = getattr(cls, "do_%s" % action_dict["action"], "default")(
+    async def handle_action(cls, sender, action_dict, /, **kwargs):
+        result = await getattr(cls, "do_%s" % action_dict["action"], "default")(
             action_dict, sender=sender, **kwargs
         )
         # force include the original input when returning a dict and not False or None
@@ -15,11 +15,11 @@ class ActionHandler(SideEffectsHandlers, UpdateHandlers, ViewHandlers):
         return result
 
     @classmethod
-    def clean_action(
+    async def clean_action(
         cls, action_dict, /, request, cluster, content=None, admin=False
     ):
         action = action_dict["action"]
-        result = getattr(cls, "clean_%s" % action)(
+        result = await getattr(cls, "clean_%s" % action)(
             action_dict,
             request=request,
             cluster=cluster,

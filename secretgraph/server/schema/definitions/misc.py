@@ -7,18 +7,17 @@ from django.utils.translation import get_language, gettext, override
 from strawberry.types import Info
 from strawberry_django import django_resolver
 
-from ...utils.auth import get_cached_net_properties
+from ...utils.auth import aget_cached_net_properties
 from ._shared import Language
 
-_valid_permissions = re.compile(r"^(?:manage_|allow_)")
+_valid_permissions = re.compile(r"^(?:manage_|allow_|bypass_)")
 
 
-@django_resolver
-def get_permissions(info: Info) -> list[str]:
+async def get_permissions(info: Info) -> list[str]:
     return list(
         filter(
             lambda x: _valid_permissions.match(x),
-            get_cached_net_properties(
+            await aget_cached_net_properties(
                 info.context["request"], ensureInitialized=True
             ),
         )

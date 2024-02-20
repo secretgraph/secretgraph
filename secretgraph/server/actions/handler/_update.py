@@ -8,7 +8,7 @@ from ._shared import get_forbidden_content_ids, only_owned_helper
 
 class UpdateHandlers:
     @staticmethod
-    def do_delete(action_dict, scope, sender, accesslevel, action, **kwargs):
+    async def do_delete(action_dict, scope, sender, accesslevel, action, **kwargs):
         if scope != "delete":
             return None
         ownaccesslevel = 3
@@ -57,9 +57,7 @@ class UpdateHandlers:
                 "filters": ~excl_filters & incl_filters,
                 "accesslevel": ownaccesslevel,
             }
-        elif issubclass(sender, Cluster) and not hasattr(
-            action, "contentAction"
-        ):
+        elif issubclass(sender, Cluster) and not hasattr(action, "contentAction"):
             return {
                 "filters": Q(),
                 "accesslevel": ownaccesslevel,
@@ -67,7 +65,7 @@ class UpdateHandlers:
         return None
 
     @staticmethod
-    def clean_delete(action_dict, request, cluster, content, admin):
+    async def clean_delete(action_dict, request, cluster, content, admin):
         result = {"action": "delete", "contentActionGroup": "delete"}
         if content:
             # ignore tags if specified for a content
@@ -78,7 +76,7 @@ class UpdateHandlers:
             result["excludeTypes"] = []
             result["excludeIds"] = []
         else:
-            result["excludeIds"] = list(get_forbidden_content_ids(request))
+            result["excludeIds"] = list(await get_forbidden_content_ids(request))
             exclude_tags = action_dict.get("excludeTags", [])
             result["excludeTags"] = list(map(str, exclude_tags))
             include_tags = action_dict.get("includeTags", [])
@@ -92,7 +90,7 @@ class UpdateHandlers:
         return result
 
     @staticmethod
-    def do_update(action_dict, scope, sender, accesslevel, **kwargs):
+    async def do_update(action_dict, scope, sender, accesslevel, **kwargs):
         if scope in {"update", "peek"}:
             ownaccesslevel = 1
         else:
@@ -153,9 +151,7 @@ class UpdateHandlers:
                 # allowedTypes is invalid for update
                 "allowedStates": action_dict.get("allowedStates", None),
                 "allowedActions": [],
-                "injectedReferences": action_dict.get(
-                    "injectedReferences", []
-                ),
+                "injectedReferences": action_dict.get("injectedReferences", []),
                 "accesslevel": ownaccesslevel,
             }
         elif issubclass(sender, Cluster):
@@ -167,15 +163,13 @@ class UpdateHandlers:
                 # allowedTypes is invalid for update
                 "allowedStates": action_dict.get("allowedStates", None),
                 "allowedActions": [],
-                "injectedReferences": action_dict.get(
-                    "injectedReferences", []
-                ),
+                "injectedReferences": action_dict.get("injectedReferences", []),
                 "accesslevel": ownaccesslevel,
             }
         return None
 
     @staticmethod
-    def clean_update(action_dict, request, cluster, content, admin):
+    async def clean_update(action_dict, request, cluster, content, admin):
         result = {
             "action": "update",
             "contentActionGroup": "update",
@@ -187,9 +181,7 @@ class UpdateHandlers:
             "injectedReferences": [],
         }
         if action_dict.get("includeTypes") and action_dict.get("excludeTypes"):
-            raise ValueError(
-                "Either includeTypes or excludeTypes should be specified"
-            )
+            raise ValueError("Either includeTypes or excludeTypes should be specified")
 
         if content:
             # ignore tags if specified for a content
@@ -226,7 +218,7 @@ class UpdateHandlers:
 
         nets = action_dict.get("nets")
         if nets:
-            clusters = only_owned_helper(
+            clusters = await only_owned_helper(
                 Cluster,
                 nets,
                 request,
@@ -243,7 +235,7 @@ class UpdateHandlers:
         if references:
             if isinstance(references, list):
                 references = dict(map(lambda x: (x["target"], x), references))
-            for _flexid, _id in only_owned_helper(
+            for _flexid, _id in await only_owned_helper(
                 Content,
                 references.keys(),
                 request,
@@ -253,13 +245,9 @@ class UpdateHandlers:
                     "deleteRecursive", constants.DeleteRecursive.TRUE.value
                 )
                 # TODO: specify nicer
-                if (
-                    deleteRecursive
-                    not in constants.DeleteRecursive.valid_values
-                ):
+                if deleteRecursive not in constants.DeleteRecursive.valid_values:
                     raise ValueError(
-                        "invalid deleteRecursive specification "
-                        "in injected reference"
+                        "invalid deleteRecursive specification " "in injected reference"
                     )
                 result["injectedReferences"].append(
                     {
@@ -271,7 +259,7 @@ class UpdateHandlers:
         return result
 
     @staticmethod
-    def do_create(action_dict, scope, sender, accesslevel, **kwargs):
+    async def do_create(action_dict, scope, sender, accesslevel, **kwargs):
         if scope == "create" and issubclass(sender, (Content, Cluster)):
             return {
                 "action": "create",
@@ -283,14 +271,12 @@ class UpdateHandlers:
                 "allowedTypes": action_dict.get("allowedTypes", None),
                 "allowedStates": action_dict.get("allowedStates", None),
                 "allowedActions": action_dict.get("allowedActions", None),
-                "injectedReferences": action_dict.get(
-                    "injectedReferences", []
-                ),
+                "injectedReferences": action_dict.get("injectedReferences", []),
             }
         return None
 
     @staticmethod
-    def _clean_create_or_push(action_dict, request, cluster, content, admin):
+    async def _clean_create_or_push(action_dict, request, cluster, content, admin):
         result = {
             "id": content.id if content and content.id else None,
             "injectedTags": [],
@@ -320,7 +306,7 @@ class UpdateHandlers:
 
         nets = action_dict.get("nets")
         if nets:
-            clusters = only_owned_helper(
+            clusters = await only_owned_helper(
                 Cluster,
                 nets,
                 request,
@@ -337,7 +323,7 @@ class UpdateHandlers:
         if references:
             if isinstance(references, list):
                 references = dict(map(lambda x: (x["target"], x), references))
-            for _flexid, _id in only_owned_helper(
+            for _flexid, _id in await only_owned_helper(
                 Content,
                 references.keys(),
                 request,
@@ -349,13 +335,9 @@ class UpdateHandlers:
                     "deleteRecursive", constants.DeleteRecursive.TRUE.value
                 )
                 # TODO: specify nicer
-                if (
-                    deleteRecursive
-                    not in constants.DeleteRecursive.valid_values
-                ):
+                if deleteRecursive not in constants.DeleteRecursive.valid_values:
                     raise ValueError(
-                        "invalid deleteRecursive specification "
-                        "in injected reference"
+                        "invalid deleteRecursive specification " "in injected reference"
                     )
                 result["injectedReferences"].append(
                     {
@@ -368,10 +350,10 @@ class UpdateHandlers:
         return result
 
     @classmethod
-    def clean_create(cls, action_dict, request, cluster, content, admin):
+    async def clean_create(cls, action_dict, request, cluster, content, admin):
         if content:
             raise ValueError("create invalid for content")
-        result = cls._clean_create_or_push(
+        result = await cls._clean_create_or_push(
             action_dict, request, content=content, admin=admin
         )
         if action_dict.get("allowedActions"):
@@ -383,7 +365,7 @@ class UpdateHandlers:
         return result
 
     @staticmethod
-    def do_push(action_dict, scope, sender, accesslevel, **kwargs):
+    async def do_push(action_dict, scope, sender, accesslevel, **kwargs):
         if scope == "push":
             return {
                 "action": "create",
@@ -395,9 +377,7 @@ class UpdateHandlers:
                 "allowedTypes": action_dict.get("allowedTypes", None),
                 "allowedStates": action_dict.get("allowedStates", None),
                 "allowedActions": [],
-                "injectedReferences": action_dict.get(
-                    "injectedReferences", []
-                ),
+                "injectedReferences": action_dict.get("injectedReferences", []),
                 "updateable": bool(action_dict.get("updateable", True)),
             }
         if (
@@ -416,25 +396,23 @@ class UpdateHandlers:
                 "allowedTypes": action_dict.get("allowedTypes", None),
                 "allowedStates": action_dict.get("allowedStates", None),
                 "allowedActions": action_dict.get("allowedActions", None),
-                "injectedReferences": action_dict.get(
-                    "injectedReferences", []
-                ),
+                "injectedReferences": action_dict.get("injectedReferences", []),
                 "updateable": bool(action_dict.get("updateable", True)),
             }
         return None
 
     @classmethod
-    def clean_push(cls, action_dict, request, cluster, content, admin):
+    async def clean_push(cls, action_dict, request, cluster, content, admin):
         if not content:
             raise ValueError("push invalid for content")
-        result = cls._clean_create_or_push(
+        result = await cls._clean_create_or_push(
             action_dict, request, content=content, admin=admin
         )
         result["action"] = "push"
         return result
 
     @staticmethod
-    def do_manage(action_dict, scope, sender, action, **kwargs):
+    async def do_manage(action_dict, scope, sender, action, **kwargs):
         # handles Action, Content, Cluster
         type_name = sender.__name__
         excl_filters = Q(id__in=action_dict["exclude"][type_name])
@@ -460,7 +438,7 @@ class UpdateHandlers:
         }
 
     @staticmethod
-    def clean_manage(action_dict, request, cluster, content, admin):
+    async def clean_manage(action_dict, request, cluster, content, admin):
         from ...utils.auth import fetch_by_id, get_cached_result
 
         if content:
@@ -472,7 +450,7 @@ class UpdateHandlers:
         }
         nets = action_dict.get("nets")
         if nets:
-            clusters = only_owned_helper(
+            clusters = await only_owned_helper(
                 Cluster,
                 nets,
                 request,
@@ -480,9 +458,9 @@ class UpdateHandlers:
                 fields=("id",),
                 admin=admin,
             )
-            action_dict["nets"] = Net.objects.filter(
+            action_dict["nets"] = await Net.objects.filter(
                 clusters__id__in=clusters
-            ).values_list("id", flat=True)
+            ).avalues_list("id", flat=True)
             del clusters
         del nets
         for idtuple in action_dict.get("exclude") or []:

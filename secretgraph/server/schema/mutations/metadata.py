@@ -107,9 +107,7 @@ def mutate_update_mark(
         ):
             contents = Content.objects.all()
         else:
-            dProperty = SGroupProperty.objects.get_or_create(
-                name="allow_hidden"
-            )[0]
+            dProperty = SGroupProperty.objects.get_or_create(name="allow_hidden")[0]
             cgroups = dProperty.clusterGroups.all()
             contents = Content.objects.filter(cluster__groups__in=cgroups)
         contents = fetch_by_id_noconvert(contents, ids)
@@ -125,9 +123,9 @@ def mutate_update_mark(
             ):
                 clusters = clusters_all
             else:
-                dProperty = SGroupProperty.objects.get_or_create(
-                    name="allow_featured"
-                )[0]
+                dProperty = SGroupProperty.objects.get_or_create(name="allow_featured")[
+                    0
+                ]
                 cgroups = dProperty.clusterGroups.all()
                 clusters = clusters_all.filter(groups__in=cgroups)
 
@@ -235,23 +233,19 @@ def mutate_update_metadata(
     ops = []
     for content_obj in contents:
         ops.append(
-            update_content_metadata_fn(
+            await update_content_metadata_fn(
                 info.context["request"],
                 content_obj,
                 state=state if not content_obj.has_immutable else None,
-                tags=tags
-                if not content_obj.has_immutable or manage_update
-                else None,
-                references=references
-                if not content_obj.has_immutable
-                else None,
+                tags=tags if not content_obj.has_immutable or manage_update else None,
+                references=references if not content_obj.has_immutable else None,
                 operation=operation,
                 authset=authorization,
             )
         )
         if actions:
             ops.append(
-                manage_actions_fn(
+                await manage_actions_fn(
                     info.context["request"],
                     content_obj,
                     actions,
@@ -261,7 +255,7 @@ def mutate_update_metadata(
     if actions and clusters:
         for cluster_obj in clusters:
             ops.append(
-                manage_actions_fn(
+                await manage_actions_fn(
                     info.context["request"],
                     cluster_obj,
                     actions,
@@ -277,8 +271,6 @@ def mutate_update_metadata(
             updated.update(clusters.values_list("flexid_cached", flat=True))
 
         if apply_groups(nets, netGroups_qset, operation=operation):
-            updated.update(
-                primaryForClusters.values_list("flexid_cached", flat=True)
-            )
+            updated.update(primaryForClusters.values_list("flexid_cached", flat=True))
 
     return MetadataUpdateMutation(updated=list(updated))
