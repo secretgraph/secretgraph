@@ -141,7 +141,7 @@ class ContentView(View):
     def dispatch(self, request, *args, **kwargs):
         return super().dispatch(request, *args, **kwargs)
 
-    async def get(self, request: HttpRequest, *args, **kwargs):
+    def get(self, request: HttpRequest, *args, **kwargs):
         authset = set(
             request.headers.get("Authorization", "").replace(" ", "").split(",")
         )

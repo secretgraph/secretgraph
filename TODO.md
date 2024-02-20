@@ -1,5 +1,6 @@
 # TODO
 
+-   python tools have to be adapted
 -   python tests have to be adapted
 -   make ts base-crypto static classes and methods
 -   expand hashing to to general derive tool, argon2id
