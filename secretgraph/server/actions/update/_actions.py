@@ -136,16 +136,14 @@ async def manage_actions_fn(
             actionObj = Action()
         if content:
             actionObj.contentAction.group = group
-        actionObj.value = base64.b64encode(
-            (
-                await encrypt(
-                    action_key[-32:],
-                    json.dumps(action_value).encode("utf-8"),
-                    algorithm="AESGCM",
-                    params={"nonce": nonce},
-                )
-            ).data
-        )
+        actionObj.value = (
+            await encrypt(
+                action_key[-32:],
+                json.dumps(action_value).encode("utf-8"),
+                algorithm="AESGCM",
+                params={"nonce": nonce},
+            )
+        ).data
         # reset used
         actionObj.used = None
         actionObj.start = action.start or timezone.now()
@@ -156,6 +154,7 @@ async def manage_actions_fn(
                 actionObj.stop = min(maxStop, actionObj.stop)
             else:
                 actionObj.stop = maxStop
+        assert isinstance(action_key_hash, str)
         actionObj.keyHash = action_key_hash
         actionObj.nonce = base64.b64encode(nonce).decode("ascii")
         actionObj.cluster = cluster

@@ -7,7 +7,6 @@ from cryptography.hazmat.primitives import serialization
 
 from .. import constants
 from ..typings import PrivateCryptoKey, PublicCryptoKey
-from .base_crypto import DeriveAlgorithm
 from .crypto import deriveString, findWorkingAlgorithms, mapDeriveAlgorithms
 
 
@@ -21,11 +20,8 @@ class MissingSaltError(ValueError):
 
 async def hashObject(
     inp: bytes | PrivateCryptoKey | PublicCryptoKey | Iterable[bytes],
-    hashAlgorithm: DeriveAlgorithm | str,
+    hashAlgorithm: str,
 ) -> str:
-    if isinstance(hashAlgorithm, str):
-        hashAlgorithm = mapDeriveAlgorithms[hashAlgorithm]
-
     if isinstance(inp, str):
         inp = base64.b64decode(inp)
     if hasattr(inp, "public_key"):
@@ -35,20 +31,18 @@ async def hashObject(
             encoding=serialization.Encoding.DER,
             format=serialization.PublicFormat.SubjectPublicKeyInfo,
         )
-    return await deriveString(inp, algorithm=hashAlgorithm.serializedName)
+    return await deriveString(inp, algorithm=hashAlgorithm)
 
 
 async def hashObjectContentHash(
     obj: bytes | PrivateCryptoKey | PublicCryptoKey | Iterable[bytes],
     domain: str,
-    hashAlgorithm: DeriveAlgorithm | str,
+    hashAlgorithm: str,
 ) -> str:
     return "%s:%s" % (domain, await hashObject(obj, hashAlgorithm))
 
 
-async def sortedHash(
-    inp: Iterable[str], hashAlgorithm: constants.HashNameItem | str
-) -> str:
+async def sortedHash(inp: Iterable[str], hashAlgorithm: str) -> str:
     obj = map(lambda x: x.encode("utf8"), sorted(inp))
     return await hashObject(obj, hashAlgorithm)
 
@@ -110,7 +104,7 @@ async def hashTagsContentHash(
 
 async def calculateHashesForHashAlgorithms(
     inp: bytes | PrivateCryptoKey | PublicCryptoKey | Iterable[bytes],
-    hashAlgorithms: Iterable[DeriveAlgorithm | str],
+    hashAlgorithms: Iterable[str],
 ) -> list[str]:
     if isinstance(inp, str):
         inp = base64.b64decode(inp)
@@ -125,7 +119,11 @@ async def calculateHashesForHashAlgorithms(
     for hashAlgorithm in hashAlgorithms:
         if isinstance(hashAlgorithm, str):
             hashAlgorithm = mapDeriveAlgorithms[hashAlgorithm]
-        hashes.append(asyncio.ensure_future(hashAlgorithm.derive(inp)))
+        hashes.append(
+            asyncio.ensure_future(
+                deriveString(inp, algorithm=hashAlgorithm.serializedName)
+            )
+        )
     return await asyncio.gather(*hashes)
 
 

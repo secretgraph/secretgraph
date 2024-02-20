@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import base64
+import json
 import logging
 from functools import partial, reduce
 from itertools import chain, islice
@@ -17,6 +18,7 @@ from django.utils import timezone
 from strawberry import relay
 
 from ...core import constants
+from ...core.utils.crypto import decrypt
 from ..actions.handler import ActionHandler
 from ..models import Action, Cluster, Content, Net, NetGroup, SGroupProperty
 from .hashing import calculateHashes
@@ -118,7 +120,7 @@ async def _parse_token(token: str):
             return None, None, None
     return (
         flexid_raw,
-        AESGCM(action_key[-32:]),
+        action_key[-32:],
         await calculateHashes((b"secretgraph", action_key)),
     )
 
@@ -258,10 +260,12 @@ async def retrieve_allowed_objects(
             # don't block auth with encoded @system
             q |= models.Q(cluster__name_cached=flexid_cached)
         # execute every action only once
-        actions = pre_filtered_actions.filter(q, keyHash__in=keyhashes).exclude(
-            id__in=returnval["action_results"].keys()
+        actions = (
+            pre_filtered_actions.filter(q, keyHash__in=keyhashes)
+            .exclude(id__in=returnval["action_results"].keys())
+            .select_related("contentAction")
         )
-        if not actions:
+        if not await actions.aexists():
             continue
 
         filters = models.Q()
@@ -272,7 +276,16 @@ async def retrieve_allowed_objects(
         # 3 special
         accesslevel = 0
         async for action in actions:
-            action_dict = action.decrypt_aesgcm(aesgcm)
+            action_dict = json.loads(
+                (
+                    await decrypt(
+                        aesgcm,
+                        action.value,
+                        params={"nonce": action.nonce},
+                        algorithm="AESGCM",
+                    )
+                ).data.decode("utf8")
+            )
             action_result = await ActionHandler.handle_action(
                 query.model,
                 action_dict,
@@ -369,7 +382,7 @@ async def retrieve_allowed_objects(
             getattr(request, "secretgraphActionsToRollback", set()),
         )
         request.secretgraphActionsToRollback.update(
-            updatedActions.values_list("id", flat=True)
+            [val async for val in updatedActions.values_list("id", flat=True)]
         )
         await updatedActions.aupdate(used=now)
 
@@ -385,9 +398,8 @@ async def retrieve_allowed_objects(
         _q = models.Q(
             id__in={
                 *returnval["action_info_clusters"].keys(),
-                *all_query.values_list("id", flat=True),
             }
-        )
+        ) | models.Q(id__in=models.Subquery(all_query.values("id")))
         # in view, we can see @system contents
         if scope == "view":
             _q_public = _q | models.Q(name__startswith="@")

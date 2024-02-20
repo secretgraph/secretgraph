@@ -191,7 +191,7 @@ class SideEffectsHandlers:
             not in await aget_cached_net_properties(
                 request, authset=request.secretgraphCleanResult.authset
             )
-            and "allow_dangerous_actions" not in cluster.properties
+            and "allow_dangerous_actions" not in await cluster.aproperties()
         ):
             raise ValueError("No permission to register dangerous actions")
         now_plus_x = timezone.now() + td(minutes=20)

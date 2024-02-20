@@ -1,17 +1,12 @@
-# TODO urgent
+# TODO
 
-Currently the whole code is failing, why? New harmonized Crypto system. Fix this!
-
+-   python tests have to be adapted
 -   make ts base-crypto static classes and methods
--   expand hashing to to general derive tool
+-   expand hashing to to general derive tool, argon2id
 -   use key fn of mapEncryption/mapSignature
 -   add compatibility check for keys, or doesn't fail when a key fails
 -   remove mapKeyusages
--   complete the crypto refactory of ts code
--   major refactory of python code to the new crypto system
-
-# TODO
-
+-   complete the crypto refactory of ts code, python
 -   goToNode document node change function
 -   document how to add elements, cannot use goToNode here
 -   editor for Personal Data (in progress)

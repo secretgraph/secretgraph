@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import base64
-import json
 import logging
 import posixpath
 import secrets
@@ -10,7 +8,7 @@ from functools import cached_property
 from typing import Iterable, Optional, TypedDict, Union
 from uuid import UUID, uuid4
 
-from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+from asgiref.sync import sync_to_async
 from cryptography.hazmat.primitives.serialization import load_der_public_key
 from django.conf import settings
 from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
@@ -23,6 +21,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from strawberry import relay
+from strawberry_django import django_resolver
 
 from ..core import constants
 from .validators import (
@@ -290,7 +289,7 @@ class Cluster(FlexidModel):
         size = len(self.description) + FlexidModel.flexid_byte_size
         return size
 
-    @property
+    @django_resolver
     def is_primary(self) -> bool:
         return hasattr(self, "primaryFor")
 
@@ -304,6 +303,10 @@ class Cluster(FlexidModel):
             "name", flat=True
         )
 
+    @sync_to_async
+    def aproperties(self):
+        return self.properties
+
     @property
     def nonhidden_properties(self) -> list[str]:
         if not self.id:
@@ -313,6 +316,10 @@ class Cluster(FlexidModel):
         return SGroupProperty.objects.filter(
             clusterGroups__in=self.groups.filter(hidden=False)
         ).values_list("name", flat=True)
+
+    @sync_to_async
+    def anonhidden_properties(self):
+        return self.nonhidden_properties
 
     def clean(self):
         super().clean()
@@ -537,9 +544,17 @@ class Content(FlexidModel):
     def properties(self) -> list[str]:
         return self.cluster.properties
 
+    @sync_to_async
+    def aproperties(self):
+        return self.properties
+
     @property
     def nonhidden_properties(self) -> list[str]:
         return self.cluster.nonhidden_properties
+
+    @sync_to_async
+    def anonhidden_properties(self):
+        return self.nonhidden_properties
 
     @property
     def needs_signature(self) -> bool:
@@ -792,20 +807,6 @@ class Action(models.Model):
                 name="%(class)s_exist",
             ),
         ]
-
-    def decrypt(self, key: str | bytes):
-        if isinstance(key, str):
-            key = base64.b64decode(key)
-        return self.decrypt_aesgcm(AESGCM(key))
-
-    def decrypt_aesgcm(self, aesgcm: AESGCM):
-        action_value = self.value
-        # cryptography doesn't support memoryview
-        if isinstance(action_value, memoryview):
-            action_value = action_value.tobytes()
-        return json.loads(
-            aesgcm.decrypt(base64.b64decode(self.nonce), action_value, None)
-        )
 
     def __str__(self) -> str:
         return self.keyHash

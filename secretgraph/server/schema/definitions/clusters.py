@@ -29,7 +29,7 @@ class ClusterNode(SBaseTypesMixin, relay.Node):
 
     @strawberry_django.field()
     async def net(self, info: Info) -> Optional[NetNode]:
-        if self.limited or not self.is_primary:
+        if self.limited or not await self.is_primary():
             return None
 
         if (
@@ -55,10 +55,10 @@ class ClusterNode(SBaseTypesMixin, relay.Node):
         return self.featured
 
     @strawberry_django.field()
-    def primary(self) -> Optional[bool]:
+    async def primary(self) -> Optional[bool]:
         if self.limited:
             return None
-        return self.is_primary
+        return await self.is_primary()
 
     @strawberry_django.field(description="Is cluster public/global")
     def public(self) -> Optional[bool]:

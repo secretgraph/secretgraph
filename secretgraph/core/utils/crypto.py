@@ -19,7 +19,9 @@ from .base_crypto import (
 
 logger = getLogger(__name__)
 
-DataInputType = TypeVar("DataInputType", str, bytes, Awaitable[str | bytes])
+DataInputType = TypeVar(
+    "DataInputType", str, bytes, memoryview, Awaitable[str | bytes | memoryview]
+)
 KeyInputType = TypeVar("KeyInputType", KeyType, Awaitable[KeyType])
 ParamsInputType = TypeVar(
     "ParamsInputType",
@@ -102,6 +104,8 @@ async def derive(
 ) -> FullCryptoResult:
     if isawaitable(data):
         data = await data
+    if isinstance(data, memoryview):
+        data = data.tobytes()
     if not algorithm and isinstance(data, str):
         splitted = data.split(":", 1)
         algorithm = splitted[0]
@@ -115,7 +119,7 @@ async def derive(
         result = await entry.deserialize(data, params)
         data = result.data
         params = result.params
-    assert isinstance(data, bytes)
+    assert isinstance(data, (bytes, Iterable))
     result = await entry.derive(data, params)
     return FullCryptoResult(
         data=result.data, params=result.params, serializedName=entry.serializedName
@@ -148,6 +152,8 @@ async def deriveString(
 ) -> str:
     if isawaitable(data):
         data = await data
+    if isinstance(data, memoryview):
+        data = data.tobytes()
     if isinstance(data, str):
         data = await b64decode(data)
     result = await derive(data, params=params, algorithm=algorithm)
@@ -184,6 +190,8 @@ async def encrypt(
 ) -> FullCryptoResult:
     if isawaitable(data):
         data = await data
+    if isinstance(data, memoryview):
+        data = data.tobytes()
     if isawaitable(key):
         key = await key
     if isinstance(data, str):
@@ -253,6 +261,11 @@ async def decrypt(
         result = await deserializeEncryptedString(params)
         algorithm = result.serializedName
         params = result.params
+
+    if isawaitable(data):
+        data = await data
+    if isinstance(data, memoryview):
+        data = data.tobytes()
     entry = mapEncryptionAlgorithms.get(algorithm)
     if not entry:
         raise UnknownAlgorithm("invalid algorithm: " + algorithm)

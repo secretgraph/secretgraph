@@ -402,10 +402,8 @@ class AESGCMAlgo(EncryptionAlgorithm):
         else:
             params = copy.copy(params)
         params["bits"] = int(params.get("bits", 256))
-        if params["bits"] not in {128, 256}:
-            raise ValueError("invalid amount of bits")
         return KeyResult(
-            key=urandom(params["bits"] // 8),
+            key=AESGCM.generate_key(params["bits"]),
             params=params,
         )
 

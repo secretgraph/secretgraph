@@ -150,7 +150,7 @@ async def mutate_content(
                 not in await aget_cached_net_properties(
                     info.context["request"], authset=authorization
                 )
-                and "allow_hidden" not in content_obj.properties
+                and "allow_hidden" not in await content_obj.aproperties()
             ):
                 content.hidden = None
 
@@ -209,7 +209,7 @@ async def mutate_content(
                 not in await aget_cached_net_properties(
                     info.context["request"], authset=authorization
                 )
-                and "allow_hidden" not in cluster_obj.properties
+                and "allow_hidden" not in await cluster_obj.aproperties()
             ):
                 content.hidden = None
 

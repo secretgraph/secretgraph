@@ -10,6 +10,7 @@ from itertools import chain
 from typing import Iterable, List, Optional
 from uuid import UUID, uuid4
 
+from asgiref.sync import sync_to_async
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.serialization import load_der_public_key
 from django.conf import settings
@@ -174,15 +175,17 @@ async def _update_or_create_content_or_key(
         size_old = content.size
 
     if isinstance(objdata.cluster, str):
-        objdata.cluster = (
-            await ids_to_results(
-                request,
-                objdata.cluster,
-                Cluster,
-                # create includes move permission
-                scope="create",
-                cacheName=None,
-                authset=authset,
+        objdata.cluster = await (
+            (
+                await ids_to_results(
+                    request,
+                    objdata.cluster,
+                    Cluster,
+                    # create includes move permission
+                    scope="create",
+                    cacheName=None,
+                    authset=authset,
+                )
             )["Cluster"]["objects_without_public"]
             .select_related("net")
             .filter(markForDestruction=None)
@@ -356,7 +359,7 @@ async def _update_or_create_content_or_key(
         else:
             content.contentHash = chash
     del chash
-    content.full_clean(exclude=["file", "net", "cluster"])
+    await sync_to_async(content.full_clean)(exclude=["file", "net", "cluster"])
 
     final_references = None
     encryption_target_ref = set()

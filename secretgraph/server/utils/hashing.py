@@ -27,7 +27,7 @@ async def hashObject(
     assert len(settings.SECRETGRAPH_HASH_ALGORITHMS) > 0, "no hash algorithms specified"
     if not hashAlgorithm:
         hashAlgorithm = settings.SECRETGRAPH_HASH_ALGORITHMS[0]
-    return _hashObject(inp, hashAlgorithm)
+    return await _hashObject(inp, hashAlgorithm)
 
 
 async def hashTagsContentHash(
@@ -38,7 +38,7 @@ async def hashTagsContentHash(
     assert len(settings.SECRETGRAPH_HASH_ALGORITHMS) > 0, "no hash algorithms specified"
     if not hashAlgorithm:
         hashAlgorithm = settings.SECRETGRAPH_HASH_ALGORITHMS[0]
-    return _hashTagsContentHash(inp, domain, hashAlgorithm)
+    return await _hashTagsContentHash(inp, domain, hashAlgorithm)
 
 
 async def calculateHashes(
