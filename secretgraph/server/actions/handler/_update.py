@@ -458,9 +458,12 @@ class UpdateHandlers:
                 fields=("id",),
                 admin=admin,
             )
-            action_dict["nets"] = await Net.objects.filter(
-                clusters__id__in=clusters
-            ).avalues_list("id", flat=True)
+            action_dict["nets"] = [
+                val
+                async for val in Net.objects.filter(
+                    clusters__id__in=clusters
+                ).values_list("id", flat=True)
+            ]
             del clusters
         del nets
         for idtuple in action_dict.get("exclude") or []:

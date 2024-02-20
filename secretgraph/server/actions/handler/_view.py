@@ -9,7 +9,7 @@ from ._shared import get_forbidden_content_ids
 
 class ViewHandlers:
     @staticmethod
-    def do_auth(action_dict, scope, sender, request, action, **kwargs):
+    async def do_auth(action_dict, scope, sender, request, action, **kwargs):
         # for preventing accidentally deletion (Note: 1 hour limit cleans also up)
         if scope != "auth":
             return None
@@ -41,7 +41,7 @@ class ViewHandlers:
         return None
 
     @classmethod
-    def clean_auth(cls, action_dict, request, cluster, content, admin):
+    async def clean_auth(cls, action_dict, request, cluster, content, admin):
         if not action_dict.get("challenge"):
             raise ValueError("Missing challenge (challenge)")
         if not action_dict.get("requester"):
@@ -72,7 +72,7 @@ class ViewHandlers:
         }
 
     @staticmethod
-    def do_view(action_dict, scope, sender, accesslevel, action, **kwargs):
+    async def do_view(action_dict, scope, sender, accesslevel, action, **kwargs):
         if scope not in {"view", "link"}:
             if scope != "peek" or not action_dict.get("allowPeek"):
                 return None
@@ -131,7 +131,7 @@ class ViewHandlers:
         return None
 
     @classmethod
-    def clean_view(cls, action_dict, request, cluster, content, admin):
+    async def clean_view(cls, action_dict, request, cluster, content, admin):
         result = {
             "action": "view",
             "contentActionGroup": "view",

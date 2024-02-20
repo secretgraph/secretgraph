@@ -59,11 +59,12 @@ async def mutate_push_content(
         raise ValueError("Could not determinate parent for push operation")
     source = result["objects_without_public"].get()
     cleaned_result = pre_clean_content_spec(True, content, result)
-    required_keys = set(
-        await Content.objects.required_keys_full(source.cluster).avalues_list(
+    required_keys = {
+        val
+        async for val in Content.objects.required_keys_full(source.cluster).values_list(
             "contentHash", flat=True
         )
-    )
+    }
     action_key = None
     if cleaned_result["updateable"]:
         action_key = os.urandom(50)
@@ -139,13 +140,14 @@ async def mutate_transfer(
         referencedBy__source=transfer_target,
         referencedBy__group="signature",
     )
-    signer_key_hashes = list(
-        await ContentTag.objects.filter(
+    signer_key_hashes = [
+        val
+        async for val in ContentTag.objects.filter(
             content__in=signer_keys, tag__startswith="key_hash="
         )
         .annotate(key=Substr("tag", 10))
-        .avalues_list("key", flat=True)
-    )
+        .values_list("key", flat=True)
+    ]
 
     tres = await transfer_value(
         info.context["request"],
@@ -262,11 +264,12 @@ async def mutate_pull(
         referencedBy__source=transfer_target,
         referencedBy__group="signature",
     )
-    signer_key_hashes = list(
-        await ContentTag.objects.filter(
+    signer_key_hashes = [
+        val
+        async for val in ContentTag.objects.filter(
             content__in=signer_keys, tag__startswith="key_hash="
-        ).avalues_list("tag", flat=True)
-    )
+        ).values_list("tag", flat=True)
+    ]
 
     tres = await transfer_value(
         info.context["request"],

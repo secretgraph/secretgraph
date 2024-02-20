@@ -1,7 +1,6 @@
 import re
 from itertools import chain
 
-from ...core.constants import public_states
 from ..models import Net
 
 # TODO: may improve dataclasses so everything is calculated from itself
@@ -17,8 +16,7 @@ def check_actions(actions, result):
             pass
         else:
             matcher = re.compile(
-                "^(%s)$"
-                % "|".join(map(re.escape, action_result["allowedActions"]))
+                "^(%s)$" % "|".join(map(re.escape, action_result["allowedActions"]))
             )
             if actions.any(lambda x: not matcher.fullmatch(x.value.value)):
                 continue
@@ -43,8 +41,7 @@ def pre_clean_update_content_args(tags, state, references, actions, result):
                 pass
             else:
                 matcher = re.compile(
-                    "^(%s)$"
-                    % "|".join(map(re.escape, action_result["allowedActions"]))
+                    "^(%s)$" % "|".join(map(re.escape, action_result["allowedActions"]))
                 )
                 if actions.any(lambda x: not matcher.fullmatch(x.value.value)):
                     continue
@@ -129,8 +126,7 @@ def pre_clean_content_spec(create: bool, content, result):
                 pass
             else:
                 matcher = re.compile(
-                    "^(%s)$"
-                    % "|".join(map(re.escape, action_dict["allowedActions"]))
+                    "^(%s)$" % "|".join(map(re.escape, action_dict["allowedActions"]))
                 )
                 if actions.any(lambda x: not matcher.fullmatch(x.value.value)):
                     continue
@@ -202,9 +198,7 @@ def pre_clean_content_spec(create: bool, content, result):
 
     if injectedRefs:
         if content.references is not None or create:
-            content.references = chain(
-                content.references or [], injectedRefs.values()
-            )
+            content.references = chain(content.references or [], injectedRefs.values())
     additionalNets = list(additionalNets.keys())
     if create and not content.net:
         # we identify the net directly by the net id if set by action

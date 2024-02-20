@@ -97,9 +97,9 @@ class LazyViewResult(object):
                 if not loop:
                     self[i]
                 else:
-                    ops.append(self.aat(i))
+                    ops.append(asyncio.ensure_future(self.aat(i)))
         if loop:
-            return asyncio.gather(ops)
+            return asyncio.wait(ops)
 
 
 _valid_lengths = {32, 50}
@@ -618,17 +618,22 @@ async def aget_cached_net_properties(
                 request,
                 cacheName=result_name,
             )["authset"]
-        query = await retrieve_allowed_objects(
-            request,
-            Cluster.objects.filter(markForDestruction__isnull=True),
-            scope="manage",
-            authset=authset,
+        query = (
+            await retrieve_allowed_objects(
+                request,
+                Cluster.objects.filter(markForDestruction__isnull=True),
+                scope="manage",
+                authset=authset,
+            )
         )["objects_without_public"]
         net_groups = NetGroup.objects.filter(get_net_properties_q(request, query))
         all_props = frozenset(
-            await SGroupProperty.objects.filter(netGroups__in=net_groups).avalues_list(
-                "name", flat=True
-            )
+            [
+                val
+                async for val in SGroupProperty.objects.filter(
+                    netGroups__in=net_groups
+                ).values_list("name", flat=True)
+            ]
         )
         setattr(
             request,

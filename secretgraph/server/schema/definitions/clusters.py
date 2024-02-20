@@ -28,20 +28,22 @@ class ClusterNode(SBaseTypesMixin, relay.Node):
     flexid: relay.NodeID[str]
 
     @strawberry_django.field()
-    def net(self, info: Info) -> Optional[NetNode]:
+    async def net(self, info: Info) -> Optional[NetNode]:
         if self.limited or not self.is_primary:
             return None
 
         if (
             "manage_user"
-            not in get_cached_net_properties(info.context["request"])
-            and not get_cached_result(
-                info.context["request"],
-                scope="manage",
-                cacheName="secretgraphNetResult",
-            )["Cluster"]["objects_without_public"]
+            not in await aget_cached_net_properties(info.context["request"])
+            and not await (
+                await get_cached_result(
+                    info.context["request"],
+                    scope="manage",
+                    cacheName="secretgraphNetResult",
+                ).aat("Cluster")
+            )["objects_without_public"]
             .filter(id=self.id)
-            .exists()
+            .aexists()
         ):
             return None
         return self.net
@@ -98,9 +100,7 @@ class ClusterNode(SBaseTypesMixin, relay.Node):
         if "allow_hidden" in props or "manage_cluster_groups" in props:
             return list(self.groups.values_list("name", flat=True))
         else:
-            return list(
-                self.groups.filter(hidden=False).values_list("name", flat=True)
-            )
+            return list(self.groups.filter(hidden=False).values_list("name", flat=True))
 
     @strawberry_django.connection(strawberry.relay.ListConnection[ContentNode])
     def contents(
@@ -145,9 +145,9 @@ class ClusterNode(SBaseTypesMixin, relay.Node):
             node_ids = list(node_ids)
         if len(node_ids) > settings.SECRETGRAPH_STRAWBERRY_MAX_RESULTS:
             raise ValueError("too many nodes requested")
-        if not (
-            await aget_cached_net_properties(info.context["request"])
-        ).isdisjoint({"manage_update", "allow_view"}):
+        if not (await aget_cached_net_properties(info.context["request"])).isdisjoint(
+            {"manage_update", "allow_view"}
+        ):
             query = Cluster.objects.all()
         else:
             query = (
@@ -203,9 +203,7 @@ class ClusterNode(SBaseTypesMixin, relay.Node):
                 scope="delete",
             )["Cluster"]
             queryset = queryset.filter(
-                id__in=Subquery(
-                    del_result["objects_without_public"].values("id")
-                )
+                id__in=Subquery(del_result["objects_without_public"].values("id"))
             )
         if filters:
             if filters.search:

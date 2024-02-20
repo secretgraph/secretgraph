@@ -3,6 +3,7 @@ from itertools import chain
 from typing import Optional
 
 import strawberry
+from asgiref.sync import sync_to_async
 from django.db import transaction
 from django.db.models import Exists, OuterRef, Value
 from strawberry import relay
@@ -26,6 +27,7 @@ from ...models import (
 from ...signals import generateFlexidAndDownloadId
 from ...utils.arguments import check_actions, pre_clean_update_content_args
 from ...utils.auth import (
+    aget_cached_net_properties,
     fetch_by_id_noconvert,
     get_cached_net_properties,
     ids_to_results,
@@ -86,7 +88,7 @@ class MarkMutation:
     updated: list[relay.GlobalID]
 
 
-def mutate_update_mark(
+async def mutate_update_mark(
     info: Info,
     ids: list[strawberry.ID],  # ID or cluster global name
     hidden: Optional[bool] = None,
@@ -153,7 +155,7 @@ class MetadataUpdateMutation:
     updated: list[relay.GlobalID]
 
 
-def mutate_update_metadata(
+async def mutate_update_metadata(
     info: Info,
     ids: list[relay.GlobalID],
     state: Optional[str] = None,
@@ -165,7 +167,7 @@ def mutate_update_metadata(
     operation: Optional[MetadataOperations] = MetadataOperations.APPEND,
     authorization: Optional[AuthList] = None,
 ) -> MetadataUpdateMutation:
-    manage_update = "manage_update" in get_cached_net_properties(
+    manage_update = "manage_update" in await aget_cached_net_properties(
         info.context["request"], authset=authorization
     )
     if manage_update:
@@ -185,7 +187,7 @@ def mutate_update_metadata(
             ids,
         )
     else:
-        result = ids_to_results(
+        result = await ids_to_results(
             info.context["request"],
             ids,
             (Content, Cluster),
@@ -264,13 +266,20 @@ def mutate_update_metadata(
             )
 
     updated = set()
-    with transaction.atomic():
-        for f in ops:
-            updated.add(f().flexid_cached)
-        if apply_groups(clusters, clusterGroups_qset, operation=operation):
-            updated.update(clusters.values_list("flexid_cached", flat=True))
 
-        if apply_groups(nets, netGroups_qset, operation=operation):
-            updated.update(primaryForClusters.values_list("flexid_cached", flat=True))
+    @sync_to_async
+    def save_fn():
+        with transaction.atomic():
+            for f in ops:
+                updated.add(f().flexid_cached)
+            if apply_groups(clusters, clusterGroups_qset, operation=operation):
+                updated.update(clusters.values_list("flexid_cached", flat=True))
+
+            if apply_groups(nets, netGroups_qset, operation=operation):
+                updated.update(
+                    primaryForClusters.values_list("flexid_cached", flat=True)
+                )
+
+    await save_fn()
 
     return MetadataUpdateMutation(updated=list(updated))

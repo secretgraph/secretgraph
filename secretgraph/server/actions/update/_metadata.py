@@ -321,7 +321,7 @@ async def update_content_metadata_fn(
         else content.net.quota
     )
     if tags:
-        oldtags = await content.tags.avalues_list("tag", flat=True)
+        oldtags = [val async for val in content.tags.values_list("tag", flat=True)]
         (
             tags_dict,
             key_hashes_tags,
@@ -361,11 +361,12 @@ async def update_content_metadata_fn(
                         composed = "%s=%s" % (prefix, subval)
                         remove_tags_q &= ~Q(tag__startswith=composed)
     else:
-        kl = await (
-            content.tags.filter(tag__startswith="key_hash=")
+        kl = [
+            val
+            async for val in content.tags.filter(tag__startswith="key_hash=")
             .annotate(key_hash=Substr("tag", 10))
-            .avalues_list("key_hash", flat=True)
-        )
+            .values_list("key_hash", flat=True)
+        ]
         key_hashes_tags = set(kl)
 
     if references is None:

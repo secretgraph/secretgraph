@@ -125,7 +125,7 @@ async def calculateHashesForHashAlgorithms(
     for hashAlgorithm in hashAlgorithms:
         if isinstance(hashAlgorithm, str):
             hashAlgorithm = mapDeriveAlgorithms[hashAlgorithm]
-        hashes.append(asyncio.create_task(hashAlgorithm.derive(inp)))
+        hashes.append(asyncio.ensure_future(hashAlgorithm.derive(inp)))
     return (await asyncio.wait(hashes))[0]
 
 

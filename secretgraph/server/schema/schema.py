@@ -143,7 +143,7 @@ class SecretgraphSubscriptions:
 
 @strawberry.type
 class Query:
-    @strawberry.field
+    @strawberry_django.field
     @staticmethod
     async def secretgraph(
         info: Info, authorization: Optional[AuthList] = None
@@ -154,7 +154,7 @@ class Query:
         # f["Content"]
         # f["Cluster"]
         await aget_cached_net_properties(info.context["request"])
-        return SecretgraphObject
+        return SecretgraphObject()
 
 
 @strawberry.type

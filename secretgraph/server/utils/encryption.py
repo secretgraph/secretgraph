@@ -2,6 +2,7 @@ import base64
 import logging
 from typing import Iterable
 
+from asgiref.sync import async_to_sync
 from cryptography import exceptions
 from django.db.models import Exists, F, OuterRef, Q, Subquery
 
@@ -16,6 +17,8 @@ from ...core.utils.crypto import (
 from ..models import Content, ContentReference
 
 logger = logging.getLogger(__name__)
+
+sync_decryptString = async_to_sync(decryptString)
 
 
 async def create_key_maps(contents, keyset):
@@ -168,7 +171,7 @@ class ProxyTag:
         if not self._key or not splitted[0].startswith("~"):
             return splitted[1]
         try:
-            return decryptString(self._key, splitted[1])
+            return sync_decryptString(self._key, splitted[1])
         except Exception as exc:
             logger.info(
                 "Cannot decrypt index: %s of content: %s",
@@ -205,6 +208,9 @@ class ProxyTags:
         return len(getattr(self, attr)) > 0
 
 
+sync_create_key_maps = async_to_sync(create_key_maps)
+
+
 def iter_decrypt_contents(
     result, /, *, queryset=None, decryptset=None
 ) -> Iterable[Content]:
@@ -214,7 +220,7 @@ def iter_decrypt_contents(
         raise Exception("decryptset is missing")
     # copy query
     content_query = (queryset or result["objects_with_public"]).all()
-    content_map, transfer_map = create_key_maps(content_query, decryptset)
+    content_map, transfer_map = sync_create_key_maps(content_query, decryptset)
     # main query, restricted to PublicKeys and decoded contents
     query = content_query.filter(
         Q(type="PublicKey") | Q(state__in=public_states) | Q(id__in=content_map.keys())

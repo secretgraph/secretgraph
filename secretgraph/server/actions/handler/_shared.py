@@ -25,11 +25,14 @@ async def only_owned_helper(
     if only_first_field:
         fields = list(fields)[:1]
     if admin:
-        return await klass.objects.filter(q).avalues_list(*fields, flat=True)
+        return [
+            val async for val in klass.objects.filter(q).values_list(*fields, flat=True)
+        ]
 
     if scope == "manage":
-        return (
-            await (
+        return [
+            val
+            async for val in (
                 await get_cached_result(
                     request,
                     scope="manage",
@@ -38,11 +41,12 @@ async def only_owned_helper(
                 ).aat(klass)
             )["objects_without_public"]
             .filter(q)
-            .avalues_list(*fields, flat=True)
-        )
+            .values_list(*fields, flat=True)
+        ]
     elif scope == "link":
-        return (
-            await (
+        return [
+            val
+            async for val in (
                 await get_cached_result(
                     request,
                     scope="link",
@@ -51,11 +55,12 @@ async def only_owned_helper(
                 ).aat(klass)
             )["objects_with_public"]
             .filter(q)
-            .avalues_list(*fields, flat=True)
-        )
+            .values_list(*fields, flat=True)
+        ]
     elif scope == "view":
-        return (
-            await (
+        return [
+            val
+            async for val in (
                 await get_cached_result(
                     request,
                     scope="view",
@@ -63,17 +68,20 @@ async def only_owned_helper(
                 ).aat(klass)
             )["objects_with_public"]
             .filter(q)
-            .avalues_list(*fields, flat=True)
-        )
+            .values_list(*fields, flat=True)
+        ]
     else:
-        return await (
-            await retrieve_allowed_objects(
-                request,
-                klass.objects.filter(q),
-                scope,
-                authset=request.secretgraphCleanResult.authset,
-            )
-        )["objects_without_public"].avalues_list(*fields, flat=True)
+        return [
+            val
+            async for val in (
+                await retrieve_allowed_objects(
+                    request,
+                    klass.objects.filter(q),
+                    scope,
+                    authset=request.secretgraphCleanResult.authset,
+                )
+            )["objects_without_public"].values_list(*fields, flat=True)
+        ]
 
 
 @lru_cache(maxsize=4)

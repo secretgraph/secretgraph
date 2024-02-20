@@ -170,9 +170,12 @@ async def mutate_content(
             else:
                 required_keys = Content.objects.required_keys_full(content_obj.cluster)
             if isinstance(required_keys, QuerySet):
-                required_keys = await required_keys.annotate(
-                    keyHash=Substr("contentHash", 5)
-                ).avalues_list("keyHash", flat=True)
+                required_keys = {
+                    val
+                    async for val in required_keys.annotate(
+                        keyHash=Substr("contentHash", 5)
+                    ).values_list("keyHash", flat=True)
+                }
             required_keys = set(required_keys)
         pre_clean_content_spec(False, content, result)
         update_fn = await update_content_fn(
@@ -212,11 +215,12 @@ async def mutate_content(
 
         # is a key spec
         if not content.key:
-            required_keys = set(
-                await Content.objects.required_keys_full(cluster_obj).avalues_list(
-                    "contentHash", flat=True
-                )
-            )
+            required_keys = {
+                val
+                async for val in Content.objects.required_keys_full(
+                    cluster_obj
+                ).values_list("contentHash", flat=True)
+            }
         pre_clean_content_spec(True, content, result)
         create_fn = await create_content_fn(
             info.context["request"],

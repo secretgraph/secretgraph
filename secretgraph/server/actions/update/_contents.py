@@ -697,9 +697,12 @@ async def update_content_fn(
         key_obj = ContentKeyInput(**_value_to_dict(objdata.key))
 
         if not key_obj.publicTags:
-            key_obj.publicTags = await content.tags.exclude(
-                tag__startswith="key_hash="
-            ).avalues_list("tag", flat=True)
+            key_obj.publicTags = [
+                val
+                async for val in content.tags.exclude(
+                    tag__startswith="key_hash="
+                ).values_list("tag", flat=True)
+            ]
         key_obj.privateTags = None
         hashes, newdata, _private = await _transform_key_into_dataobj(
             key_obj,

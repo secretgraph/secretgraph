@@ -3,7 +3,6 @@
 Currently the whole code is failing, why? New harmonized Crypto system. Fix this!
 
 -   make ts base-crypto static classes and methods
--   asyncify manage_action_fn for allowing hash selection
 -   expand hashing to to general derive tool
 -   use key fn of mapEncryption/mapSignature
 -   add compatibility check for keys, or doesn't fail when a key fails
