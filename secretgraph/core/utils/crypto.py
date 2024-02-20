@@ -92,8 +92,8 @@ def findWorkingAlgorithms(
             found = mapSignatureAlgorithms[algo].serializedName
         elif failhard:
             raise UnknownAlgorithm("Unknown algorithm: " + algo)
-        if found and not algos.has(found):
-            algos.add(found)
+        if found and found not in algos:
+            algos[found] = True
     return algos.keys()
 
 
@@ -172,7 +172,7 @@ async def generateKey(
         params = await params
     result = await entry.generateKey(params)
     return FullKeyResult(
-        key=result.key, params=result.parameters, serializedName=entry.serializedName
+        key=result.key, params=result.params, serializedName=entry.serializedName
     )
 
 
@@ -193,10 +193,10 @@ async def encrypt(
         raise UnknownAlgorithm("invalid algorithm: " + algorithm)
     assert isinstance(data, bytes)
     result = await entry.encrypt(key, data, params)
-    return FullKeyResult(
-        data=result.params,
+    return FullCryptoResult(
+        data=result.data,
         key=result.key,
-        params=result.parameters,
+        params=result.params,
         serializedName=entry.serializedName,
     )
 

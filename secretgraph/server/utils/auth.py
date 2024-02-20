@@ -420,6 +420,9 @@ async def retrieve_allowed_objects(
     return returnval
 
 
+sync_retrieve_allowed_objects = async_to_sync(retrieve_allowed_objects)
+
+
 def fetch_by_id_noconvert(
     query: models.QuerySet,
     flexids: tuple[str] | set[str] | list[str],

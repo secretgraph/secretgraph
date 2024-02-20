@@ -27,7 +27,7 @@ from django.views.generic import View
 from strawberry.django.views import AsyncGraphQLView
 
 from ..core import constants
-from .utils.auth import retrieve_allowed_objects
+from .utils.auth import sync_retrieve_allowed_objects
 from .utils.encryption import iter_decrypt_contents
 from .utils.mark import freeze_contents, update_file_accessed
 from .view_decorators import (
@@ -141,7 +141,7 @@ class ContentView(View):
     def dispatch(self, request, *args, **kwargs):
         return super().dispatch(request, *args, **kwargs)
 
-    def get(self, request: HttpRequest, *args, **kwargs):
+    async def get(self, request: HttpRequest, *args, **kwargs):
         authset = set(
             request.headers.get("Authorization", "").replace(" ", "").split(",")
         )
@@ -156,7 +156,7 @@ class ContentView(View):
             assert _assert_nospace(
                 authset
             ), "whitespace in one of the tokens (GET token)"
-        self.result = retrieve_allowed_objects(
+        self.result = sync_retrieve_allowed_objects(
             request,
             "Content",
             scope="peek"

@@ -469,12 +469,12 @@ class UpdateHandlers:
         for idtuple in action_dict.get("exclude") or []:
             type_name, id = relay.from_base64(idtuple)
             result["exclude"][type_name].append(id)
-        res_action = get_cached_result(
+        res_action = await get_cached_result(
             request,
             scope="manage",
             cacheName="secretgraphCleanResult",
             ensureInitialized=True,
-        )["Action"]
+        ).aat("Action")
         for klass in [Content, Action]:
             type_name = klass.__name__
             if isinstance(klass, Action):
@@ -482,19 +482,19 @@ class UpdateHandlers:
                     keyHash__in=result["exclude"][type_name]
                 )
             else:
-                r = get_cached_result(
+                r = await get_cached_result(
                     request,
                     scope="manage",
                     cacheName="secretgraphCleanResult",
                     ensureInitialized=True,
-                )[type_name]
+                ).aat(type_name)
                 objs = fetch_by_id(
                     r["objects_without_public"],
                     result["exclude"][type_name],
                     limit_ids=None,
                 )
 
-            s = set(objs.values_list("id", flat=True))
+            s = {val for val in objs.values_list("id", flat=True)}
             # now add exclude infos (if not admin)
             # note: manage always resolves, so this is valid
             for action in res_action["action_results"]:

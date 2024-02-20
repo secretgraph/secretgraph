@@ -106,13 +106,15 @@ async def _update_or_create_cluster(
             if net:
                 net = net.net
         if not net:
-            if retrieve_allowed_objects(
-                request,
-                "Cluster",
-                scope="manage",
-                authset=authset,
-                ignore_restrictions=True,
-            )["objects_without_public"].exists():
+            if await (
+                await retrieve_allowed_objects(
+                    request,
+                    "Cluster",
+                    scope="manage",
+                    authset=authset,
+                    ignore_restrictions=True,
+                )
+            )["objects_without_public"].aexists():
                 raise ValueError(
                     "not allowed - net disabled or " "not in actions time range"
                 )
@@ -235,8 +237,8 @@ async def _update_or_create_cluster(
             initial=create_net,
         )
         assert isinstance(clusterGroups_qtuple, tuple)
-    dProperty = await SGroupProperty.objects.aget_or_create(
-        name="default", defaults={}
+    dProperty = (
+        await SGroupProperty.objects.aget_or_create(name="default", defaults={})
     )[0]
 
     def cluster_save_fn():
@@ -321,7 +323,9 @@ async def create_cluster_fn(
     if objdata.keys:
         for key_ob in objdata.keys[:2]:
             contentdata = ContentInput(key=key_ob, cluster=cluster)
-            content_fns.append(create_key_fn(request, contentdata, authset=authset))
+            content_fns.append(
+                await create_key_fn(request, contentdata, authset=authset)
+            )
 
     @django_resolver
     def save_fn(context: AbstractContextManager = nullcontext):

@@ -50,23 +50,17 @@ class SBaseTypesMixin:
         if self.limited or self.reduced:
             return
         name = self.__class__.__name__.replace("Node", "", 1)
-        results = get_cached_result(
-            info.context["request"], ensureInitialized=True
-        )
+        results = get_cached_result(info.context["request"], ensureInitialized=True)
         # only show some actions if not set
         has_manage = False
         if isinstance(self, Content):
             # if content: check cluster and content keys
             mappers = [
                 results[name].get("action_info_contents", {}).get(self.id, {}),
-                results[name]
-                .get("action_info_clusters", {})
-                .get(self.cluster_id, {}),
+                results[name].get("action_info_clusters", {}).get(self.cluster_id, {}),
             ]
         else:
-            mappers = [
-                results[name].get("action_info_clusters", {}).get(self.id, {})
-            ]
+            mappers = [results[name].get("action_info_clusters", {}).get(self.id, {})]
         # auth included unprotected ids
         seen_ids = set()
         # prevent copy
@@ -81,9 +75,9 @@ class SBaseTypesMixin:
                     # ...doesn't appear here
                     if key_val[0][0] != "view":
                         for action_id in key_val[1]:
-                            _tags = results[name]["action_results"][
-                                action_id
-                            ].get("allowedTags")
+                            _tags = results[name]["action_results"][action_id].get(
+                                "allowedTags"
+                            )
                             if _tags is not None:
                                 if allowedTags is None:
                                     allowedTags = list()
@@ -128,36 +122,26 @@ class SBaseTypesMixin:
                     )
 
     @strawberry_django.field()
-    def auth(
-        self: Union[Content, Cluster], info: Info
-    ) -> Optional[SGAuthResult]:
+    async def auth(self: Union[Content, Cluster], info: Info) -> Optional[SGAuthResult]:
         if self.limited or self.reduced:
             return None
-        viewresult = get_cached_result(
-            info.context["request"], ensureInitialized=True
-        )
+        viewresult = get_cached_result(info.context["request"], ensureInitialized=True)
         if isinstance(self, Content):
-            result = retrieve_allowed_objects(
+            result = await retrieve_allowed_objects(
                 info.context["request"],
-                Content.objects.filter(
-                    id=self.id, markForDestruction__isnull=True
-                ),
+                Content.objects.filter(id=self.id, markForDestruction__isnull=True),
                 scope="auth",
                 authset=viewresult.authset,
             )
             # if content: check cluster and content keys
             mappers = [
                 result.get("action_info_contents", {}).get(self.id, {}),
-                result.get("action_info_clusters", {}).get(
-                    self.cluster_id, {}
-                ),
+                result.get("action_info_clusters", {}).get(self.cluster_id, {}),
             ]
         else:
-            result = retrieve_allowed_objects(
+            result = await retrieve_allowed_objects(
                 info.context["request"],
-                Cluster.objects.filter(
-                    id=self.id, markForDestruction__isnull=True
-                ),
+                Cluster.objects.filter(id=self.id, markForDestruction__isnull=True),
                 scope="auth",
                 authset=viewresult.authset,
             )
@@ -174,12 +158,8 @@ class SBaseTypesMixin:
                             "multiple auth actions for one token specified, use the first ignore the rest"
                         )
                     authResult = SGAuthResult(
-                        requester=result["action_results"][key_val[1][0]][
-                            "requester"
-                        ],
-                        challenge=result["action_results"][key_val[1][0]][
-                            "challenge"
-                        ],
+                        requester=result["action_results"][key_val[1][0]]["requester"],
+                        challenge=result["action_results"][key_val[1][0]]["challenge"],
                         signatures=result["action_results"][key_val[1][0]][
                             "signatures"
                         ],
@@ -211,9 +191,7 @@ class SBaseTypesMixin:
     def properties(self: Union[Content, Cluster], info: Info) -> list[str]:
         if self.limited or self.reduced:
             return []
-        if "allow_hidden" in get_cached_net_properties(
-            info.context["request"]
-        ):
+        if "allow_hidden" in get_cached_net_properties(info.context["request"]):
             return list(self.properties)
         else:
             return list(self.nonhidden_properties)

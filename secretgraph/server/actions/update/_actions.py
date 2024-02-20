@@ -79,7 +79,7 @@ async def manage_actions_fn(
         allowed_and_existing_actions = (
             await get_cached_result(
                 request,
-                retrieve_allowed_objects(
+                await retrieve_allowed_objects(
                     request,
                     "Cluster",
                     scope="manage",

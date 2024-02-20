@@ -4,7 +4,7 @@ from typing import Optional
 import strawberry
 from django.conf import settings
 from django.contrib.auth import get_user_model
-from django.db.models import Q
+from django.db.models import Q, Subquery
 from django.utils import timezone
 from strawberry import relay
 from strawberry.types import Info
@@ -49,7 +49,7 @@ class UserMutation(relay.Node):
     user = UserNode
 
     @classmethod
-    def mutate_and_get_payload(
+    async def mutate_and_get_payload(
         cls,
         info: Info,
         id: Optional[strawberry.ID] = None,
@@ -58,7 +58,7 @@ class UserMutation(relay.Node):
         if id:
             if not user:
                 raise ValueError()
-            result = ids_to_results(
+            result = await ids_to_results(
                 info.context["request"],
                 id,
                 Cluster,
@@ -72,9 +72,11 @@ class UserMutation(relay.Node):
             return cls(user=user_obj)
         else:
             user = None
-            manage = retrieve_allowed_objects(
-                info.context["request"], "Cluster", scope="manage"
-            )["objects_without_public"].first()
+            manage = await (
+                await retrieve_allowed_objects(
+                    info.context["request"], "Cluster", scope="manage"
+                )["objects_without_public"]
+            ).afirst()
 
             if getattr(settings, "SECRETGRAPH_REQUIRE_USER", False):
                 if manage:
@@ -84,15 +86,11 @@ class UserMutation(relay.Node):
                 if not admin_user or not admin_user.is_authenticated:
                     raise ValueError("Must be logged in")
             elif (
-                getattr(settings, "SECRETGRAPH_ALLOW_REGISTER", False)
-                == "cluster"
-                and not manage.exist()
+                getattr(settings, "SECRETGRAPH_ALLOW_REGISTER", False) == "cluster"
+                and not manage
             ):
                 raise ValueError("Cannot register new clusters")
-            elif (
-                getattr(settings, "SECRETGRAPH_ALLOW_REGISTER", False)
-                is not True
-            ):
+            elif getattr(settings, "SECRETGRAPH_ALLOW_REGISTER", False) is not True:
                 raise ValueError("Cannot register new cluster")
             user_obj = user_model.create_user()
             return cls(user=user_obj)
@@ -103,29 +101,27 @@ class DeleteUserMutation(relay.Node):
     user: Optional[UserNode]
 
     @classmethod
-    def mutate_and_get_payload(cls, info: Info, id: strawberry.ID):
+    async def mutate_and_get_payload(cls, info: Info, id: strawberry.ID):
         now = timezone.now()
         now_plus_x = now + td(minutes=20)
         # cleanup expired
         Content.objects.filter(markForDestruction__lte=now).delete()
         user = user_model.objects.get(pk=id.node_id)
-        result = retrieve_allowed_objects(
+        result = await retrieve_allowed_objects(
             info.context["request"], "Cluster", scope="manage"
         )
         if user.net.clusters.exclude(
-            id__in=result["objects_without_public"].values_list(
-                "id", flat=True
-            )
+            id__in=Subquery(result["objects_without_public"].values("id"))
         ):
             raise ValueError("No permission")
         user_contents = Content.objects.filter(cluster__user=user)
-        if not user_contents.exists():
-            user.delete()
+        if not await user_contents.aexists():
+            await user.adelete()
         else:
-            user_contents.filter(
+            await user_contents.filter(
                 Q(markForDestruction__isnull=True)
                 | Q(markForDestruction__gt=now_plus_x)
-            ).update(markForDestruction=now_plus_x)
+            ).aupdate(markForDestruction=now_plus_x)
         return cls(user=user)
 
 

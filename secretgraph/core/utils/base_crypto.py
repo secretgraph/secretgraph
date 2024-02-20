@@ -153,7 +153,7 @@ class SHA512Algo(DeriveAlgorithm):
 
     @classmethod
     def _execute(cls, data: bytes | Iterable[bytes]):
-        hashCtx = hashlib.new(cls.serializedName)()
+        hashCtx = hashlib.new(cls.serializedName)
         if isinstance(data, bytes):
             hashCtx.update(data)
         else:
