@@ -115,7 +115,7 @@ export function splitFirstTwoOnly(inp: string): [string, string, string] {
 export function splitLastOnly(inp: string): [string, string] {
     const matches = inp.match(/(.*):([^:]*)$/)
     if (!matches) {
-        return ['', inp]
+        return [inp, '']
     }
     return [matches[1], matches[2]]
 }

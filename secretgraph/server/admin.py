@@ -233,7 +233,7 @@ class NetAdmin(admin.ModelAdmin):
         nullctx = nullcontext()
         with transaction.atomic():
             for net in queryset.select_for_update():
-                net.recalculate_bytes_in_use(nullctx)
+                net.recalculate_bytes_in_use(nullctx, nolocking=True)
 
     def get_readonly_fields(self, request, obj: Optional[Net] = None):
         rfields = list(self.readonly_fields)

@@ -337,6 +337,13 @@ export async function decrypt(
             unserializeToCryptoKey(key, entry.keyParams, 'privateKey'),
             unserializeToArrayBuffer(data),
         ])
+    if (!key_cleaned) {
+        throw new Error('Empty key')
+    }
+
+    if (data_cleaned === undefined) {
+        throw new Error('Empty data')
+    }
     try {
         return {
             ...(await entry.decrypt(key_cleaned, data_cleaned, params)),

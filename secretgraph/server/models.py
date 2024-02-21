@@ -169,10 +169,8 @@ class Net(models.Model):
         # should be used with locked net and in transaction
         # or with nets, clusters, contents not in use e.g. maintainance work
         # clusters are easy
-        aclusters = self.clusters.annotate(
-            size=Length("description").aggregate(
-                size_sum=models.Sum("size"), count=models.Count("id")
-            )
+        aclusters = self.clusters.annotate(size=Length("description")).aggregate(
+            size_sum=models.Sum("size"), count=models.Count("id")
         )
         size = (aclusters["size_sum"] or 0) + aclusters[
             "count"
@@ -185,17 +183,21 @@ class Net(models.Model):
         size += self._size_references(self.id)
         return size
 
+    acalculate_bytes_in_use = sync_to_async(calculate_bytes_in_use)
+
     def reset_quota(self):
         self.quota = default_net_limit(self, "SECRETGRAPH_QUOTA")
 
     def reset_max_upload_size(self):
         self.max_upload_size = default_net_limit(self, "SECRETGRAPH_MAX_UPLOAD")
 
-    def recalculate_bytes_in_use(self, context=transaction.atomic):
+    def recalculate_bytes_in_use(self, context=transaction.atomic, nolocking=False):
         if callable(context):
             context = context()
         with context:
-            obj: Net = self.objects.select_for_update().get(id=self.id)
+            obj: Net = (
+                self if nolocking else self.objects.select_for_update().get(id=self.id)
+            )
             obj.bytes_in_use = obj.calculate_bytes_in_use()
             obj.save(update_fields=["bytes_in_use"])
 
@@ -239,6 +241,10 @@ class Net(models.Model):
 
 
 class ClusterManager(models.Manager):
+    # prevent async issues
+    def get_queryset(self):
+        return super().get_queryset().select_related("net")
+
     def consistent(self, queryset=None):
         if queryset is None:
             queryset = self.get_queryset()
@@ -373,6 +379,10 @@ class Cluster(FlexidModel):
 
 
 class ContentManager(models.Manager):
+    # prevent async issues
+    def get_queryset(self):
+        return super().get_queryset().select_related("net", "cluster")
+
     def consistent(self, queryset=None):
         if queryset is None:
             queryset = self.get_queryset()
@@ -587,6 +597,10 @@ class Content(FlexidModel):
         )
         return tags["size_sum"] or 0
 
+    @sync_to_async
+    def asize_tags(self) -> int:
+        return self.size_tags
+
     @property
     def size_references(self) -> int:
         refs = self.references.annotate(size=Length("extra")).aggregate(
@@ -595,8 +609,19 @@ class Content(FlexidModel):
         # include target id size and group field
         return (refs["size_sum"] or 0) + refs["count"] * 28
 
+    @sync_to_async
+    def asize_references(self) -> int:
+        return self.size_references
+
     @property
     def size(self) -> int:
+        size = self.size_file + self.flexid_byte_size
+        size += self.size_tags
+        size += self.size_references
+        return size
+
+    @sync_to_async
+    def asize(self) -> int:
         size = self.size_file + self.flexid_byte_size
         size += self.size_tags
         size += self.size_references

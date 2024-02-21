@@ -172,7 +172,7 @@ async def _update_or_create_content_or_key(
     refs_is_transfer = False
     tags_transfer_type = 0
     if not create:
-        size_old = content.size
+        size_old = await content.asize()
 
     if isinstance(objdata.cluster, str):
         objdata.cluster = await (
@@ -208,7 +208,7 @@ async def _update_or_create_content_or_key(
     net = objdata.net
     old_net = None
     if not create:
-        old_net = await Net.objects.aget(content.net_id)
+        old_net = content.net
     explicit_net = False
     if net:
         if isinstance(net, Net):
@@ -286,7 +286,7 @@ async def _update_or_create_content_or_key(
     elif create:
         raise ValueError("Content tags are missing")
     else:
-        size_new += content.size_tags
+        size_new += await content.asize_tags()
         if objdata.references is not None:
             key_hashes_tags = set()
 
@@ -345,7 +345,7 @@ async def _update_or_create_content_or_key(
             content.file.save("ignored", objdata.value)
 
     else:
-        size_new += content.size_file
+        size_new += await content.asize_file()
 
         def save_fn_value():
             content.updateId = uuid4()

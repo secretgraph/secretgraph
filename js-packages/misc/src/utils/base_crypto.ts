@@ -1,4 +1,8 @@
-import { unserializeToArrayBuffer, serializeToBase64 } from './encoding'
+import {
+    unserializeToArrayBuffer,
+    serializeToBase64,
+    splitFirstOnly,
+} from './encoding'
 import { ValueType } from '../typing'
 
 export function addWithVariants<T extends { [key: string]: any }>(
@@ -38,8 +42,9 @@ export async function defaultDeserialize(
     inp: string,
     params?: ParamsType
 ): Promise<CryptoResult> {
+    const match = inp.match(/^:*(.*?)$/) as string[]
     return {
-        data: await unserializeToArrayBuffer(inp),
+        data: await unserializeToArrayBuffer(match[1]),
         params: params || {},
     }
 }
@@ -428,6 +433,9 @@ addWithVariants(
             data,
             params: { nonce: string | ArrayBuffer }
         ) => {
+            if (!params?.nonce) {
+                throw new Error('missing nonce')
+            }
             const nonce = await unserializeToArrayBuffer(params.nonce)
             return {
                 data: await crypto.subtle.decrypt(
@@ -449,10 +457,12 @@ addWithVariants(
                 {},
                 params || {}
             )
-            const splitted = inp.split(':')
-            if (splitted.length >= 2) {
-                params2.nonce = await unserializeToArrayBuffer(splitted[0])
+            let splitted = splitFirstOnly(inp)
+            // swap, splittedFirst will put on error the string at the second place
+            if (!splitted[0] && splitted[1]) {
+                splitted = [splitted[1], splitted[0]]
             }
+            params2.nonce = await unserializeToArrayBuffer(splitted[0])
             let cleaned: ArrayBuffer | undefined = undefined
             if (params2.nonce && splitted[splitted.length - 1]) {
                 cleaned = await unserializeToArrayBuffer(

@@ -505,7 +505,7 @@ export async function decryptContentObject({
             nodeData,
         }
     } catch (exc) {
-        // console.debug('Decoding content failed', exc)
+        console.debug('Decoding content failed', exc)
         throw new KeyMissmatchError(
             "Encrypted content and shared key doesn't match"
         )
