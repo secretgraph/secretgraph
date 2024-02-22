@@ -295,7 +295,7 @@ async def regenerateKeyHash(force=False, **kwargs):
 
     # distinct on contentHash field currently only for postgresql
     async for content in contents.aiterator(batch_size):
-        chashes = await calculateHashes(content.load_pubkey())
+        chashes = await calculateHashes(await content.aload_pubkey())
         until_index = 0
         strippedContentHash = content.contentHash.removeprefix("Key:")
         for i in chashes:

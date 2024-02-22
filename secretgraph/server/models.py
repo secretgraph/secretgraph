@@ -9,14 +9,13 @@ from typing import Iterable, Optional, TypedDict, Union
 from uuid import UUID, uuid4
 
 from asgiref.sync import sync_to_async
-from cryptography.hazmat.primitives.serialization import load_der_public_key
 from django.conf import settings
 from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
 from django.core.files.base import File
 from django.core.files.storage import default_storage
 from django.core.validators import MinLengthValidator
 from django.db import models, transaction
-from django.db.models.functions import Length
+from django.db.models.functions import Concat, Length, Substr
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
@@ -210,6 +209,10 @@ class Net(models.Model):
         return SGroupProperty.objects.filter(netGroups__nets=self).values_list(
             "name", flat=True
         )
+
+    @sync_to_async
+    def aproperties(self):
+        return self.properties
 
     @cached_property
     def user(self) -> Optional[usermodel]:
@@ -526,21 +529,19 @@ class Content(FlexidModel):
         if self.type != "PrivateKey" and self.type != "PublicKey":
             return None
         if self.type == "PublicKey":
-            try:
-                return load_der_public_key(self.value.open("rb").read())
-            except Exception as exc:
-                logger.error("Could not load public key", exc_info=exc)
+            with self.value.open("rb") as rob:
+                return rob.read()
         else:
             pubkey = ContentReference.objects.filter(
                 source_id=self.id, group="public_key"
             ).first()
             if pubkey:
                 pubkey = pubkey.target
-                try:
-                    return load_der_public_key(pubkey.value.open("rb").read())
-                except Exception as exc:
-                    logger.error("Could not load public key", exc_info=exc)
+                with pubkey.value.open("rb") as rob:
+                    return rob.read()
         return None
+
+    aload_pubkey = sync_to_async(load_pubkey)
 
     @cached_property
     def is_mutable(self) -> bool:
@@ -549,6 +550,10 @@ class Content(FlexidModel):
         if self.tags.filter(tag="immutable").exists():
             return False
         return True
+
+    @sync_to_async
+    def ais_mutable(self):
+        return self.is_mutable
 
     @property
     def properties(self) -> list[str]:
@@ -641,14 +646,25 @@ class Content(FlexidModel):
         else:
             for k in keyhashes:
                 q |= models.Q(target__tags__tag=f"key_hash={k}")
+        splitted = reverse("secretgraph:contents", kwargs={"id": "__value__"}).rsplit(
+            "__value__", 1
+        )
         refs = self.references.select_related("target").filter(group="signature")
-        refs = refs.filter(q).order_by("id")
-        for ref in refs:
-            yield {
-                "hash": ref.target.contentHash.removeprefix("Key:"),
-                "signature": ref.extra,
-                "link": ref.target.link,
-            }
+        refs = (
+            refs.filter(q)
+            .order_by("id")
+            .annotate(
+                hash=Substr("target__contentHash", 5),
+                signature=models.F("extra"),
+                link=Concat(
+                    models.Value(splitted[0]),
+                    models.F("target__downloadId"),
+                    models.Value(splitted[1]),
+                ),
+            )
+            .distinct()
+        )
+        return refs.values("hash", "signature", "link")
 
     def keys(
         self,
@@ -661,9 +677,14 @@ class Content(FlexidModel):
         else:
             for k in keyhashes:
                 q |= models.Q(target__tags__tag=f"key_hash={k}")
-        refs = self.references.select_related("target").filter(group="key")
-        for ref in (
-            refs.filter(q)
+
+        splitted = reverse("secretgraph:contents", kwargs={"id": "__value__"}).rsplit(
+            "__value__", 1
+        )
+        refs = (
+            self.references.select_related("target")
+            .filter(group="key")
+            .filter(q)
             .annotate(
                 privkey_downloadId=models.Subquery(
                     # private keys in result set, empty if no permission
@@ -674,22 +695,18 @@ class Content(FlexidModel):
                 )
                 if allowed is not None
                 else models.Value(None),
+                hash=Substr("target__contentHash", 5),
+                key=models.F("extra"),
+                link=Concat(
+                    models.Value(splitted[0]),
+                    models.F("target__downloadId"),
+                    models.Value(splitted[1]),
+                ),
             )
             .order_by("id")
             .distinct()
-        ):
-            yield {
-                "hash": ref.target.contentHash.removeprefix("Key:"),
-                "key": ref.extra,
-                "link": (
-                    ref.privkey_downloadId
-                    and reverse(
-                        "secretgraph:contents",
-                        kwargs={"id": ref.privkey_downloadId},
-                    )
-                )
-                or None,
-            }
+        )
+        return refs.values("hash", "key", "link")
 
     def clean_fields(self, exclude=None):
         super().clean_fields(exclude=exclude)

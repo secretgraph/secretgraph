@@ -1,5 +1,6 @@
 # TODO
 
+-   signatures, keys functions should use annotate and values
 -   python tools have to be adapted
 -   python tests have to be adapted
 -   make ts base-crypto static classes and methods
