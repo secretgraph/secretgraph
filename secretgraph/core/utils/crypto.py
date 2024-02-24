@@ -8,6 +8,7 @@ from typing import Iterable, Literal, TypeVar
 from ..exceptions import UnknownAlgorithm
 from .base_crypto import (
     CryptoResult,
+    DeriveResult,
     KeyResult,
     KeyType,
     OptionalCryptoResult,
@@ -33,6 +34,11 @@ ParamsInputType2 = TypeVar(
     ParamsInputType,
     str,
 )
+
+
+@dataclass(frozen=True, kw_only=True)
+class FullDeriveResult(DeriveResult):
+    serializedName: str
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -101,7 +107,7 @@ def findWorkingAlgorithms(
 
 async def derive(
     data: DataInputType, params: ParamsInputType = None, algorithm: str = ""
-) -> FullCryptoResult:
+) -> FullDeriveResult:
     if isawaitable(data):
         data = await data
     if isinstance(data, memoryview):
@@ -121,14 +127,16 @@ async def derive(
         params = result.params
     assert isinstance(data, (bytes, Iterable))
     result = await entry.derive(data, params)
-    return FullCryptoResult(
-        data=result.data, params=result.params, serializedName=entry.serializedName
+    return FullDeriveResult(
+        data=result.data,
+        params=result.params,
+        serializedName=entry.serializedName,
     )
 
 
 async def deserializeDerivedString(
     inp: Awaitable[str] | str, params: ParamsInputType = None, algorithm: str = ""
-) -> FullCryptoResult:
+) -> FullDeriveResult:
     if isawaitable(inp):
         inp = await inp
     if not algorithm:
@@ -140,7 +148,7 @@ async def deserializeDerivedString(
         raise UnknownAlgorithm("unknown algorithm")
 
     result = await entry.deserialize(inp, params)
-    return FullCryptoResult(
+    return FullDeriveResult(
         params=result.params,
         data=result.data,
         serializedName=entry.serializedName,
@@ -161,7 +169,7 @@ async def deriveString(
     return f"{entry.serializedName}:{await entry.serialize(result)}"
 
 
-async def serializeDerive(inp: FullCryptoResult | Awaitable[CryptoResult]) -> str:
+async def serializeDerive(inp: FullDeriveResult | Awaitable[FullDeriveResult]) -> str:
     if isawaitable(inp):
         inp = await inp
     entry = mapDeriveAlgorithms[inp.serializedName]

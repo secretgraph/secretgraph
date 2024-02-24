@@ -1,8 +1,6 @@
 import { trusted_states } from '../constants'
 import * as Interfaces from '../interfaces'
-import { serializeToBase64 } from './encoding'
 import {
-    encrypt,
     encryptString,
     mapDeriveAlgorithms,
     mapSignatureAlgorithms,
@@ -11,6 +9,7 @@ import {
 } from './crypto'
 import { MaybePromise } from '../typing'
 import { hashKey, hashObject } from './hashing'
+import { KeyInput } from './base_crypto_legacy'
 import { fallback_fetch } from './misc'
 
 export async function extractGroupKeys({
@@ -335,20 +334,20 @@ export async function verifyContent({
 
 async function createSignatureReferences_helper(
     key:
-        | Interfaces.KeyInput
+        | KeyInput
         | Interfaces.CryptoHashPair
-        | PromiseLike<Interfaces.KeyInput | Interfaces.CryptoHashPair>,
+        | PromiseLike<KeyInput | Interfaces.CryptoHashPair>,
     content: ArrayBuffer,
     hashAlgorithm: string,
     signatureAlgorithm: string
 ) {
     const _x = await key
-    let signkey: Interfaces.KeyInput, hash: string | Promise<string>
+    let signkey: KeyInput, hash: string | Promise<string>
     if ((_x as any)['hash']) {
         signkey = (_x as Interfaces.CryptoHashPair).key
         hash = (_x as Interfaces.CryptoHashPair).hash
     } else {
-        signkey = key as Interfaces.KeyInput
+        signkey = key as KeyInput
 
         // serialize to spki of publickey for consistent hash
         const result = await hashKey(signkey, hashAlgorithm)
@@ -366,9 +365,9 @@ async function createSignatureReferences_helper(
 export async function createSignatureReferences(
     content: ArrayBuffer,
     privkeys: (
-        | Interfaces.KeyInput
+        | KeyInput
         | Interfaces.CryptoHashPair
-        | PromiseLike<Interfaces.KeyInput | Interfaces.CryptoHashPair>
+        | PromiseLike<KeyInput | Interfaces.CryptoHashPair>
     )[],
     hashAlgorithm: string,
     signatureAlgorithm: string
@@ -404,9 +403,9 @@ export async function createSignatureReferences(
 
 async function encryptSharedKey_helper(
     key:
-        | Interfaces.KeyInput
+        | KeyInput
         | Interfaces.CryptoHashPair
-        | PromiseLike<Interfaces.KeyInput | Interfaces.CryptoHashPair>,
+        | PromiseLike<KeyInput | Interfaces.CryptoHashPair>,
     sharedkey: ArrayBuffer,
     deriveAlgorithm: string,
     encryptAlgorithm: string
@@ -417,10 +416,7 @@ async function encryptSharedKey_helper(
         pubkey = (_x as Interfaces.CryptoHashPair).key
         hash = (_x as Interfaces.CryptoHashPair).hash
     } else {
-        const result = await hashKey(
-            key as Interfaces.KeyInput,
-            deriveAlgorithm
-        )
+        const result = await hashKey(key as KeyInput, deriveAlgorithm)
         pubkey = result.publicKey
         hash = result.digest
     }
@@ -434,7 +430,7 @@ async function encryptSharedKey_helper(
 
 export function encryptSharedKey(
     sharedkey: ArrayBuffer,
-    pubkeys: MaybePromise<Interfaces.KeyInput | Interfaces.CryptoHashPair>[],
+    pubkeys: MaybePromise<KeyInput | Interfaces.CryptoHashPair>[],
     deriveAlgorithm: string,
     encryptAlgorithm: string
 ): [Promise<Interfaces.ReferenceInterface[]>, Promise<string[]>] {

@@ -456,7 +456,11 @@ export async function decryptContentObject({
     }
 
     // skip decryption as always unencrypted
-    if (_node.type == 'PublicKey' || _node.state == 'public') {
+    if (
+        _node.type == 'PublicKey' ||
+        _node.state == 'public' ||
+        !_node.cryptoParameters
+    ) {
         return {
             data: await arrPromise,
             tags: await extractTagsRaw({

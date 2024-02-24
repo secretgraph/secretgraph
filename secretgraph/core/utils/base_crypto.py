@@ -32,22 +32,32 @@ def addWithVariants(
     return wrapper
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, kw_only=True)
+class DeriveResult:
+    data: bytes
+    params: ParamsType
+
+
+@dataclass(frozen=True, kw_only=True)
+class CryptoResult(DeriveResult):
+    key: bytes
+
+
+@dataclass(frozen=True, kw_only=True)
 class KeyResult:
     key: KeyType
     params: ParamsType = field(default_factory=dict)
 
 
-@dataclass(frozen=True)
-class CryptoResult:
-    data: bytes
-    params: ParamsType = field(default_factory=dict)
-    key: Optional[bytes] = None
-
-
-@dataclass(frozen=True)
-class OptionalCryptoResult(CryptoResult):
+@dataclass(frozen=True, kw_only=True)
+class DeserializeResult:
+    params: ParamsType
     data: Optional[bytes] = None
+
+
+@dataclass(frozen=True, kw_only=True)
+class DeserializeDeriveResult(DeserializeResult):
+    data: bytes
 
 
 class DeriveAlgorithm(ABC):
@@ -68,7 +78,7 @@ class DeriveAlgorithm(ABC):
     @classmethod
     async def deserialize(
         cls, inp: str, params: Optional[ParamsType] = None
-    ) -> CryptoResult:
+    ) -> DeserializeDeriveResult:
         return CryptoResult(data=b64decode(inp), params=params)
 
 
@@ -108,8 +118,8 @@ class EncryptionAlgorithm(ABC):
         return ""
 
     @classmethod
-    async def deserialize(cls, data: str, params: ParamsType) -> OptionalCryptoResult:
-        return OptionalCryptoResult(data=b64decode(data), params=params or {})
+    async def deserialize(cls, data: str, params: ParamsType) -> DeserializeResult:
+        return DeserializeResult(data=b64decode(data), params=params or {})
 
 
 class SignatureAlgorithm(ABC):
@@ -167,7 +177,7 @@ class SHA512Algo(DeriveAlgorithm):
 
     @classmethod
     async def derive(cls, inp: bytes | Iterable[bytes], params=None) -> CryptoResult:
-        return CryptoResult(data=await cls.execute(inp), params={})
+        return DeriveResult(data=await cls.execute(inp), params={})
 
     @classmethod
     async def serialize(cls, result: CryptoResult) -> str:
@@ -216,10 +226,9 @@ class PBKDF2sha512(DeriveAlgorithm):
             params["salt"] = b64decode(params["salt"])
 
         # for AESGCM compatibility cap at 32
-        return CryptoResult(
+        return DeriveResult(
             data=await cls.execute(params["iterations"], params["salt"], inp),
             params=params,
-            key=inp,
         )
 
     @classmethod
@@ -239,7 +248,7 @@ class PBKDF2sha512(DeriveAlgorithm):
             raise ValueError("no salt provided")
         if isinstance(params["salt"], str):
             params["salt"] = b64decode(params["salt"])
-        return CryptoResult(data=b64decode(splitted[-1]), params=params)
+        return DeserializeDeriveResult(data=b64decode(splitted[-1]), params=params)
 
     @classmethod
     async def serialize(cls, result):

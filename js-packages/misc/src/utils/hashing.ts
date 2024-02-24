@@ -1,12 +1,8 @@
 import * as Constants from '../constants'
 import * as Interfaces from '../interfaces'
 import { unserializeToArrayBuffer, utf8encoder } from './encoding'
-import {
-    unserializeToCryptoKey,
-    mapDeriveAlgorithms,
-    derive,
-    deriveString,
-} from './crypto'
+import { deriveString } from './crypto'
+import { KeyInput, unserializeToCryptoKey } from './base_crypto_legacy'
 
 export async function hashObject(
     obj: Parameters<typeof unserializeToArrayBuffer>[0],
@@ -33,14 +29,14 @@ export async function hashToken(
 }
 
 export async function hashKey(
-    key: Interfaces.KeyInput,
+    key: KeyInput,
     deriveAlgorithm: string
 ): Promise<{
     publicKey: CryptoKey
     digest: string
 }> {
     const publicKey = await unserializeToCryptoKey(
-        key as Interfaces.KeyInput,
+        key as KeyInput,
         {
             name: 'RSA-OAEP',
             hash: 'SHA-512',

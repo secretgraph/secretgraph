@@ -4,6 +4,7 @@ import {
     splitFirstOnly,
 } from './encoding'
 import { ValueType } from '../typing'
+import { unserializeToCryptoKey } from './base_crypto_legacy'
 
 export function addWithVariants<T extends { [key: string]: any }>(
     obj: T,
@@ -23,9 +24,12 @@ export let DEFAULT_DERIVE_ALGORITHM = 'PBKDF2-sha512'
 export type ParamsType = any
 export type KeyType = any
 
-export interface CryptoResult {
+export interface DeriveResult {
     data: ArrayBuffer
     params: ParamsType
+}
+export interface CryptoResult extends DeriveResult {
+    key: ArrayBuffer
 }
 
 export interface KeyResult {
@@ -33,9 +37,13 @@ export interface KeyResult {
     params: ParamsType
 }
 
-export interface OptionalCryptoResult {
+export interface DeserializeResult {
     data?: ArrayBuffer
     params: ParamsType
+}
+
+export interface DeserializeDeriveResult extends DeserializeResult {
+    data: ArrayBuffer
 }
 
 export abstract class DeriveAlgorithm {
@@ -44,11 +52,11 @@ export abstract class DeriveAlgorithm {
     abstract derive(
         inp: ArrayBuffer,
         params?: ParamsType
-    ): Promise<CryptoResult>
+    ): Promise<DeriveResult>
     async deserialize(
         inp: string,
         params?: ParamsType
-    ): Promise<CryptoResult> {
+    ): Promise<DeserializeDeriveResult> {
         const match = inp.match(/^:*(.*?)$/) as string[]
         return {
             data: await unserializeToArrayBuffer(match[1]),
@@ -64,7 +72,6 @@ export abstract class DeriveAlgorithm {
 }
 
 export abstract class EncryptionAlgorithm {
-    keyParams: any
     serializedName: string
     type: 'asymmetric' | 'symmetric'
 
@@ -85,7 +92,7 @@ export abstract class EncryptionAlgorithm {
     async deserialize(
         inp: string,
         params?: ParamsType
-    ): Promise<OptionalCryptoResult> {
+    ): Promise<DeserializeResult> {
         const match = inp.match(/^:*(.*?)$/) as string[]
         return {
             data: await unserializeToArrayBuffer(match[1]),
@@ -96,7 +103,6 @@ export abstract class EncryptionAlgorithm {
 
 export abstract class SignatureAlgorithm {
     serializedName: string
-    keyParams: any
     abstract sign(key: KeyType, data: ArrayBuffer): Promise<string>
     abstract verify(
         key: KeyType,
@@ -106,22 +112,6 @@ export abstract class SignatureAlgorithm {
     abstract generateKey(params: ParamsType): Promise<KeyResult>
 }
 
-export async function defaultDeserialize(
-    inp: string,
-    params?: ParamsType
-): Promise<CryptoResult> {
-    const match = inp.match(/^:*(.*?)$/) as string[]
-    return {
-        data: await unserializeToArrayBuffer(match[1]),
-        params: params || {},
-    }
-}
-
-export async function defaultSerializeParams(
-    params: ParamsType
-): Promise<string> {
-    return ''
-}
 // argon1id, pkb
 export const mapDeriveAlgorithms: {
     [algo: string]: DeriveAlgorithm
@@ -177,7 +167,7 @@ class PBKDF2Algos extends DeriveAlgorithm {
         } = {
             iterations: 800000,
         }
-    ) {
+    ): Promise<CryptoResult> {
         // copy
         params = Object.assign({}, params)
         const key = await crypto.subtle.importKey(
@@ -203,6 +193,7 @@ class PBKDF2Algos extends DeriveAlgorithm {
                 256 // cap at 256 for AESGCM compatibility
             ),
             params,
+            key: inp,
         }
     }
     async deserialize(
@@ -262,6 +253,11 @@ class RSAOEAPAlgos extends EncryptionAlgorithm {
             .replace('-', '')}`
     }
     async encrypt(key: KeyType, data: ArrayBuffer) {
+        const key_cleaned = await unserializeToCryptoKey(
+            key,
+            this.keyParams,
+            'publicKey'
+        )
         return {
             data: await crypto.subtle.encrypt(
                 {
@@ -271,9 +267,15 @@ class RSAOEAPAlgos extends EncryptionAlgorithm {
                 data
             ),
             params: {},
+            key: await unserializeToArrayBuffer(key_cleaned),
         }
     }
     async decrypt(key: KeyType, data: ArrayBuffer) {
+        const key_cleaned = await unserializeToCryptoKey(
+            key,
+            this.keyParams,
+            'privateKey'
+        )
         return {
             data: await crypto.subtle.decrypt(
                 {
@@ -283,6 +285,7 @@ class RSAOEAPAlgos extends EncryptionAlgorithm {
                 data
             ),
             params: {},
+            key: await unserializeToArrayBuffer(key_cleaned),
         }
     }
     async generateKey({ bits }: { bits: number } = { bits: 4096 }) {
@@ -323,6 +326,7 @@ class AESGCMAlgos extends EncryptionAlgorithm {
         data: ArrayBuffer,
         params?: { nonce: string | ArrayBuffer }
     ) {
+        const key_cleaned = await unserializeToCryptoKey(key, this.keyParams)
         let nonce
         if (params?.nonce) {
             nonce = await unserializeToArrayBuffer(params.nonce)
@@ -339,6 +343,7 @@ class AESGCMAlgos extends EncryptionAlgorithm {
                 data
             ),
             params: { nonce },
+            key: await unserializeToArrayBuffer(key_cleaned),
         }
     }
     async decrypt(
@@ -349,6 +354,7 @@ class AESGCMAlgos extends EncryptionAlgorithm {
         if (!params?.nonce) {
             throw new Error('missing nonce')
         }
+        const key_cleaned = await unserializeToCryptoKey(key, this.keyParams)
         const nonce = await unserializeToArrayBuffer(params.nonce)
         return {
             data: await crypto.subtle.decrypt(
@@ -360,6 +366,7 @@ class AESGCMAlgos extends EncryptionAlgorithm {
                 data
             ),
             params: { nonce },
+            key: await unserializeToArrayBuffer(key_cleaned),
         }
     }
     async serializeParams(params: { nonce: ArrayBuffer }) {

@@ -1,16 +1,12 @@
 import * as Interfaces from '../interfaces'
-import {
-    unserializeToArrayBuffer,
-    splitFirstOnly,
-    serializeToBase64,
-    splitLastOnly,
-} from './encoding'
+import { unserializeToArrayBuffer, splitFirstOnly } from './encoding'
 import { MaybePromise } from '../typing'
 import {
     mapDeriveAlgorithms,
     mapEncryptionAlgorithms,
     mapSignatureAlgorithms,
     ParamsType,
+    KeyType,
 } from './base_crypto'
 
 export {
@@ -23,10 +19,13 @@ export {
     DEFAULT_DERIVE_ALGORITHM,
 } from './base_crypto'
 
-export class UnknownAlgorithm extends Error {}
+export {
+    KeyTypeError,
+    UnknownAlgorithm,
+    EmptyKeyError,
+} from './base_crypto_legacy'
 
-export class KeyTypeError extends Error {}
-export class EmptyKeyError extends Error {}
+import { UnknownAlgorithm } from './base_crypto_legacy'
 
 export function findWorkingAlgorithms(
     algorithms: string[],
@@ -74,90 +73,6 @@ export function findWorkingAlgorithms(
         }
     }
     return [...algos]
-}
-
-function compareObjects(obj1: any, obj2: any) {
-    const keys = new Set([...Object.keys(obj1), ...Object.keys(obj2)])
-    for (const key of keys) {
-        if (obj1[key] != obj2[key]) {
-            return false
-        }
-    }
-    return true
-}
-const mapKeyUsages: {
-    readonly [algo: string]: readonly KeyUsage[]
-} = {
-    PBKDF2: ['deriveBits', 'deriveKey'],
-    'RSA-PSSprivate': ['sign'],
-    'RSA-PSSpublic': ['verify'],
-    ECDSAprivate: ['sign', 'deriveKey', 'deriveBits'],
-    ECDSApublic: ['verify', 'deriveKey', 'deriveBits'],
-    'RSA-OAEPprivate': ['decrypt'],
-    'RSA-OAEPpublic': ['encrypt'],
-    'AES-GCM': ['encrypt', 'decrypt'],
-}
-
-// TODO: fix conversion of OEAP from SHA-256 to SHA-512
-export async function toPublicKey(
-    inp: Interfaces.KeyInput | PromiseLike<Interfaces.KeyInput>,
-    params: any
-) {
-    let _key: CryptoKey
-    const _inp = await inp
-    if (_inp instanceof CryptoKey) {
-        _key = _inp
-    } else if (
-        (_inp as CryptoKeyPair).privateKey &&
-        (_inp as CryptoKeyPair).publicKey
-    ) {
-        _key = (_inp as Required<CryptoKeyPair>).privateKey
-    } else if (params.name.startsWith('AES-')) {
-        // symmetric
-        if (!mapKeyUsages[params.name]) {
-            throw Error('Algorithm not supported: ' + params.name)
-        }
-        return await crypto.subtle.importKey(
-            'raw',
-            await unserializeToArrayBuffer(_inp as Interfaces.RawInput),
-            params,
-            true,
-            mapKeyUsages[params.name]
-        )
-    } else {
-        if (!mapKeyUsages[`${params.name}private`]) {
-            throw Error('Algorithm not supported: ' + params.name)
-        }
-        _key = await crypto.subtle.importKey(
-            'pkcs8' as const,
-            await unserializeToArrayBuffer(_inp as Interfaces.RawInput),
-            params,
-            true,
-            mapKeyUsages[`${params.name}private`]
-        )
-    }
-    const tempkey = await crypto.subtle.exportKey('jwk', _key)
-    // remove private data from JWK
-    delete tempkey.d
-    delete tempkey.dp
-    delete tempkey.dq
-    delete tempkey.q
-    delete tempkey.qi
-    tempkey.key_ops = ['sign', 'verify', 'encrypt', 'decrypt']
-    if (!mapKeyUsages[`${params.name}public`]) {
-        throw Error(
-            `Public version not available, should not happen: ${
-                params.name
-            } (private: ${mapKeyUsages[`${params.name}private`]})`
-        )
-    }
-    return await crypto.subtle.importKey(
-        'jwk',
-        tempkey,
-        params,
-        true,
-        mapKeyUsages[`${params.name}public`]
-    )
 }
 
 export async function derive(
@@ -249,7 +164,7 @@ export async function generateKey(
 }
 
 export async function encrypt(
-    key: MaybePromise<any>,
+    key: MaybePromise<KeyType>,
     data: MaybePromise<string | ArrayBuffer>,
     { params, algorithm }: { params?: ParamsType; algorithm: string } = {
         algorithm: '',
@@ -258,27 +173,21 @@ export async function encrypt(
     data: ArrayBuffer
     params: any
     serializedName: string
-    key: any
+    key: ArrayBuffer
 }> {
     let data_cleaned = await unserializeToArrayBuffer(data)
     const entry = mapEncryptionAlgorithms['' + algorithm]
     if (!entry) {
         throw new UnknownAlgorithm('invalid algorithm: ' + algorithm)
     }
-    const key_cleaned = await unserializeToCryptoKey(
-        key,
-        entry.keyParams,
-        'publicKey'
-    )
     return {
-        ...(await entry.encrypt(key_cleaned, data_cleaned, params)),
+        ...(await entry.encrypt(key, data_cleaned, params)),
         serializedName: entry.serializedName,
-        key: key_cleaned,
     }
 }
 
 export async function encryptString(
-    key: MaybePromise<any>,
+    key: MaybePromise<KeyType>,
     data: MaybePromise<string | ArrayBuffer>,
     options: { params?: ParamsType; algorithm: string }
 ): Promise<string> {
@@ -313,14 +222,14 @@ export async function serializeEncryptionParams({
 }
 
 export async function decrypt(
-    key: MaybePromise<any>,
+    key: MaybePromise<KeyType>,
     data: MaybePromise<string | ArrayBuffer>,
     { params, algorithm }: { params: ParamsType | string; algorithm?: string }
 ): Promise<{
     data: ArrayBuffer
     params: any
     serializedName: string
-    key: any
+    key: ArrayBuffer
 }> {
     if (!algorithm && typeof params == 'string') {
         const splitted = splitFirstOnly(params)
@@ -332,23 +241,14 @@ export async function decrypt(
     if (!entry) {
         throw new UnknownAlgorithm('invalid algorithm: ' + algorithm)
     }
-    const [key_cleaned, data_cleaned]: [CryptoKey, ArrayBuffer] =
-        await Promise.all([
-            unserializeToCryptoKey(key, entry.keyParams, 'privateKey'),
-            unserializeToArrayBuffer(data),
-        ])
-    if (!key_cleaned) {
-        throw new Error('Empty key')
-    }
-
+    const data_cleaned = await unserializeToArrayBuffer(data)
     if (data_cleaned === undefined) {
         throw new Error('Empty data')
     }
     try {
         return {
-            ...(await entry.decrypt(key_cleaned, data_cleaned, params)),
+            ...(await entry.decrypt(key, data_cleaned, params)),
             serializedName: entry.serializedName,
-            key: key_cleaned,
         }
     } catch (exc) {
         // console.error('decrypt failed:', key_cleaned, data_cleaned, params)
@@ -357,7 +257,7 @@ export async function decrypt(
     }
 }
 export async function decryptString(
-    key: MaybePromise<any>,
+    key: MaybePromise<KeyType>,
     data: MaybePromise<string>,
     {
         params,
@@ -370,7 +270,7 @@ export async function decryptString(
     data: ArrayBuffer
     params: any
     serializedName: string
-    key: any
+    key: ArrayBuffer
 }> {
     let data_cleaned = await data
     if (!algorithm) {
@@ -388,13 +288,13 @@ export async function decryptString(
     if (!result.data) {
         throw Error('no data to decrypt provided')
     }
-    return await decrypt(key, result.data, {
+    return await decrypt(await key, result.data, {
         params,
         algorithm: entry.serializedName,
     })
 }
 export async function sign(
-    key: MaybePromise<any>,
+    key: MaybePromise<KeyType>,
     data: MaybePromise<string | ArrayBuffer>,
     { algorithm }: { algorithm: string }
 ): Promise<string> {
@@ -402,28 +302,19 @@ export async function sign(
     if (!entry) {
         throw Error('invalid algorithm: ' + algorithm)
     }
-    const [key_cleaned, data_cleaned]: [CryptoKey, ArrayBuffer] =
-        await Promise.all([
-            unserializeToCryptoKey(key, entry.keyParams, 'privateKey'),
-            unserializeToArrayBuffer(data),
-        ])
+    const data_cleaned = await unserializeToArrayBuffer(data)
     try {
         return `${entry.serializedName}:${await entry.sign(
-            key_cleaned,
+            await key,
             data_cleaned
         )}`
     } catch (exc) {
-        console.error(
-            'sign parameters:',
-            algorithm,
-            entry.keyParams,
-            key_cleaned
-        )
+        console.error('sign parameters:', algorithm, data_cleaned)
         throw exc
     }
 }
 export async function verify(
-    key: MaybePromise<any>,
+    key: MaybePromise<KeyType>,
     signature: MaybePromise<string>,
     data: MaybePromise<string | ArrayBuffer>,
     { algorithm }: { algorithm?: string } = {}
@@ -439,128 +330,6 @@ export async function verify(
     if (!entry) {
         throw new UnknownAlgorithm('invalid algorithm: ' + algorithm)
     }
-    const [key_cleaned, data_cleaned]: [CryptoKey, ArrayBuffer] =
-        await Promise.all([
-            unserializeToCryptoKey(key, entry.keyParams, 'publicKey'),
-            unserializeToArrayBuffer(data),
-        ])
-    return entry.verify(key_cleaned, signature_cleaned, data_cleaned)
-}
-export async function unserializeToCryptoKey(
-    inp: Interfaces.KeyInput | PromiseLike<Interfaces.KeyInput>,
-    params: any,
-    type: 'privateKey' | 'publicKey' = 'publicKey',
-    failInsteadConvert?: boolean
-): Promise<CryptoKey> {
-    let _data: ArrayBuffer, _result: CryptoKey
-    const temp1 = await inp
-    if (temp1 instanceof CryptoKey) {
-        if (
-            compareObjects(temp1.algorithm, params) &&
-            type.startsWith(temp1.type)
-        ) {
-            return temp1
-        }
-        if (type == 'publicKey' && temp1.type == 'private') {
-            if (failInsteadConvert) {
-                throw new KeyTypeError('Not a Public Key')
-            }
-            return await toPublicKey(temp1, params)
-        }
-        _data = await unserializeToArrayBuffer(temp1)
-    } else if (
-        (temp1 as CryptoKeyPair).privateKey &&
-        (temp1 as CryptoKeyPair).publicKey
-    ) {
-        let temp2 = (temp1 as Required<CryptoKeyPair>)[type]
-        if (compareObjects(temp2.algorithm, params)) {
-            return temp2
-        }
-        _data = await unserializeToArrayBuffer(temp2)
-    } else {
-        _data = await unserializeToArrayBuffer(temp1 as Interfaces.RawInput)
-    }
-    if (!_data.byteLength) {
-        throw new EmptyKeyError('Empty key')
-    }
-    if (params.name.startsWith('AES-')) {
-        const entry = mapKeyUsages[params.name]
-        if (!entry) {
-            throw Error('Algorithm not supported: ' + params.name)
-        }
-        if (_data.byteLength > 32) {
-            console.warn(
-                'Invalid key length: ' + _data.byteLength + ' fixing...'
-            )
-            _data = _data.slice(-32)
-        }
-        // symmetric
-        _result = await crypto.subtle.importKey(
-            'raw' as const,
-            _data,
-            params,
-            true,
-            entry
-        )
-    } else {
-        if (
-            !mapKeyUsages[`${params.name}private`] ||
-            !mapKeyUsages[`${params.name}public`]
-        ) {
-            throw new UnknownAlgorithm(
-                `Algorithm not supported: ${params.name}`
-            )
-        }
-        try {
-            _result = await crypto.subtle.importKey(
-                'pkcs8',
-                _data,
-                params,
-                true,
-                mapKeyUsages[`${params.name}private`]
-            )
-            if (type == 'publicKey' && _result.type == 'private') {
-                if (failInsteadConvert) {
-                    throw new KeyTypeError('Not a Public Key')
-                }
-                _result = await toPublicKey(_result, params)
-            }
-        } catch (exc) {
-            if (exc instanceof KeyTypeError) {
-                throw exc
-            }
-            if (type == 'publicKey') {
-                try {
-                    // serialize publicKey
-                    _result = await crypto.subtle.importKey(
-                        'spki',
-                        _data,
-                        params,
-                        true,
-                        mapKeyUsages[`${params.name}public`]
-                    )
-                } catch (exc_inner) {
-                    console.debug(
-                        'error importing, parameters: ',
-                        params,
-                        _data,
-                        mapKeyUsages[`${params.name}public`],
-                        exc_inner.stack
-                    )
-                    throw exc_inner
-                }
-            } else {
-                console.debug(
-                    'error invalid, parameters: ',
-                    params,
-                    _data,
-                    mapKeyUsages[`${params.name}public`],
-                    exc,
-                    exc.stack
-                )
-                throw Error('Not a PrivateKey')
-            }
-        }
-    }
-    return _result
+    const data_cleaned = await unserializeToArrayBuffer(data)
+    return entry.verify(await key, signature_cleaned, data_cleaned)
 }
