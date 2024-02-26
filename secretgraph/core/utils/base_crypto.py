@@ -79,7 +79,7 @@ class DeriveAlgorithm(ABC):
     async def deserialize(
         cls, inp: str, params: Optional[ParamsType] = None
     ) -> DeserializeDeriveResult:
-        return CryptoResult(data=b64decode(inp), params=params)
+        return DeserializeDeriveResult(data=b64decode(inp), params=params)
 
 
 class EncryptionAlgorithm(ABC):

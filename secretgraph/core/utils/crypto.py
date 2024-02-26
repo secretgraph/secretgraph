@@ -9,9 +9,9 @@ from ..exceptions import UnknownAlgorithm
 from .base_crypto import (
     CryptoResult,
     DeriveResult,
+    DeserializeResult,
     KeyResult,
     KeyType,
-    OptionalCryptoResult,
     ParamsType,
     mapDeriveAlgorithms,
     mapEncryptionAlgorithms,
@@ -47,7 +47,7 @@ class FullCryptoResult(CryptoResult):
 
 
 @dataclass(frozen=True, kw_only=True)
-class FullOptionalCryptoResult(OptionalCryptoResult):
+class FullDeserializeResult(DeserializeResult):
     serializedName: str
 
 
@@ -240,7 +240,7 @@ async def serializeEncryptionParams(params: ParamsInputType, algorithm: str) -> 
 
 async def deserializeEncryptedString(
     data: Awaitable[str] | str, params: ParamsInputType = None, algorithm: str = ""
-) -> FullOptionalCryptoResult:
+) -> FullDeserializeResult:
     if isawaitable(data):
         data = await data
     if not algorithm:
@@ -252,7 +252,7 @@ async def deserializeEncryptedString(
         raise UnknownAlgorithm("unknown algorithm")
 
     result = await entry.deserialize(data, params)
-    return FullOptionalCryptoResult(
+    return FullDeserializeResult(
         params=result.params,
         data=result.data,
         serializedName=entry.serializedName,

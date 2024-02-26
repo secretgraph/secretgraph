@@ -87,6 +87,11 @@ class Key(TypedDict):
     link: Optional[str]  # link to private key when allowed to
 
 
+class FlexidManager(models.Manager):
+    def get_by_natural_key(self, flexid_cached):
+        return self.get(flexid_cached=flexid_cached)
+
+
 class FlexidModel(models.Model):
     id: int = models.BigAutoField(primary_key=True, editable=False)
     flexid: str = models.CharField(max_length=36, blank=True, null=True, unique=True)
@@ -95,6 +100,24 @@ class FlexidModel(models.Model):
     )
     # id + flexid + flexid_cached
     flexid_byte_size: int = 8 + 36 + 80
+
+    class Meta:
+        abstract = True
+
+    def natural_key(self):
+        return (self.flexid_cached,)
+
+
+class NamedManager(models.Manager):
+    def get_by_natural_key(self, name):
+        return self.get(name=name)
+
+
+class NamedBase(models.Model):
+    objects = NamedManager()
+
+    def natural_key(self):
+        return (self.name,)
 
     class Meta:
         abstract = True
@@ -243,10 +266,15 @@ class Net(models.Model):
         )
 
 
-class ClusterManager(models.Manager):
+class ClusterManager(FlexidManager):
     # prevent async issues
     def get_queryset(self):
         return super().get_queryset().select_related("net")
+
+    def get_by_natural_key(self, flexid_cached):
+        if flexid_cached.startswith("@"):
+            return self.get(name=flexid_cached)
+        return super().get_by_natural_key(flexid_cached=flexid_cached)
 
     def consistent(self, queryset=None):
         if queryset is None:
@@ -292,6 +320,11 @@ class Cluster(FlexidModel):
     objects = ClusterManager()
     primaryFor: models.OneToOneRel[Net]
     groups: models.ManyToManyRel["ClusterGroup"]
+
+    def natural_key(self):
+        if self.name.startswith("@"):
+            return self.name
+        return super().natural_key()
 
     @property
     def size(self) -> int:
@@ -958,7 +991,7 @@ class ContentReference(models.Model):
         )
 
 
-class SGroupPropertyManager(models.Manager):
+class SGroupPropertyManager(NamedManager):
     def defaultNetProperties(self, queryset=None) -> models.QuerySet:
         if queryset is None:
             queryset = self.get_queryset()
@@ -977,7 +1010,7 @@ class SGroupPropertyManager(models.Manager):
 
 
 # e.g. auto_hide = contents are automatically hidden and manually
-class SGroupProperty(models.Model):
+class SGroupProperty(NamedBase):
     # there are just few of them
     id: int = models.AutoField(primary_key=True, editable=False)
     name: str = models.CharField(
@@ -999,7 +1032,7 @@ class SGroupProperty(models.Model):
         return self.name
 
 
-class NetGroup(models.Model):
+class NetGroup(NamedBase):
     # there are just few of them
     id: int = models.AutoField(primary_key=True, editable=False)
     name: str = models.CharField(
@@ -1049,7 +1082,7 @@ class NetGroup(models.Model):
         )
 
 
-class ClusterGroup(models.Model):
+class ClusterGroup(NamedBase):
     # there are just few of them
     id: int = models.AutoField(primary_key=True, editable=False)
     name: str = models.CharField(
