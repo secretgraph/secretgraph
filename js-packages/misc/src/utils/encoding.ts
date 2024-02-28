@@ -106,6 +106,14 @@ export function splitFirstOnly(inp: string): [string, string] {
     }
     return [matches[1], matches[2]]
 }
+
+export function splitFirstOnlyInverted(inp: string): [string, string] {
+    const matches = inp.match(/([^:]*):(.*)/)
+    if (!matches) {
+        return [inp, '']
+    }
+    return [matches[1], matches[2]]
+}
 export function splitFirstTwoOnly(inp: string): [string, string, string] {
     const splitted = splitFirstOnly(inp)
     const splitted2 = splitFirstOnly(splitted[1])

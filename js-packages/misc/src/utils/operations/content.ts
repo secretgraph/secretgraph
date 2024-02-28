@@ -234,11 +234,15 @@ export async function updateContent({
             if (options.pubkeys.length == 0) {
                 throw Error('No public keys provided')
             }
-            const result = await encrypt(sharedKey, options.value, {
-                algorithm:
-                    options.symmetricEncryptionAlgorithm ||
-                    DEFAULT_SYMMETRIC_ENCRYPTION_ALGORITHM,
-            })
+            const result = await encrypt(
+                sharedKey as ArrayBuffer,
+                options.value,
+                {
+                    algorithm:
+                        options.symmetricEncryptionAlgorithm ||
+                        DEFAULT_SYMMETRIC_ENCRYPTION_ALGORITHM,
+                }
+            )
             finalizedContent = result.data
             cryptoParameters = await serializeEncryptionParams(result)
 

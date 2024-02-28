@@ -6,11 +6,12 @@ import {
     mapSignatureAlgorithms,
     sign,
     verify,
+    hashKey,
 } from './crypto'
 import { MaybePromise } from '../typing'
-import { hashKey, hashObject } from './hashing'
-import { KeyInput } from './base_crypto_legacy'
+import { hashObject } from './hashing'
 import { fallback_fetch } from './misc'
+import { b64tobuffer, unserializeToArrayBuffer } from './encoding'
 
 export async function extractGroupKeys({
     serverConfig,
@@ -334,24 +335,27 @@ export async function verifyContent({
 
 async function createSignatureReferences_helper(
     key:
-        | KeyInput
+        | Interfaces.RawInput
         | Interfaces.CryptoHashPair
-        | PromiseLike<KeyInput | Interfaces.CryptoHashPair>,
+        | PromiseLike<Interfaces.RawInput | Interfaces.CryptoHashPair>,
     content: ArrayBuffer,
     hashAlgorithm: string,
     signatureAlgorithm: string
 ) {
     const _x = await key
-    let signkey: KeyInput, hash: string | Promise<string>
+    let signkey: Interfaces.RawInput, hash: string | Promise<string>
     if ((_x as any)['hash']) {
         signkey = (_x as Interfaces.CryptoHashPair).key
         hash = (_x as Interfaces.CryptoHashPair).hash
     } else {
-        signkey = key as KeyInput
+        signkey = key as Interfaces.RawInput
 
         // serialize to spki of publickey for consistent hash
-        const result = await hashKey(signkey, hashAlgorithm)
-        hash = result.digest
+        const result = await hashKey(signkey, {
+            deriveAlgorithm: hashAlgorithm,
+            keyAlgorithm: 'rsa-sha512',
+        })
+        hash = result.serialized
     }
 
     return {
@@ -365,9 +369,9 @@ async function createSignatureReferences_helper(
 export async function createSignatureReferences(
     content: ArrayBuffer,
     privkeys: (
-        | KeyInput
+        | Interfaces.RawInput
         | Interfaces.CryptoHashPair
-        | PromiseLike<KeyInput | Interfaces.CryptoHashPair>
+        | PromiseLike<Interfaces.RawInput | Interfaces.CryptoHashPair>
     )[],
     hashAlgorithm: string,
     signatureAlgorithm: string
@@ -403,25 +407,30 @@ export async function createSignatureReferences(
 
 async function encryptSharedKey_helper(
     key:
-        | KeyInput
+        | Interfaces.RawInput
         | Interfaces.CryptoHashPair
-        | PromiseLike<KeyInput | Interfaces.CryptoHashPair>,
+        | PromiseLike<Interfaces.RawInput | Interfaces.CryptoHashPair>,
     sharedkey: ArrayBuffer,
     deriveAlgorithm: string,
     encryptAlgorithm: string
 ) {
     const _x = await key
-    let pubkey: CryptoKey, hash: string
+    let pubkey: ArrayBuffer, hash: string
     if ((_x as any)['hash']) {
-        pubkey = (_x as Interfaces.CryptoHashPair).key
+        pubkey = await unserializeToArrayBuffer(
+            (_x as Interfaces.CryptoHashPair).key
+        )
         hash = (_x as Interfaces.CryptoHashPair).hash
     } else {
-        const result = await hashKey(key as KeyInput, deriveAlgorithm)
-        pubkey = result.publicKey
-        hash = result.digest
+        const result = await hashKey(_x as Interfaces.RawInput, {
+            deriveAlgorithm,
+            keyAlgorithm: 'rsa-sha512',
+        })
+        pubkey = result.key
+        hash = result.serialized
     }
     return {
-        encrypted: await encryptString(key, sharedkey, {
+        encrypted: await encryptString(pubkey, sharedkey, {
             algorithm: encryptAlgorithm,
         }),
         hash,
@@ -430,7 +439,7 @@ async function encryptSharedKey_helper(
 
 export function encryptSharedKey(
     sharedkey: ArrayBuffer,
-    pubkeys: MaybePromise<KeyInput | Interfaces.CryptoHashPair>[],
+    pubkeys: MaybePromise<Interfaces.RawInput | Interfaces.CryptoHashPair>[],
     deriveAlgorithm: string,
     encryptAlgorithm: string
 ): [Promise<Interfaces.ReferenceInterface[]>, Promise<string[]>] {

@@ -1,5 +1,9 @@
 import * as Interfaces from '../interfaces'
-import { unserializeToArrayBuffer, splitFirstOnly } from './encoding'
+import {
+    unserializeToArrayBuffer,
+    splitFirstOnly,
+    b64tobuffer,
+} from './encoding'
 import { MaybePromise } from '../typing'
 import {
     mapDeriveAlgorithms,
@@ -7,6 +11,8 @@ import {
     mapSignatureAlgorithms,
     ParamsType,
     KeyType,
+    SignatureAlgorithm,
+    EncryptionAlgorithm,
 } from './base_crypto'
 
 export {
@@ -17,6 +23,7 @@ export {
     DEFAULT_ASYMMETRIC_ENCRYPTION_ALGORITHM,
     DEFAULT_SYMMETRIC_ENCRYPTION_ALGORITHM,
     DEFAULT_DERIVE_ALGORITHM,
+    KeyType,
 } from './base_crypto'
 
 export {
@@ -26,6 +33,7 @@ export {
 } from './base_crypto_legacy'
 
 import { UnknownAlgorithm } from './base_crypto_legacy'
+export type FullKeyType = KeyType | Interfaces.RawInput
 
 export function findWorkingAlgorithms(
     algorithms: string[],
@@ -75,12 +83,25 @@ export function findWorkingAlgorithms(
     return [...algos]
 }
 
+async function key_helper(key: MaybePromise<FullKeyType>) {
+    const key_cleaned = await key
+    if (key_cleaned instanceof CryptoKey) {
+        return key_cleaned
+    }
+    return await unserializeToArrayBuffer(key_cleaned)
+}
+
 export async function derive(
     inp: MaybePromise<string | ArrayBuffer>,
     { params, algorithm }: { params?: any; algorithm: string } = {
         algorithm: '',
     }
-): Promise<{ data: ArrayBuffer; params: any; serializedName: string }> {
+): Promise<{
+    data: ArrayBuffer
+    params: any
+    serializedName: string
+    serialized: string
+}> {
     let inp_cleaned: ArrayBuffer | string = await inp
     if (!algorithm && typeof inp_cleaned == 'string') {
         const splitted = splitFirstOnly(inp_cleaned)
@@ -97,9 +118,11 @@ export async function derive(
         inp_cleaned = result.data
         params = result.params
     }
+    const result = await entry.derive(inp_cleaned, params)
     return {
-        ...(await entry.derive(inp_cleaned, params)),
+        ...result,
         serializedName: entry.serializedName,
+        serialized: `${entry.serializedName}:${await entry.serialize(result)}`,
     }
 }
 
@@ -120,16 +143,18 @@ export async function deserializeDerivedString(
         throw Error('invalid algorithm: ' + algorithm)
     }
     const result = await entry.deserialize(inp_cleaned, params)
-    return { ...result, serializedName: entry.serializedName }
+    return {
+        ...result,
+        serializedName: entry.serializedName,
+        serialized: `${entry.serializedName}:${inp_cleaned}`,
+    }
 }
 
 export async function deriveString(
     data: MaybePromise<string | ArrayBuffer>,
     options: { params?: any; algorithm: string } = { algorithm: '' }
 ): Promise<string> {
-    const result = await derive(data, options)
-    const entry = mapDeriveAlgorithms[result.serializedName]
-    return `${entry.serializedName}:${await entry.serialize(result)}`
+    return (await derive(data, options)).serialized
 }
 
 export async function serializeDerive(
@@ -144,14 +169,14 @@ export async function serializeDerive(
     return `${entry.serializedName}:${await entry.serialize(result)}`
 }
 
-export async function generateKey(
+export async function generateEncryptionKey(
     { params, algorithm }: { params?: any; algorithm: string } = {
         algorithm: '',
     }
 ): Promise<{
     params?: any
     serializedName: string
-    key: any
+    key: ArrayBuffer
 }> {
     const entry = mapEncryptionAlgorithms['' + algorithm]
     if (!entry) {
@@ -163,8 +188,27 @@ export async function generateKey(
     }
 }
 
+export async function generateSignKey(
+    { params, algorithm }: { params?: any; algorithm: string } = {
+        algorithm: '',
+    }
+): Promise<{
+    params?: any
+    serializedName: string
+    key: ArrayBuffer
+}> {
+    const entry = mapSignatureAlgorithms['' + algorithm]
+    if (!entry) {
+        throw Error('invalid algorithm: ' + algorithm)
+    }
+    return {
+        ...(await entry.generateKey(params)),
+        serializedName: entry.serializedName,
+    }
+}
+
 export async function encrypt(
-    key: MaybePromise<KeyType>,
+    key: MaybePromise<FullKeyType>,
     data: MaybePromise<string | ArrayBuffer>,
     { params, algorithm }: { params?: ParamsType; algorithm: string } = {
         algorithm: '',
@@ -181,13 +225,13 @@ export async function encrypt(
         throw new UnknownAlgorithm('invalid algorithm: ' + algorithm)
     }
     return {
-        ...(await entry.encrypt(key, data_cleaned, params)),
+        ...(await entry.encrypt(await key_helper(key), data_cleaned, params)),
         serializedName: entry.serializedName,
     }
 }
 
 export async function encryptString(
-    key: MaybePromise<KeyType>,
+    key: MaybePromise<FullKeyType>,
     data: MaybePromise<string | ArrayBuffer>,
     options: { params?: ParamsType; algorithm: string }
 ): Promise<string> {
@@ -198,9 +242,13 @@ export async function encryptString(
             'invalid algorithm: ' + result.serializedName
         )
     }
-    return `${entry.serializedName}:${await entry.serializeParams(
-        result.params
-    )}:${Buffer.from(result.data).toString('base64')}`
+    let serializedParams = await entry.serializeParams(result.params)
+    if (serializedParams) {
+        serializedParams = `${serializedParams}:`
+    }
+    return `${entry.serializedName}:${serializedParams}${Buffer.from(
+        result.data
+    ).toString('base64')}`
 }
 
 export async function serializeEncryptionParams({
@@ -222,7 +270,7 @@ export async function serializeEncryptionParams({
 }
 
 export async function decrypt(
-    key: MaybePromise<KeyType>,
+    key: MaybePromise<FullKeyType>,
     data: MaybePromise<string | ArrayBuffer>,
     { params, algorithm }: { params: ParamsType | string; algorithm?: string }
 ): Promise<{
@@ -247,7 +295,11 @@ export async function decrypt(
     }
     try {
         return {
-            ...(await entry.decrypt(key, data_cleaned, params)),
+            ...(await entry.decrypt(
+                await key_helper(key),
+                data_cleaned,
+                params
+            )),
             serializedName: entry.serializedName,
         }
     } catch (exc) {
@@ -257,7 +309,7 @@ export async function decrypt(
     }
 }
 export async function decryptString(
-    key: MaybePromise<KeyType>,
+    key: MaybePromise<FullKeyType>,
     data: MaybePromise<string>,
     {
         params,
@@ -294,7 +346,7 @@ export async function decryptString(
     })
 }
 export async function sign(
-    key: MaybePromise<KeyType>,
+    key: MaybePromise<FullKeyType>,
     data: MaybePromise<string | ArrayBuffer>,
     { algorithm }: { algorithm: string }
 ): Promise<string> {
@@ -305,7 +357,7 @@ export async function sign(
     const data_cleaned = await unserializeToArrayBuffer(data)
     try {
         return `${entry.serializedName}:${await entry.sign(
-            await key,
+            await key_helper(key),
             data_cleaned
         )}`
     } catch (exc) {
@@ -314,7 +366,7 @@ export async function sign(
     }
 }
 export async function verify(
-    key: MaybePromise<KeyType>,
+    key: MaybePromise<FullKeyType>,
     signature: MaybePromise<string>,
     data: MaybePromise<string | ArrayBuffer>,
     { algorithm }: { algorithm?: string } = {}
@@ -331,5 +383,86 @@ export async function verify(
         throw new UnknownAlgorithm('invalid algorithm: ' + algorithm)
     }
     const data_cleaned = await unserializeToArrayBuffer(data)
-    return entry.verify(await key, signature_cleaned, data_cleaned)
+    return entry.verify(await key_helper(key), signature_cleaned, data_cleaned)
+}
+
+export async function toHashableKey(
+    key: MaybePromise<FullKeyType>,
+    {
+        algorithm,
+        sign,
+        raiseOnSymmetric = false,
+    }: { algorithm?: string; sign?: boolean; raiseOnSymmetric?: boolean } = {}
+): Promise<{ serializedName: string; key: ArrayBuffer; params: ParamsType }> {
+    let keyEntry: undefined | SignatureAlgorithm | EncryptionAlgorithm =
+        undefined
+    if (sign === undefined || sign) {
+        keyEntry = mapSignatureAlgorithms['' + algorithm]
+    }
+    if (!keyEntry && !sign) {
+        keyEntry = mapEncryptionAlgorithms['' + algorithm]
+        if (raiseOnSymmetric && keyEntry.type == 'symmetric') {
+            throw new Error('not an asymmetric algorithm')
+        }
+    }
+    if (!keyEntry) {
+        throw new UnknownAlgorithm('invalid key algorithm: ' + algorithm)
+    }
+    const hashableKey = await keyEntry.toHashableKey(await key_helper(key))
+    return {
+        serializedName: keyEntry.serializedName,
+        key: hashableKey,
+        params: {},
+    }
+}
+
+export async function toPublicKey(
+    key: MaybePromise<FullKeyType>,
+    options: { algorithm?: string; sign?: boolean } = {}
+) {
+    return await toHashableKey(key, { ...options, raiseOnSymmetric: true })
+}
+
+export async function hashKey(
+    key: MaybePromise<FullKeyType>,
+    {
+        keyAlgorithm,
+        sign,
+        deriveAlgorithm,
+        deriveParams,
+    }: {
+        keyAlgorithm: string
+        sign?: boolean
+        deriveAlgorithm: string
+        deriveParams?: any
+    }
+): Promise<{
+    data: ArrayBuffer
+    params: any
+    serializedName: string
+    key: ArrayBuffer
+    serialized: string
+}> {
+    const hashableKey = (await toHashableKey(key)).key
+    const result = await derive(hashableKey, {
+        algorithm: deriveAlgorithm,
+        params: deriveParams,
+    })
+    return {
+        ...result,
+        key: hashableKey,
+    }
+}
+
+export async function hashKeyString(
+    key: MaybePromise<FullKeyType>,
+    options: {
+        keyAlgorithm: string
+        deriveAlgorithm: string
+        sign?: boolean
+        deriveParams?: any
+    }
+): Promise<string> {
+    const result = await hashKey(key, options)
+    return result.serialized
 }

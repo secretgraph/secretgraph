@@ -23,7 +23,9 @@ logger = getLogger(__name__)
 DataInputType = TypeVar(
     "DataInputType", str, bytes, memoryview, Awaitable[str | bytes | memoryview]
 )
-KeyInputType = TypeVar("KeyInputType", KeyType, Awaitable[KeyType])
+KeyInputType = TypeVar(
+    "KeyInputType", str, bytes, memoryview, Awaitable[str | bytes | memoryview]
+)
 ParamsInputType = TypeVar(
     "ParamsInputType",
     ParamsType,
@@ -39,6 +41,7 @@ ParamsInputType2 = TypeVar(
 @dataclass(frozen=True, kw_only=True)
 class FullDeriveResult(DeriveResult):
     serializedName: str
+    serialized: str
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -54,6 +57,19 @@ class FullDeserializeResult(DeserializeResult):
 @dataclass(frozen=True, kw_only=True)
 class FullKeyResult(KeyResult):
     serializedName: str
+
+
+@dataclass(frozen=True, kw_only=True)
+class FullHashKeyResult(FullDeriveResult):
+    key: bytes
+
+
+async def data_helper(data: DataInputType) -> bytes | str:
+    if isawaitable(data):
+        data = await data
+    if isinstance(data, memoryview):
+        data = data.tobytes()
+    return data
 
 
 def findWorkingAlgorithms(
@@ -102,16 +118,13 @@ def findWorkingAlgorithms(
             raise UnknownAlgorithm("Unknown algorithm: " + algo)
         if found and found not in algos:
             algos[found] = True
-    return algos.keys()
+    return list(algos.keys())
 
 
 async def derive(
     data: DataInputType, params: ParamsInputType = None, algorithm: str = ""
 ) -> FullDeriveResult:
-    if isawaitable(data):
-        data = await data
-    if isinstance(data, memoryview):
-        data = data.tobytes()
+    data = await data_helper(data)
     if not algorithm and isinstance(data, str):
         splitted = data.split(":", 1)
         algorithm = splitted[0]
@@ -131,6 +144,7 @@ async def derive(
         data=result.data,
         params=result.params,
         serializedName=entry.serializedName,
+        serialized=f"{entry.serializedName}:{await entry.serialize(result)}",
     )
 
 
@@ -158,15 +172,8 @@ async def deserializeDerivedString(
 async def deriveString(
     data: DataInputType, params: ParamsInputType = None, algorithm: str = ""
 ) -> str:
-    if isawaitable(data):
-        data = await data
-    if isinstance(data, memoryview):
-        data = data.tobytes()
-    if isinstance(data, str):
-        data = await b64decode(data)
     result = await derive(data, params=params, algorithm=algorithm)
-    entry = mapDeriveAlgorithms.get(result.serializedName)
-    return f"{entry.serializedName}:{await entry.serialize(result)}"
+    return result.serialized
 
 
 async def serializeDerive(inp: FullDeriveResult | Awaitable[FullDeriveResult]) -> str:
@@ -176,10 +183,24 @@ async def serializeDerive(inp: FullDeriveResult | Awaitable[FullDeriveResult]) -
     return f"{entry.serializedName}:{await entry.serialize(inp)}"
 
 
-async def generateKey(
+async def generateEncryptionKey(
     algorithm: str = "", params: ParamsInputType = None
 ) -> FullKeyResult:
     entry = mapEncryptionAlgorithms.get(algorithm)
+    if not entry:
+        raise UnknownAlgorithm("invalid algorithm: " + algorithm)
+    if isawaitable(params):
+        params = await params
+    result = await entry.generateKey(params)
+    return FullKeyResult(
+        key=result.key, params=result.params, serializedName=entry.serializedName
+    )
+
+
+async def generateSignKey(
+    algorithm: str = "", params: ParamsInputType = None
+) -> FullKeyResult:
+    entry = mapSignatureAlgorithms.get(algorithm)
     if not entry:
         raise UnknownAlgorithm("invalid algorithm: " + algorithm)
     if isawaitable(params):
@@ -196,14 +217,12 @@ async def encrypt(
     params: ParamsInputType = None,
     algorithm: str = "",
 ) -> FullCryptoResult:
-    if isawaitable(data):
-        data = await data
-    if isinstance(data, memoryview):
-        data = data.tobytes()
-    if isawaitable(key):
-        key = await key
+    data = await data_helper(data)
     if isinstance(data, str):
         data = b64decode(data)
+    key = await data_helper(key)
+    if isinstance(key, str):
+        key = b64decode(key)
     entry = mapEncryptionAlgorithms.get(algorithm)
     if not entry:
         raise UnknownAlgorithm("invalid algorithm: " + algorithm)
@@ -225,7 +244,10 @@ async def encryptString(
 ) -> str:
     result = await encrypt(key, data, params=params, algorithm=algorithm)
     entry = mapEncryptionAlgorithms[result.serializedName]
-    return f"{entry.serializedName}:{await entry.serializeParams(result.params)}:{b64encode(result.data).decode()}"
+    serializedParams = await entry.serializeParams(result.params)
+    if serializedParams:
+        serializedParams = f"{serializedParams}:"
+    return f"{entry.serializedName}:{serializedParams}{b64encode(result.data).decode()}"
 
 
 async def serializeEncryptionParams(params: ParamsInputType, algorithm: str) -> str:
@@ -269,22 +291,15 @@ async def decrypt(
         result = await deserializeEncryptedString(params)
         algorithm = result.serializedName
         params = result.params
-
-    if isawaitable(data):
-        data = await data
-    if isinstance(data, memoryview):
-        data = data.tobytes()
+    data = await data_helper(data)
+    if isinstance(data, str):
+        data = b64decode(data)
+    key = await data_helper(key)
+    if isinstance(key, str):
+        key = b64decode(key)
     entry = mapEncryptionAlgorithms.get(algorithm)
     if not entry:
         raise UnknownAlgorithm("invalid algorithm: " + algorithm)
-    if isawaitable(key):
-        key = await key
-    if isawaitable(data):
-        data = await data
-    if isinstance(data, str):
-        data = b64decode(data)
-
-    assert isinstance(data, bytes)
     result = await entry.decrypt(key, data, params)
     return FullCryptoResult(
         data=result.data,
@@ -306,8 +321,9 @@ async def getDecryptor(
     entry = mapEncryptionAlgorithms.get(algorithm)
     if not entry:
         raise UnknownAlgorithm("invalid algorithm: " + algorithm)
-    if isawaitable(key):
-        key = await key
+    key = await data_helper(key)
+    if isinstance(key, str):
+        key = b64decode(key)
     return await entry.decryptor(key, params)
 
 
@@ -323,8 +339,9 @@ async def getEncryptor(
     entry = mapEncryptionAlgorithms.get(algorithm)
     if not entry:
         raise UnknownAlgorithm("invalid algorithm: " + algorithm)
-    if isawaitable(key):
-        key = await key
+    key = await data_helper(key)
+    if isinstance(key, str):
+        key = b64decode(key)
     return await entry.encryptor(key, params)
 
 
@@ -344,12 +361,12 @@ async def sign(
     entry = mapSignatureAlgorithms.get(algorithm)
     if not entry:
         raise UnknownAlgorithm("invalid algorithm: " + algorithm)
-    if isawaitable(key):
-        key = await key
-    if isawaitable(data):
-        data = await data
+    data = await data_helper(data)
     if isinstance(data, str):
         data = b64decode(data)
+    key = await data_helper(key)
+    if isinstance(key, str):
+        key = b64decode(key)
 
     try:
         return f"{entry.serializedName}:${await entry.sign(key, data, prehashed=prehashed)}"
@@ -381,10 +398,65 @@ async def verify(
     entry = mapSignatureAlgorithms.get(algorithm)
     if not entry:
         raise UnknownAlgorithm("invalid algorithm: " + algorithm)
-    if isawaitable(key):
-        key = await key
-    if isawaitable(data):
-        data = await data
+    data = await data_helper(data)
     if isinstance(data, str):
         data = b64decode(data)
+    key = await data_helper(key)
+    if isinstance(key, str):
+        key = b64decode(key)
+
     return entry.verify(key, signature, data, prehashed=prehashed)
+
+
+async def toHashableKey(
+    key: KeyType | Awaitable[KeyType],
+    algorithm: str,
+    sign: bool | None = None,
+    raiseOnSymmetric=False,
+) -> FullKeyResult:
+    keyEntry = None
+    if sign is None or sign:
+        keyEntry = mapSignatureAlgorithms.get(algorithm)
+    if not keyEntry and not sign:
+        keyEntry = mapEncryptionAlgorithms.get(algorithm)
+        if keyEntry.type == "symmetric":
+            raise ValueError("not an asymmetric algorithm")
+    if not keyEntry:
+        raise UnknownAlgorithm("invalid key algorithm: " + algorithm)
+    key = await data_helper(key)
+    if isinstance(key, str):
+        key = b64decode(key)
+    hashableKey = await keyEntry.toHashableKey(key)
+    return FullKeyResult(key=hashableKey, serializedName=keyEntry.serializedName)
+
+
+async def toPublicKey(
+    key: KeyType | Awaitable[KeyType],
+    algorithm: str,
+    sign: bool | None = None,
+) -> FullKeyResult:
+    return await toHashableKey(
+        key, algorithm=algorithm, sign=sign, raiseOnSymmetric=True
+    )
+
+
+async def hashKey(
+    key: KeyType | Awaitable[KeyType],
+    keyAlgorithm: str,
+    deriveAlgorithm: str,
+    sign: bool | None = None,
+    deriveParams: ParamsType = None,
+) -> FullHashKeyResult:
+    result1 = await toHashableKey(key, algorithm=keyAlgorithm, sign=sign)
+    result2 = await derive(
+        result1.key,
+        algorithm=deriveAlgorithm,
+        params=deriveParams,
+    )
+    return FullHashKeyResult(
+        data=result2.data,
+        params=result2.params,
+        serializedName=result2.serializedName,
+        serialized=result2.serialized,
+        key=result1.key,
+    )

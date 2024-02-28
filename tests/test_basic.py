@@ -1,8 +1,8 @@
 import base64
 import json
-from urllib.parse import quote_plus
 import os
 from contextlib import redirect_stderr
+from urllib.parse import quote_plus
 
 import httpx
 from cryptography.hazmat.primitives import hashes, serialization
@@ -14,8 +14,8 @@ from django.test import RequestFactory, TransactionTestCase
 from strawberry.django.context import StrawberryDjangoContext
 
 from secretgraph.asgi import application
+from secretgraph.core.utils.crypto import findWorkingAlgorithms
 from secretgraph.core.utils.hashing import (
-    findWorkingHashAlgorithms,
     hashObject,
 )
 from secretgraph.core.utils.verification import verify
@@ -67,14 +67,10 @@ class BasicTests(TransactionTestCase):
             },
             StrawberryDjangoContext(request=request, response=None),
         )
-        self.assertEqual(
-            await Cluster.objects.exclude(name="@system").acount(), 1
-        )
+        self.assertEqual(await Cluster.objects.exclude(name="@system").acount(), 1)
         self.assertEqual(await Content.objects.acount(), 0)
         self.assertFalse(result.errors)
-        clusterid = result.data["secretgraph"]["updateOrCreateCluster"][
-            "cluster"
-        ]["id"]
+        clusterid = result.data["secretgraph"]["updateOrCreateCluster"]["cluster"]["id"]
         with self.subTest("Fail because content is not signed"):
             request = self.factory.get("/graphql")
             with redirect_stderr(None):
@@ -94,9 +90,7 @@ class BasicTests(TransactionTestCase):
                 )
             self.assertTrue(result.errors)
         with self.subTest("Allow bootstrapping"):
-            encryptkey = rsa.generate_private_key(
-                public_exponent=65537, key_size=2048
-            )
+            encryptkey = rsa.generate_private_key(public_exponent=65537, key_size=2048)
             pub_encryptkey = encryptkey.public_key()
             pub_encryptkey_bytes = pub_encryptkey.public_bytes(
                 encoding=serialization.Encoding.DER,
@@ -117,9 +111,7 @@ class BasicTests(TransactionTestCase):
                 StrawberryDjangoContext(request=request, response=None),
             )
             self.assertTrue(result.data)
-        self.assertEqual(
-            await Cluster.objects.exclude(name="@system").acount(), 1
-        )
+        self.assertEqual(await Cluster.objects.exclude(name="@system").acount(), 1)
         # one public key is created
         self.assertEqual(await Content.objects.acount(), 1)
 
@@ -127,18 +119,14 @@ class BasicTests(TransactionTestCase):
         manage_token = os.urandom(50)
         view_token = os.urandom(50)
         request = self.factory.get("/graphql")
-        signkey = rsa.generate_private_key(
-            public_exponent=65537, key_size=2048
-        )
+        signkey = rsa.generate_private_key(public_exponent=65537, key_size=2048)
         pub_signkey = signkey.public_key()
         pub_signkey_bytes = pub_signkey.public_bytes(
             encoding=serialization.Encoding.DER,
             format=serialization.PublicFormat.SubjectPublicKeyInfo,
         )
         # 1024 is too small and could not be used for OAEP
-        encryptkey = rsa.generate_private_key(
-            public_exponent=65537, key_size=2048
-        )
+        encryptkey = rsa.generate_private_key(public_exponent=65537, key_size=2048)
         pub_encryptkey = encryptkey.public_key()
         pub_encryptkey_bytes = pub_encryptkey.public_bytes(
             encoding=serialization.Encoding.DER,
@@ -190,13 +178,9 @@ class BasicTests(TransactionTestCase):
             StrawberryDjangoContext(request=request, response=None),
         )
 
-        clusterid = result.data["secretgraph"]["updateOrCreateCluster"][
-            "cluster"
-        ]["id"]
+        clusterid = result.data["secretgraph"]["updateOrCreateCluster"]["cluster"]["id"]
 
-        hash_algos = findWorkingHashAlgorithms(
-            settings.SECRETGRAPH_HASH_ALGORITHMS
-        )
+        hash_algos = findWorkingAlgorithms(settings.SECRETGRAPH_HASH_ALGORITHMS, "hash")
         content = os.urandom(100)
         content_shared_key = os.urandom(32)
         content_nonce = os.urandom(13)
@@ -243,9 +227,7 @@ class BasicTests(TransactionTestCase):
                     "target": pub_encryptKey_hash,
                     "extra": "{}:{}".format(
                         hash_algos[0].serializedName,
-                        base64.b64encode(content_shared_key_enc).decode(
-                            "ascii"
-                        ),
+                        base64.b64encode(content_shared_key_enc).decode("ascii"),
                     ),
                 },
                 {
@@ -275,17 +257,15 @@ class BasicTests(TransactionTestCase):
             self.assertTrue(
                 result.data["secretgraph"]["updateOrCreateContent"]["writeok"]
             )
-            path = result.data["secretgraph"]["updateOrCreateContent"][
-                "content"
-            ]["link"]
-            item_id = result.data["secretgraph"]["updateOrCreateContent"][
-                "content"
-            ]["id"]
+            path = result.data["secretgraph"]["updateOrCreateContent"]["content"][
+                "link"
+            ]
+            item_id = result.data["secretgraph"]["updateOrCreateContent"]["content"][
+                "id"
+            ]
             url = f"http://{request.get_host()}{path}"
 
-        self.assertEqual(
-            await Cluster.objects.exclude(name="@system").acount(), 1
-        )
+        self.assertEqual(await Cluster.objects.exclude(name="@system").acount(), 1)
         self.assertEqual(await Content.objects.acount(), 3)
         self.assertTrue(url)
         with self.subTest("check signature without item"):

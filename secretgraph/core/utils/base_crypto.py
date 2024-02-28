@@ -8,8 +8,8 @@ from os import urandom
 from typing import Iterable, Literal, Optional, TypeVar
 
 from cryptography.exceptions import InvalidSignature
-from cryptography.hazmat.primitives import hashes, padding, serialization
-from cryptography.hazmat.primitives.asymmetric import rsa, utils
+from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives.asymmetric import padding, rsa, utils
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.primitives.hashes import Hash
@@ -72,7 +72,7 @@ class DeriveAlgorithm(ABC):
         pass
 
     @classmethod
-    async def serialize(cls, result: CryptoResult) -> str:
+    async def serialize(cls, result: DeriveResult) -> str:
         return b64encode(result.data).decode()
 
     @classmethod
@@ -110,6 +110,11 @@ class EncryptionAlgorithm(ABC):
 
     @classmethod
     @abstractmethod
+    def toHashableKey(cls, key: KeyType) -> bytes:
+        pass
+
+    @classmethod
+    @abstractmethod
     async def generateKey(cls, params: ParamsType) -> KeyType:
         pass
 
@@ -144,6 +149,11 @@ class SignatureAlgorithm(ABC):
     @classmethod
     async def finalize(cls) -> bytes:
         raise NotImplementedError()
+
+    @classmethod
+    @abstractmethod
+    def toHashableKey(cls, key: KeyType) -> bytes:
+        pass
 
     @classmethod
     @abstractmethod
@@ -293,6 +303,21 @@ class OEAPsha512(EncryptionAlgorithm):
         )
 
     @classmethod
+    async def toHashableKey(cls, key):
+        if isinstance(key, str):
+            key = b64decode(key)
+        if isinstance(key, bytes):
+            key = serialization.load_der_public_key(key)
+        elif isinstance(key, rsa.RSAPrivateKey):
+            key = key.public_key()
+        if hasattr(key, "public_key"):
+            key = key.public_key()
+        return key.public_bytes(
+            encoding=serialization.Encoding.DER,
+            format=serialization.PublicFormat.SubjectPublicKeyInfo,
+        )
+
+    @classmethod
     async def decrypt(cls, key, data, params=None):
         if isinstance(key, str):
             key = b64decode(key)
@@ -358,8 +383,7 @@ class AESGCMAlgo(EncryptionAlgorithm):
         if isinstance(params["nonce"], str):
             params["nonce"] = b64decode(params["nonce"])
         return CryptoResult(
-            data=key.encrypt(params["nonce"], data, None),
-            params=params,
+            data=key.encrypt(params["nonce"], data, None), params=params, key=key._key
         )
 
     @classmethod
@@ -384,8 +408,7 @@ class AESGCMAlgo(EncryptionAlgorithm):
         if isinstance(key, bytes):
             key = AESGCM(key)
         return CryptoResult(
-            data=key.decrypt(params["nonce"], data, None),
-            params=params,
+            data=key.decrypt(params["nonce"], data, None), params=params, key=key._key
         )
 
     @classmethod
@@ -403,6 +426,15 @@ class AESGCMAlgo(EncryptionAlgorithm):
     @classmethod
     async def serializeParams(params):
         return b64encode(params.nonce).decode()
+
+    @classmethod
+    async def toHashableKey(cls, key: KeyType):
+        # already strengthed
+        if len(key) >= 50:
+            return key
+        if len(key) != 32:
+            raise ValueError("invalid key length for hashing")
+        return urandom(18) + key
 
     @classmethod
     async def generateKey(params=None):
@@ -453,6 +485,21 @@ class RSASignsha512(SignatureAlgorithm):
     @classmethod
     async def finalize(cls, hasher):
         return hasher.finalize()
+
+    @classmethod
+    async def toHashableKey(cls, key):
+        if isinstance(key, str):
+            key = b64decode(key)
+        if isinstance(key, bytes):
+            key = serialization.load_der_public_key(key)
+        elif isinstance(key, rsa.RSAPrivateKey):
+            key = key.public_key()
+        if hasattr(key, "public_key"):
+            key = key.public_key()
+        return key.public_bytes(
+            encoding=serialization.Encoding.DER,
+            format=serialization.PublicFormat.SubjectPublicKeyInfo,
+        )
 
     @classmethod
     async def verify(cls, key, signature, data, prehashed=False):

@@ -2,6 +2,7 @@ import {
     unserializeToArrayBuffer,
     serializeToBase64,
     splitFirstOnly,
+    splitFirstOnlyInverted,
 } from './encoding'
 import { ValueType } from '../typing'
 import { unserializeToCryptoKey } from './base_crypto_legacy'
@@ -22,7 +23,7 @@ export let DEFAULT_SYMMETRIC_ENCRYPTION_ALGORITHM = 'AESGCM'
 export let DEFAULT_DERIVE_ALGORITHM = 'PBKDF2-sha512'
 
 export type ParamsType = any
-export type KeyType = any
+export type KeyType = CryptoKey | ArrayBuffer
 
 export interface DeriveResult {
     data: ArrayBuffer
@@ -33,7 +34,7 @@ export interface CryptoResult extends DeriveResult {
 }
 
 export interface KeyResult {
-    key: KeyType
+    key: ArrayBuffer
     params: ParamsType
 }
 
@@ -86,6 +87,7 @@ export abstract class EncryptionAlgorithm {
         params: ParamsType
     ): Promise<CryptoResult>
     abstract generateKey(params: ParamsType): Promise<KeyResult>
+    abstract toHashableKey(key: CryptoKey | ArrayBuffer): Promise<ArrayBuffer>
     async serializeParams(params: ParamsType): Promise<string> {
         return ''
     }
@@ -110,6 +112,7 @@ export abstract class SignatureAlgorithm {
         data: ArrayBuffer
     ): Promise<boolean>
     abstract generateKey(params: ParamsType): Promise<KeyResult>
+    abstract toHashableKey(key: CryptoKey | ArrayBuffer): Promise<ArrayBuffer>
 }
 
 // argon1id, pkb
@@ -263,7 +266,7 @@ class RSAOEAPAlgos extends EncryptionAlgorithm {
                 {
                     name: 'RSA-OAEP',
                 },
-                key,
+                key_cleaned,
                 data
             ),
             params: {},
@@ -281,24 +284,33 @@ class RSAOEAPAlgos extends EncryptionAlgorithm {
                 {
                     name: 'RSA-OAEP',
                 },
-                key,
+                key_cleaned,
                 data
             ),
             params: {},
             key: await unserializeToArrayBuffer(key_cleaned),
         }
     }
+    async toHashableKey(key: CryptoKey | ArrayBuffer): Promise<ArrayBuffer> {
+        const publicKey = await unserializeToCryptoKey(
+            key,
+            this.keyParams,
+            'publicKey'
+        )
+        return await crypto.subtle.exportKey('spki' as const, publicKey)
+    }
     async generateKey({ bits }: { bits: number } = { bits: 4096 }) {
+        const keypair = await crypto.subtle.generateKey(
+            {
+                modulusLength: bits,
+                publicExponent: new Uint8Array([1, 0, 1]),
+                ...this.keyParams,
+            },
+            true,
+            ['wrapKey', 'unwrapKey', 'encrypt', 'decrypt']
+        )
         return {
-            key: await crypto.subtle.generateKey(
-                {
-                    modulusLength: bits,
-                    publicExponent: new Uint8Array([1, 0, 1]),
-                    ...this.keyParams,
-                },
-                true,
-                ['wrapKey', 'unwrapKey', 'encrypt', 'decrypt']
-            ),
+            key: await unserializeToArrayBuffer(keypair.privateKey),
             params: { bits },
         }
     }
@@ -339,7 +351,7 @@ class AESGCMAlgos extends EncryptionAlgorithm {
                     name: 'AES-GCM',
                     iv: nonce,
                 },
-                key,
+                key_cleaned,
                 data
             ),
             params: { nonce },
@@ -362,7 +374,7 @@ class AESGCMAlgos extends EncryptionAlgorithm {
                     name: 'AES-GCM',
                     iv: nonce,
                 },
-                key,
+                key_cleaned,
                 data
             ),
             params: { nonce },
@@ -374,11 +386,7 @@ class AESGCMAlgos extends EncryptionAlgorithm {
     }
     async deserialize(inp: string, params?: { nonce: ArrayBuffer }) {
         let params2: { nonce?: ArrayBuffer } = Object.assign({}, params || {})
-        let splitted = splitFirstOnly(inp)
-        // swap, splittedFirst will put on error the string at the second place
-        if (!splitted[0] && splitted[1]) {
-            splitted = [splitted[1], splitted[0]]
-        }
+        let splitted = splitFirstOnlyInverted(inp)
         params2.nonce = await unserializeToArrayBuffer(splitted[0])
         let cleaned: ArrayBuffer | undefined = undefined
         if (params2.nonce && splitted[splitted.length - 1]) {
@@ -390,6 +398,23 @@ class AESGCMAlgos extends EncryptionAlgorithm {
             params: params2,
             data: cleaned,
         }
+    }
+    async toHashableKey(key: ArrayBuffer): Promise<ArrayBuffer> {
+        if (!(key instanceof ArrayBuffer)) {
+            throw Error('invalid key type')
+        }
+        // already strengthed
+        if (key.byteLength >= 50) {
+            return key
+        }
+        if (key.byteLength != 32) {
+            throw Error('invalid key length for hashing')
+        }
+        const prefix = crypto.getRandomValues(new Uint8Array(18))
+        const fullArray = new Uint8Array(50)
+        fullArray.set(prefix)
+        fullArray.set(new Uint8Array(key), 18)
+        return fullArray
     }
     async generateKey() {
         return {
@@ -420,42 +445,61 @@ class RSAPSSAlgos extends SignatureAlgorithm {
             .replace('-', '')}`
     }
     async sign(key: KeyType, data: ArrayBuffer) {
+        const key_cleaned = await unserializeToCryptoKey(
+            key,
+            this.keyParams,
+            'privateKey'
+        )
         return await serializeToBase64(
             crypto.subtle.sign(
                 {
                     name: 'RSA-PSS',
                     saltLength: this.saltLength,
                 },
-                key,
+                key_cleaned,
                 data
             )
         )
     }
 
     async verify(key: KeyType, signature: string, data: ArrayBuffer) {
+        const key_cleaned = await unserializeToCryptoKey(
+            key,
+            this.keyParams,
+            'publicKey'
+        )
         return await crypto.subtle.verify(
             {
                 name: 'RSA-PSS',
                 saltLength: this.saltLength,
             },
-            key,
+            key_cleaned,
             await unserializeToArrayBuffer(signature),
             data
         )
     }
     async generateKey({ bits }: { bits: number } = { bits: 4096 }) {
+        const keypair = await crypto.subtle.generateKey(
+            {
+                modulusLength: bits,
+                publicExponent: new Uint8Array([1, 0, 1]),
+                ...this.keyParams,
+            },
+            true,
+            ['wrapKey', 'unwrapKey', 'encrypt', 'decrypt']
+        )
         return {
-            key: await crypto.subtle.generateKey(
-                {
-                    modulusLength: bits,
-                    publicExponent: new Uint8Array([1, 0, 1]),
-                    ...this.keyParams,
-                },
-                true,
-                ['wrapKey', 'unwrapKey', 'encrypt', 'decrypt']
-            ),
+            key: await unserializeToArrayBuffer(keypair.privateKey),
             params: { bits },
         }
+    }
+    async toHashableKey(key: CryptoKey | ArrayBuffer): Promise<ArrayBuffer> {
+        const publicKey = await unserializeToCryptoKey(
+            key,
+            this.keyParams,
+            'publicKey'
+        )
+        return await crypto.subtle.exportKey('spki' as const, publicKey)
     }
 }
 addWithVariants(mapSignatureAlgorithms, new RSAPSSAlgos('SHA-512', 64), [

@@ -23,15 +23,11 @@ import {
 } from '@secretgraph/misc/utils/action'
 import { authInfoFromConfig } from '@secretgraph/misc/utils/config'
 import { serializeToBase64 } from '@secretgraph/misc/utils/encoding'
-import {
-    hashKey,
-    hashObject,
-    hashToken,
-} from '@secretgraph/misc/utils/hashing'
+import { hashToken } from '@secretgraph/misc/utils/hashing'
 import {
     DEFAULT_ASYMMETRIC_ENCRYPTION_ALGORITHM,
-    DEFAULT_SIGNATURE_ALGORITHM,
     findWorkingAlgorithms,
+    hashKeyString,
 } from '@secretgraph/misc/utils/crypto'
 import {
     createCluster,
@@ -263,8 +259,10 @@ const ClusterIntern = ({
                                 ['wrapKey', 'unwrapKey', 'encrypt', 'decrypt']
                             )) as Required<CryptoKeyPair>
                         privPromise = serializeToBase64(privateKey)
-                        digestCert = (await hashKey(publicKey, hashAlgorithm))
-                            .digest
+                        digestCert = await hashKeyString(publicKey, {
+                            keyAlgorithm: 'rsa-sha512',
+                            deriveAlgorithm: hashAlgorithm,
+                        })
                         clusterResponse = await createCluster({
                             client: itemClient,
                             actions: finishedActions,

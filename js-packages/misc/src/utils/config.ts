@@ -9,7 +9,6 @@ import {
     encryptPreKey,
 } from './encryption'
 import {
-    unserializeToCryptoKey,
     mapDeriveAlgorithms,
     mapEncryptionAlgorithms,
     encrypt,
@@ -1182,7 +1181,7 @@ export const loadConfig = async (
                         return Promise.reject('not for decryption')
                     }
                     return (
-                        await decrypt(data, parsedResult.data, {
+                        await decrypt(data[0], parsedResult.data, {
                             algorithm: 'AESGCM',
                             params: { nonce: parsedResult.nonce },
                         })

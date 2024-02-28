@@ -4,16 +4,21 @@ import logging
 import os
 from contextlib import redirect_stderr
 
-from cryptography.exceptions import InvalidSignature
-from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.primitives.asymmetric import padding, rsa
 from django.conf import settings
 from django.core.files.base import ContentFile
 from django.test import RequestFactory, TestCase
 from strawberry.django.context import StrawberryDjangoContext
 
+from secretgraph.core.utils.crypto import (
+    findWorkingAlgorithms,
+    generateEncryptionKey,
+    generateSignKey,
+    hashKey,
+    sign,
+    toPublicKey,
+    verify,
+)
 from secretgraph.core.utils.hashing import (
-    findWorkingHashAlgorithms,
     hashObject,
 )
 from secretgraph.queries.cluster import (
@@ -26,7 +31,7 @@ from secretgraph.server.models import Action
 
 
 class AuthTests(TestCase):
-    def setUp(self):
+    async def setUp(self):
         # Every test needs access to the request factory.
         self.factory = RequestFactory()
 
@@ -36,40 +41,22 @@ class AuthTests(TestCase):
         self.challenge = base64.b64encode(os.urandom(50)).decode()
         self.requester = "https://example.com"
 
-        self.hash_algos = findWorkingHashAlgorithms(
-            settings.SECRETGRAPH_HASH_ALGORITHMS
+        self.hash_algos = findWorkingAlgorithms(
+            settings.SECRETGRAPH_HASH_ALGORITHMS, "hash"
         )
-        self.signkey = rsa.generate_private_key(
-            public_exponent=65537, key_size=2048
-        )
-        self.pub_signkey = self.signkey.public_key()
-        self.pub_signkey_bytes = self.pub_signkey.public_bytes(
-            encoding=serialization.Encoding.DER,
-            format=serialization.PublicFormat.SubjectPublicKeyInfo,
-        )
-        self.pub_signKey_hash = hashObject(
-            self.pub_signkey_bytes, self.hash_algos[0]
-        )
-        self.signature_base_data = f"{self.requester}{self.challenge}".encode(
-            "utf8"
-        )
-        self.signature = self.signkey.sign(
+        self.signkey = await generateSignKey("rsa-sha512", params={"bits": 2048})
+        self.signature_base_data = f"{self.requester}{self.challenge}".encode("utf8")
+        self.signature = await sign(
+            self.signkey,
             self.signature_base_data,
-            padding.PSS(
-                mgf=padding.MGF1(self.hash_algos[0].algorithm),
-                salt_length=padding.PSS.MAX_LENGTH,
-            ),
-            self.hash_algos[0].algorithm,
+            self.hash_algos[0],
         )
 
     async def test_auth_workflow(self):
-        fake_signature = self.signkey.sign(
+        fake_signature = await sign(
+            self.signkey,
             self.signature_base_data + b"sdkdsk",
-            padding.PSS(
-                mgf=padding.MGF1(self.hash_algos[0].algorithm),
-                salt_length=padding.PSS.MAX_LENGTH,
-            ),
-            self.hash_algos[0].algorithm,
+            self.hash_algos[0],
         )
 
         request = self.factory.get("/graphql")
@@ -82,7 +69,11 @@ class AuthTests(TestCase):
                 "primary": True,
                 "keys": [
                     {
-                        "publicKey": ContentFile(self.pub_signkey_bytes),
+                        "publicKey": ContentFile(
+                            (
+                                await toPublicKey(self.signkey, "rsa-sha512", sign=True)
+                            ).key
+                        ),
                         "publicState": "public",
                         "publicTags": ["name=initial sign key"],
                     },
@@ -114,10 +105,7 @@ class AuthTests(TestCase):
                                 "action": "auth",
                                 "requester": self.requester,
                                 "challenge": self.challenge,
-                                "signatures": [
-                                    f"{self.pub_signKey_hash}:{base64.b64encode(fake_signature).decode()}",
-                                    f"{self.pub_signKey_hash}:{base64.b64encode(self.signature).decode()}",
-                                ],
+                                "signatures": [fake_signature, self.signature],
                             }
                         ),
                         "key": base64.b64encode(self.auth_token).decode(),
@@ -135,9 +123,7 @@ class AuthTests(TestCase):
             StrawberryDjangoContext(request=request, response=None),
         )
         self.assertFalse(result.errors)
-        clusterid = result.data["secretgraph"]["updateOrCreateCluster"][
-            "cluster"
-        ]["id"]
+        clusterid = result.data["secretgraph"]["updateOrCreateCluster"]["cluster"]["id"]
         self.assertEqual(await Action.objects.acount(), 4)
 
         request = self.factory.get("/graphql")
@@ -153,30 +139,25 @@ class AuthTests(TestCase):
         node = result.data["secretgraph"]["node"]
         self.assertTrue(node["auth"])
         valid_signature_found = False
-        raised_for_invalid_signature = False
+        invalid_signature_found = False
         for signature in filter(
             lambda x: x.startswith(self.pub_signKey_hash),
             node["auth"]["signatures"],
         ):
             # strip hash prefix and decode
             signature = base64.b64decode(signature.rsplit(":", 1)[-1])
-            try:
-                self.pub_signkey.verify(
-                    signature,
-                    f'{node["auth"]["requester"]}{node["auth"]["challenge"]}'.encode(
-                        "utf8"
-                    ),
-                    padding.PSS(
-                        mgf=padding.MGF1(self.hash_algos[0].algorithm),
-                        salt_length=padding.PSS.MAX_LENGTH,
-                    ),
-                    self.hash_algos[0].algorithm,
-                )
+            if verify(
+                self.signkey,
+                signature,
+                f'{node["auth"]["requester"]}{node["auth"]["challenge"]}'.encode(
+                    "utf8"
+                ),
+            ):
                 valid_signature_found = True
-            except InvalidSignature:
-                raised_for_invalid_signature = True
+            else:
+                invalid_signature_found = True
         self.assertTrue(valid_signature_found)
-        self.assertTrue(raised_for_invalid_signature)
+        self.assertTrue(invalid_signature_found)
 
     async def test_fail_double_auth_same_request(self):
         request = self.factory.get("/graphql")
@@ -190,7 +171,13 @@ class AuthTests(TestCase):
                     "primary": True,
                     "keys": [
                         {
-                            "publicKey": ContentFile(self.pub_signkey_bytes),
+                            "publicKey": ContentFile(
+                                (
+                                    await toPublicKey(
+                                        self.signkey, "rsa-sha512", sign=True
+                                    )
+                                ).key
+                            ),
                             "publicState": "public",
                             "publicTags": ["name=initial sign key"],
                         },
@@ -198,9 +185,7 @@ class AuthTests(TestCase):
                     "actions": [
                         {
                             "value": '{"action": "manage"}',
-                            "key": base64.b64encode(
-                                self.manage_token
-                            ).decode(),
+                            "key": base64.b64encode(self.manage_token).decode(),
                         },
                         {
                             "value": json.dumps(
@@ -273,9 +258,7 @@ class AuthTests(TestCase):
             StrawberryDjangoContext(request=request, response=None),
         )
         self.assertFalse(result.errors)
-        clusterid = result.data["secretgraph"]["updateOrCreateCluster"][
-            "cluster"
-        ]["id"]
+        clusterid = result.data["secretgraph"]["updateOrCreateCluster"]["cluster"]["id"]
         clusterupdateid = result.data["secretgraph"]["updateOrCreateCluster"][
             "cluster"
         ]["updateId"]
@@ -356,9 +339,7 @@ class AuthTests(TestCase):
             StrawberryDjangoContext(request=request, response=None),
         )
         self.assertFalse(result.errors)
-        clusterid = result.data["secretgraph"]["updateOrCreateCluster"][
-            "cluster"
-        ]["id"]
+        clusterid = result.data["secretgraph"]["updateOrCreateCluster"]["cluster"]["id"]
         clusterupdateid = result.data["secretgraph"]["updateOrCreateCluster"][
             "cluster"
         ]["updateId"]

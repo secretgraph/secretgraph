@@ -4,6 +4,7 @@ from base64 import b64decode, b64encode
 from time import time
 from urllib.parse import urlencode, urljoin
 
+from asgiref.sync import async_to_sync
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import padding, rsa
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
@@ -40,26 +41,26 @@ def _gen_key_vars_nohash(inp: bytes | str):
     return inp, b64encode(inp).decode("ascii")
 
 
-def _gen_key_vars(inp: bytes | str):
+@async_to_sync
+async def _gen_key_vars(inp: bytes | str):
     ret = _gen_key_vars_nohash(inp)
-    return *ret, hashObject(ret[0])
+    return *ret, await hashObject(ret[0])
 
 
-def _gen_token_vars(inp: bytes | str):
+@async_to_sync
+async def _gen_token_vars(inp: bytes | str):
     # tokens are
     ret = _gen_key_vars_nohash(inp)
     if len(ret[0]) < 50:
         raise ValueError("Token too short")
-    return *ret, hashObject((b"secretgraph", ret[0]))
+    return *ret, await hashObject((b"secretgraph", ret[0]))
 
 
 class Command(BaseCommand):
     help = "Initialize cluster"
 
     def add_arguments(self, parser):
-        parser.add_argument(
-            "--token", nargs="?", default=None, help="View token"
-        )
+        parser.add_argument("--token", nargs="?", default=None, help="View token")
         parser.add_argument("--quota", default=None, type=int)
         parser.add_argument("--bits", "-b", type=int, default=4096)
         parser.add_argument("--slots", nargs="+", default=["main"], type=str)
@@ -98,21 +99,13 @@ class Command(BaseCommand):
                 net.max_upload_size = options["max_upload_size"]
             else:
                 net.reset_max_upload_size()
-        hash_algo = constants.mapHashNames[
-            settings.SECRETGRAPH_HASH_ALGORITHMS[0]
-        ]
+        hash_algo = constants.mapHashNames[settings.SECRETGRAPH_HASH_ALGORITHMS[0]]
         nonce_config = os.urandom(13)
         nonce_privkey = os.urandom(13)
-        view_token, view_token_b64, view_token_hash = _gen_token_vars(
-            options["token"]
-        )
-        manage_key, manage_key_b64, manage_key_hash = _gen_token_vars(
-            os.urandom(50)
-        )
+        view_token, view_token_b64, view_token_hash = _gen_token_vars(options["token"])
+        manage_key, manage_key_b64, manage_key_hash = _gen_token_vars(os.urandom(50))
         privkey_key, privkey_key_b64 = _gen_key_vars_nohash(os.urandom(32))
-        config_shared_key, config_shared_key_b64 = _gen_key_vars_nohash(
-            os.urandom(32)
-        )
+        config_shared_key, config_shared_key_b64 = _gen_key_vars_nohash(os.urandom(32))
         privateKey = rsa.generate_private_key(
             public_exponent=65537, key_size=options["bits"]
         )
@@ -291,9 +284,7 @@ class Command(BaseCommand):
                                         )
                                     ).decode("ascii"),
                                 ),
-                                deleteRecursive=(
-                                    constants.DeleteRecursive.NO_GROUP
-                                ),
+                                deleteRecursive=(constants.DeleteRecursive.NO_GROUP),
                             ),
                             ReferenceInput(
                                 target=publicKey_hash,
@@ -304,18 +295,14 @@ class Command(BaseCommand):
                                         privateKey.sign(
                                             ecnryptedContent,
                                             padding.PSS(
-                                                mgf=padding.MGF1(
-                                                    hash_algo.algorithm
-                                                ),
+                                                mgf=padding.MGF1(hash_algo.algorithm),
                                                 salt_length=padding.PSS.MAX_LENGTH,  # noqa E501
                                             ),
                                             hash_algo.algorithm,
                                         )
                                     ).decode("ascii"),
                                 ),
-                                deleteRecursive=(
-                                    constants.DeleteRecursive.NO_GROUP
-                                ),
+                                deleteRecursive=(constants.DeleteRecursive.NO_GROUP),
                             ),
                         ],
                     ),
@@ -342,8 +329,4 @@ class Command(BaseCommand):
             doseq=True,
         )
         print("Cluster:", cluster.flexid_cached)
-        print(
-            "Initialization url: {}?{}".format(
-                urljoin(url, content.link), search
-            )
-        )
+        print("Initialization url: {}?{}".format(urljoin(url, content.link), search))

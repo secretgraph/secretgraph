@@ -15,9 +15,9 @@ from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from gql import gql
 from gql.client import AsyncClientSession
 
+from secretgraph.core.utils.crypto import findWorkingAlgorithms
 from secretgraph.core.utils.graphql import create_client
 from secretgraph.core.utils.hashing import (
-    findWorkingHashAlgorithms,
     hashObject,
     hashTagsContentHash,
 )
@@ -48,9 +48,7 @@ async def run(argv, session: AsyncClientSession):
     view_token_b64 = base64.b64encode(view_token).decode("ascii")
     config_key = os.urandom(32)
     config_key_b64 = base64.b64encode(config_key).decode("ascii")
-    priv_key = rsa.generate_private_key(
-        public_exponent=65537, key_size=argv.bits
-    )
+    priv_key = rsa.generate_private_key(public_exponent=65537, key_size=argv.bits)
     pub_key = priv_key.public_key()
     pub_key_bytes = pub_key.public_bytes(
         encoding=serialization.Encoding.DER,
@@ -64,7 +62,7 @@ async def run(argv, session: AsyncClientSession):
 
     result = await session.execute(gql(serverConfigQuery))
     serverConfig = result["secretgraph"]["config"]
-    hash_algos = findWorkingHashAlgorithms(serverConfig["hashAlgorithms"])
+    hash_algos = findWorkingAlgorithms(serverConfig["hashAlgorithms"], "hash")
     publicKey_hash = hashObject(pub_key_bytes, hash_algos[0])
     key1 = {
         "publicKey": BytesIO(pub_key_bytes),
@@ -235,9 +233,7 @@ async def run(argv, session: AsyncClientSession):
         "value": BytesIO(encrypted_content),
         "nonce": nonce_config_b64,
         "contentHash": config_contentHash,
-        "authorization": [
-            ":".join([config["configCluster"], manage_token_b64])
-        ],
+        "authorization": [":".join([config["configCluster"], manage_token_b64])],
     }
 
     result = await session.execute(

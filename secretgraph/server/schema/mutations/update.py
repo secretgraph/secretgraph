@@ -81,8 +81,8 @@ async def mutate_cluster(
         )(transaction.atomic)
     else:
         if cluster.clusterGroups is None:
-            dProperty = await SGroupProperty.objects.aget_or_create(
-                name="default", defaults={}
+            dProperty = await (
+                SGroupProperty.objects.aget_or_create(name="default", defaults={})
             )[0]
             await aupdate_cached_net_properties(
                 info.context["request"], groups=dProperty.netGroups.all()
@@ -94,9 +94,9 @@ async def mutate_cluster(
             if cluster.name is not None and cluster.name.startswith("@"):
                 if (
                     "allow_global_name" not in net_props
-                    and not SGroupProperty.objects.defaultClusterProperties()
+                    and not await SGroupProperty.objects.defaultClusterProperties()
                     .filter(name="allow_global_name")
-                    .exists()
+                    .aexists()
                 ):
                     cluster.name = f"+@{cluster.name}"
         _cluster_res = await (

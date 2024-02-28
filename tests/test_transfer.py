@@ -11,8 +11,10 @@ from django.test import RequestFactory, TransactionTestCase
 from strawberry.django.context import StrawberryDjangoContext
 
 from secretgraph.core.constants import TransferResult
+from secretgraph.core.utils.crypto import (
+    findWorkingAlgorithms,
+)
 from secretgraph.core.utils.hashing import (
-    findWorkingHashAlgorithms,
     hashObject,
 )
 from secretgraph.queries.cluster import createClusterMutation
@@ -32,18 +34,14 @@ class TransferTests(TransactionTestCase):
         manage_token_raw = os.urandom(50)
         view_token_raw = os.urandom(50)
         request = self.factory.get("/graphql")
-        signkey = rsa.generate_private_key(
-            public_exponent=65537, key_size=2048
-        )
+        signkey = rsa.generate_private_key(public_exponent=65537, key_size=2048)
         pub_signkey = signkey.public_key()
         pub_signkey_bytes = pub_signkey.public_bytes(
             encoding=serialization.Encoding.DER,
             format=serialization.PublicFormat.SubjectPublicKeyInfo,
         )
         # 1024 is too small and could not be used for OAEP
-        encryptkey = rsa.generate_private_key(
-            public_exponent=65537, key_size=2048
-        )
+        encryptkey = rsa.generate_private_key(public_exponent=65537, key_size=2048)
         pub_encryptkey = encryptkey.public_key()
         pub_encryptkey_bytes = pub_encryptkey.public_bytes(
             encoding=serialization.Encoding.DER,
@@ -79,13 +77,9 @@ class TransferTests(TransactionTestCase):
             StrawberryDjangoContext(request=request, response=None),
         )
 
-        clusterid = result.data["secretgraph"]["updateOrCreateCluster"][
-            "cluster"
-        ]["id"]
+        clusterid = result.data["secretgraph"]["updateOrCreateCluster"]["cluster"]["id"]
 
-        hash_algos = findWorkingHashAlgorithms(
-            settings.SECRETGRAPH_HASH_ALGORITHMS
-        )
+        hash_algos = findWorkingAlgorithms(settings.SECRETGRAPH_HASH_ALGORITHMS, "hash")
         content = os.urandom(100)
         content_shared_key = os.urandom(32)
         content_nonce = os.urandom(13)
@@ -138,9 +132,7 @@ class TransferTests(TransactionTestCase):
                     "target": pub_encryptKey_hash,
                     "extra": "{}:{}".format(
                         hash_algos[0].serializedName,
-                        base64.b64encode(content_shared_key_enc).decode(
-                            "ascii"
-                        ),
+                        base64.b64encode(content_shared_key_enc).decode("ascii"),
                     ),
                 },
                 {
@@ -164,32 +156,24 @@ class TransferTests(TransactionTestCase):
         )
         self.assertFalse(result.errors)
         self.assertTrue(result.data)
-        self.assertTrue(
-            result.data["secretgraph"]["updateOrCreateContent"]["writeok"]
-        )
-        content_id = result.data["secretgraph"]["updateOrCreateContent"][
-            "content"
-        ]["id"]
-        path = result.data["secretgraph"]["updateOrCreateContent"]["content"][
-            "link"
+        self.assertTrue(result.data["secretgraph"]["updateOrCreateContent"]["writeok"])
+        content_id = result.data["secretgraph"]["updateOrCreateContent"]["content"][
+            "id"
         ]
+        path = result.data["secretgraph"]["updateOrCreateContent"]["content"]["link"]
         url = f"http://{request.get_host()}{path}"
         url_nonce = os.urandom(13)
         transfer_shared_key = os.urandom(32)
         transfer_nonce = os.urandom(13)
         encrypted_url_tag = base64.b64encode(
             url_nonce
-            + AESGCM(transfer_shared_key).encrypt(
-                url_nonce, url.encode("utf8"), None
-            )
+            + AESGCM(transfer_shared_key).encrypt(url_nonce, url.encode("utf8"), None)
         ).decode()
         header_nonce = os.urandom(13)
         header = f"Authorization={clusterid}:{base64.b64encode(view_token_raw).decode('ascii')}"
         encrypted_header_tag = base64.b64encode(
             header_nonce
-            + AESGCM(transfer_shared_key).encrypt(
-                header_nonce, header.encode(), None
-            )
+            + AESGCM(transfer_shared_key).encrypt(header_nonce, header.encode(), None)
         ).decode()
         transfer_shared_key_enc = pub_encryptkey.encrypt(
             transfer_shared_key,
@@ -224,9 +208,7 @@ class TransferTests(TransactionTestCase):
                     "target": pub_encryptKey_hash,
                     "extra": "{}:{}".format(
                         hash_algos[0].serializedName,
-                        base64.b64encode(transfer_shared_key_enc).decode(
-                            "ascii"
-                        ),
+                        base64.b64encode(transfer_shared_key_enc).decode("ascii"),
                     ),
                 },
             ],
@@ -241,12 +223,10 @@ class TransferTests(TransactionTestCase):
         )
         self.assertFalse(result.errors)
         self.assertTrue(result.data)
-        self.assertTrue(
-            result.data["secretgraph"]["updateOrCreateContent"]["writeok"]
-        )
-        transfer_id = result.data["secretgraph"]["updateOrCreateContent"][
-            "content"
-        ]["id"]
+        self.assertTrue(result.data["secretgraph"]["updateOrCreateContent"]["writeok"])
+        transfer_id = result.data["secretgraph"]["updateOrCreateContent"]["content"][
+            "id"
+        ]
         return (
             m_token,
             content_shared_key,
@@ -276,9 +256,7 @@ class TransferTests(TransactionTestCase):
 
         await sweepOutdated()
         self.assertTrue(
-            (
-                await Content.objects.aget(flexid_cached=content_id)
-            ).markForDestruction
+            (await Content.objects.aget(flexid_cached=content_id)).markForDestruction
         )
         finished = await Content.objects.aget(flexid_cached=transfer_id)
         self.assertFalse(finished.markForDestruction)
@@ -298,9 +276,7 @@ class TransferTests(TransactionTestCase):
         decryptor = AESGCM(transfer_key)
         raw_bytes = base64.b64decode(
             (
-                await content.tags.only("tag").aget(
-                    tag__startswith="~transfer_url="
-                )
+                await content.tags.only("tag").aget(tag__startswith="~transfer_url=")
             ).tag.split("=", 1)[1]
         )
         url = decryptor.decrypt(
@@ -338,9 +314,7 @@ class TransferTests(TransactionTestCase):
         self.assertTrue(result.data)
         await sweepOutdated()
         self.assertTrue(
-            (
-                await Content.objects.aget(flexid_cached=content_id)
-            ).markForDestruction
+            (await Content.objects.aget(flexid_cached=content_id)).markForDestruction
         )
         finished = await Content.objects.aget(flexid_cached=transfer_id)
         self.assertFalse(finished.markForDestruction)
