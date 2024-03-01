@@ -112,3 +112,7 @@ SECRETGRAPH_DEFAULT_NET_GROUPS["debug_admin"] = {  # noqa F405
     ],
     "userSelectable": "DESELECTABLE",
 }
+
+# silences warnings while testing, files are iterated not async
+# raw files are more efficient when using a real async server
+SECRETGRAPH_USE_RAW_FILE_WHEN_POSSIBLE = False

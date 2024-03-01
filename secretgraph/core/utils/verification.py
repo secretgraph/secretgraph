@@ -25,13 +25,13 @@ async def _fetch_certificate(
     keyResponse = await session.get(url, headers={"Authorization": authorization})
     keyResponse.raise_for_status()
     if key_hashes:
-        calced_hashes = calculateHashesForHashAlgorithms(
+        calced_hashes = await calculateHashesForHashAlgorithms(
             keyResponse.content, hashAlgorithms
         )
         if set(calced_hashes).isdisjoint(key_hashes):
             raise ValueError("invalid key, no hash algorithm matches")
     else:
-        calced_hashes = calculateHashesForHashAlgorithms(
+        calced_hashes = await calculateHashesForHashAlgorithms(
             keyResponse.content, hashAlgorithms[:1]
         )
     return calced_hashes, keyResponse.content, url
@@ -137,7 +137,6 @@ async def verify_content(
                     signHashAlgorithm.serializedName,
                     {
                         "urls": {},
-                        "signHashAlgorithm": signHashAlgorithm,
                         "hashCtx": await signHashAlgorithm.getHasher(),
                     },
                 )
@@ -176,7 +175,6 @@ async def verify_content(
                     signHashAlgorithm.serializedName,
                     {
                         "urls": {},
-                        "signHashAlgorithm": signHashAlgorithm,
                         "hashCtx": await signHashAlgorithm.getHasher(),
                     },
                 )
@@ -206,7 +204,7 @@ async def verify_content(
             )
 
         for sig in signature_map.values():
-            signatureDigest = sig["signHashAlgorithm"].finalize(sig["hashCtx"])
+            signatureDigest = sig["hashCtx"].finalize()
             for url_signature in sig["urls"].items():
                 ops.append(
                     _verify_helper(

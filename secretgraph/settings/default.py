@@ -22,7 +22,7 @@ LAST_CONFIG_RELOAD_ID = str(time.time())
 
 ALLOWED_HOSTS = []
 
-FIXTURE_DIRS = ["test/fixtures/"]
+FIXTURE_DIRS = ["tests/fixtures/"]
 
 
 # Application definition
@@ -130,6 +130,8 @@ SECRETGRAPH_HTTPX_KWARGS_MAP = {
     #     "proxies": {}
     # }
 }
+
+SECRETGRAPH_USE_RAW_FILE_WHEN_POSSIBLE = True
 
 #  for defining default global groups
 SECRETGRAPH_DEFAULT_NET_GROUPS = {}

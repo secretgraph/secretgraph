@@ -2,9 +2,6 @@ import base64
 import json
 import os
 
-from cryptography.hazmat.primitives import hashes, serialization
-from cryptography.hazmat.primitives.asymmetric import padding, rsa, utils
-from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from django.conf import settings
 from django.core.files.base import ContentFile
 from django.test import RequestFactory, TransactionTestCase
@@ -12,7 +9,16 @@ from strawberry.django.context import StrawberryDjangoContext
 
 from secretgraph.core.constants import TransferResult
 from secretgraph.core.utils.crypto import (
+    decryptString,
+    encrypt,
+    encryptString,
     findWorkingAlgorithms,
+    generateEncryptionKey,
+    generateSignKey,
+    getSignatureHasher,
+    serializeEncryptionParams,
+    sign,
+    toPublicKey,
 )
 from secretgraph.core.utils.hashing import (
     hashObject,
@@ -31,21 +37,18 @@ class TransferTests(TransactionTestCase):
         self.factory = RequestFactory()
 
     async def _prepare(self):
-        manage_token_raw = os.urandom(50)
+        manage_token = os.urandom(50)
         view_token_raw = os.urandom(50)
         request = self.factory.get("/graphql")
-        signkey = rsa.generate_private_key(public_exponent=65537, key_size=2048)
-        pub_signkey = signkey.public_key()
-        pub_signkey_bytes = pub_signkey.public_bytes(
-            encoding=serialization.Encoding.DER,
-            format=serialization.PublicFormat.SubjectPublicKeyInfo,
+
+        signkey = await generateSignKey("rsa-sha512", {"bits": 2048})
+        pub_signkey = await toPublicKey(
+            signkey.key, algorithm=signkey.serializedName, sign=True
         )
         # 1024 is too small and could not be used for OAEP
-        encryptkey = rsa.generate_private_key(public_exponent=65537, key_size=2048)
-        pub_encryptkey = encryptkey.public_key()
-        pub_encryptkey_bytes = pub_encryptkey.public_bytes(
-            encoding=serialization.Encoding.DER,
-            format=serialization.PublicFormat.SubjectPublicKeyInfo,
+        encryptkey = await generateEncryptionKey("rsa-sha512", {"bits": 2048})
+        pub_encryptkey = await toPublicKey(
+            encryptkey.key, algorithm=encryptkey.serializedName, sign=False
         )
 
         result = await schema.execute(
@@ -57,12 +60,12 @@ class TransferTests(TransactionTestCase):
                 "primary": True,
                 "keys": [
                     {
-                        "publicKey": ContentFile(pub_signkey_bytes),
+                        "publicKey": ContentFile(pub_signkey.key),
                         "publicState": "public",
                         "publicTags": ["name=initial sign key"],
                     },
                     {
-                        "publicKey": ContentFile(pub_encryptkey_bytes),
+                        "publicKey": ContentFile(pub_encryptkey.key),
                         "publicState": "trusted",
                         "publicTags": ["name=initial encrypt key"],
                     },
@@ -70,7 +73,7 @@ class TransferTests(TransactionTestCase):
                 "actions": [
                     {
                         "value": '{"action": "manage"}',
-                        "key": base64.b64encode(manage_token_raw).decode(),
+                        "key": base64.b64encode(manage_token).decode(),
                     },
                 ],
             },
@@ -82,35 +85,23 @@ class TransferTests(TransactionTestCase):
         hash_algos = findWorkingAlgorithms(settings.SECRETGRAPH_HASH_ALGORITHMS, "hash")
         content = os.urandom(100)
         content_shared_key = os.urandom(32)
-        content_nonce = os.urandom(13)
-        encrypted_content = AESGCM(content_shared_key).encrypt(
-            content_nonce, content, None
+        encrypted_content = await encrypt(
+            content_shared_key, content, algorithm="AESGCM"
         )
 
-        hash_ctx = hashes.Hash(hash_algos[0].algorithm)
-        hash_ctx.update(encrypted_content)
+        hash_ctx = await getSignatureHasher("rsa-sha512")
+        hash_ctx.update(encrypted_content.data)
         encrypted_content_hash_raw = hash_ctx.finalize()
-        signature = signkey.sign(
+        signature = await sign(
+            signkey.key,
             encrypted_content_hash_raw,
-            padding.PSS(
-                mgf=padding.MGF1(hash_algos[0].algorithm),
-                salt_length=padding.PSS.MAX_LENGTH,
-            ),
-            utils.Prehashed(hash_algos[0].algorithm),
+            algorithm="rsa-sha512",
+            prehashed=True,
         )
 
-        content_shared_key_enc = pub_encryptkey.encrypt(
-            content_shared_key,
-            padding.OAEP(
-                mgf=padding.MGF1(algorithm=hash_algos[0].algorithm),
-                algorithm=hash_algos[0].algorithm,
-                label=None,
-            ),
-        )
-
-        pub_encryptKey_hash = hashObject(pub_encryptkey_bytes, hash_algos[0])
-        pub_signKey_hash = hashObject(pub_signkey_bytes, hash_algos[0])
-        m_token = f"{clusterid}:{base64.b64encode(manage_token_raw).decode()}"
+        pub_encryptKey_hash = await hashObject(pub_encryptkey.key, hash_algos[0])
+        pub_signKey_hash = await hashObject(pub_signkey.key, hash_algos[0])
+        m_token = f"{clusterid}:{base64.b64encode(manage_token).decode()}"
         prepared_content = {
             "cluster": clusterid,
             "type": "File",
@@ -130,22 +121,20 @@ class TransferTests(TransactionTestCase):
                 {
                     "group": "key",
                     "target": pub_encryptKey_hash,
-                    "extra": "{}:{}".format(
-                        hash_algos[0].serializedName,
-                        base64.b64encode(content_shared_key_enc).decode("ascii"),
+                    "extra": await encryptString(
+                        pub_encryptkey.key, content_shared_key, algorithm="rsa-sha512"
                     ),
                 },
                 {
                     "group": "signature",
                     "target": pub_signKey_hash,
-                    "extra": "{}:{}".format(
-                        hash_algos[0].serializedName,
-                        base64.b64encode(signature).decode("ascii"),
-                    ),
+                    "extra": signature,
                 },
             ],
-            "value": ContentFile(encrypted_content),
-            "nonce": base64.b64encode(content_nonce).decode(),
+            "value": ContentFile(encrypted_content.data),
+            "cryptoParameters": await serializeEncryptionParams(
+                encrypted_content.params, encrypted_content.serializedName
+            ),
             "authorization": [m_token],
         }
         request = self.factory.get("/graphql")
@@ -162,26 +151,16 @@ class TransferTests(TransactionTestCase):
         ]
         path = result.data["secretgraph"]["updateOrCreateContent"]["content"]["link"]
         url = f"http://{request.get_host()}{path}"
-        url_nonce = os.urandom(13)
         transfer_shared_key = os.urandom(32)
-        transfer_nonce = os.urandom(13)
-        encrypted_url_tag = base64.b64encode(
-            url_nonce
-            + AESGCM(transfer_shared_key).encrypt(url_nonce, url.encode("utf8"), None)
-        ).decode()
-        header_nonce = os.urandom(13)
+        encrypted_url_tag = await encryptString(
+            transfer_shared_key, url.encode("utf8"), algorithm="AESGCM"
+        )
         header = f"Authorization={clusterid}:{base64.b64encode(view_token_raw).decode('ascii')}"
-        encrypted_header_tag = base64.b64encode(
-            header_nonce
-            + AESGCM(transfer_shared_key).encrypt(header_nonce, header.encode(), None)
-        ).decode()
-        transfer_shared_key_enc = pub_encryptkey.encrypt(
-            transfer_shared_key,
-            padding.OAEP(
-                mgf=padding.MGF1(algorithm=hash_algos[0].algorithm),
-                algorithm=hash_algos[0].algorithm,
-                label=None,
-            ),
+        encrypted_header_tag = await encryptString(
+            transfer_shared_key, header.encode("utf8"), algorithm="AESGCM"
+        )
+        transfer_shared_key_enc = await encrypt(
+            pub_encryptkey, transfer_shared_key, algorithm="rsa-sha512"
         )
 
         prepared_transfer = {
@@ -195,25 +174,23 @@ class TransferTests(TransactionTestCase):
                 f"key_hash={pub_encryptKey_hash}",
             ],
             "references": [
-                {
-                    "group": "signature",
-                    "target": pub_signKey_hash,
-                    "extra": "{}:{}".format(
-                        hash_algos[0].serializedName,
-                        base64.b64encode(signature).decode("ascii"),
-                    ),
-                },
+                {"group": "signature", "target": pub_signKey_hash, "extra": signature},
                 {
                     "group": "transfer",
                     "target": pub_encryptKey_hash,
                     "extra": "{}:{}".format(
-                        hash_algos[0].serializedName,
-                        base64.b64encode(transfer_shared_key_enc).decode("ascii"),
+                        await serializeEncryptionParams(
+                            transfer_shared_key_enc.params,
+                            transfer_shared_key_enc.serializedName,
+                        ),
+                        base64.b64encode(transfer_shared_key_enc.data).decode("ascii"),
                     ),
                 },
             ],
             "value": ContentFile(b""),
-            "nonce": base64.b64encode(transfer_nonce).decode(),
+            "cryptoParameters": await serializeEncryptionParams(
+                transfer_shared_key_enc.params, transfer_shared_key_enc.serializedName
+            ),
             "authorization": [m_token],
         }
         result = await schema.execute(
@@ -273,26 +250,18 @@ class TransferTests(TransactionTestCase):
             transfer_id,
         ) = await self._prepare()
         content = await Content.objects.aget(flexid_cached=transfer_id)
-        decryptor = AESGCM(transfer_key)
-        raw_bytes = base64.b64decode(
-            (
-                await content.tags.only("tag").aget(tag__startswith="~transfer_url=")
-            ).tag.split("=", 1)[1]
-        )
-        url = decryptor.decrypt(
-            raw_bytes[:13],
-            raw_bytes[13:],
-            None,
-        ).decode()
+        encoded_bytes = (
+            await content.tags.only("tag").aget(tag__startswith="~transfer_url=")
+        ).tag.split("=", 1)[1]
+        url = (await decryptString(transfer_key, encoded_bytes)).data.decode()
         headers = {}
         async for tag in content.tags.only("tag").filter(
             tag__startswith="~transfer_header="
         ):
-            raw_bytes = base64.b64decode(tag.tag.split("=", 1)[1])
             # headers must be ascii
             header = (
-                decryptor.decrypt(raw_bytes[:13], raw_bytes[13:], None)
-                .decode("ascii")
+                (await decryptString(transfer_key, tag.tag.split("=", 1)[1]))
+                .data.decode()
                 .split("=", 1)
             )
             if len(header) == 2:

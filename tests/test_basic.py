@@ -7,7 +7,7 @@ from urllib.parse import quote_plus
 import httpx
 from django.conf import settings
 from django.core.files.base import ContentFile
-from django.test import RequestFactory, TestCase
+from django.test import RequestFactory, TransactionTestCase
 from strawberry.django.context import StrawberryDjangoContext
 
 from secretgraph.asgi import application
@@ -33,7 +33,8 @@ from secretgraph.schema import schema
 from secretgraph.server.models import Cluster, Content
 
 
-class BasicTests(TestCase):
+# verify_content requires TransactionTestCase
+class BasicTests(TransactionTestCase):
     def setUp(self):
         # Every test needs access to the request factory.
         self.factory = RequestFactory()

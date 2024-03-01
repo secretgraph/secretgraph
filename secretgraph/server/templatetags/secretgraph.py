@@ -21,7 +21,7 @@ from ..utils.auth import (
     get_cached_net_properties,
     get_cached_result,
 )
-from ..utils.encryption import iter_decrypt_contents
+from ..utils.encryption import iter_decrypt_contents_sync
 
 try:
     import nh3
@@ -89,9 +89,7 @@ register = template.Library()
 
 @register.simple_tag()
 def secretgraph_path():
-    return resolve_url(
-        getattr(settings, "SECRETGRAPH_GRAPHQL_PATH", "/graphql/")
-    )
+    return resolve_url(getattr(settings, "SECRETGRAPH_GRAPHQL_PATH", "/graphql/"))
 
 
 @register.simple_tag(takes_context=True)
@@ -112,13 +110,12 @@ def fetch_clusters(
     excludeTypes=None,
     authorization=None,
 ):
-    queryset = get_cached_result(context["request"], authset=authorization)[
-        "Cluster"
-    ]["objects_with_public"].exclude(name="@system")
+    queryset = get_cached_result(context["request"], authset=authorization)["Cluster"][
+        "objects_with_public"
+    ].exclude(name="@system")
     if search is not None:
         queryset = queryset.filter(
-            Q(flexid_cached__startswith=search)
-            | Q(description__icontains=search)
+            Q(flexid_cached__startswith=search) | Q(description__icontains=search)
         )
     if deleted is not None:
         queryset = queryset.filter(markForDestruction__isnull=not deleted)
@@ -221,9 +218,9 @@ def fetch_contents(
         if states:
             states = set(states).difference(constants.public_states)
         else:
-            result["objects_with_public"] = result[
-                "objects_with_public"
-            ].exclude(state__in=constants.public_states)
+            result["objects_with_public"] = result["objects_with_public"].exclude(
+                state__in=constants.public_states
+            )
     if featured is not None:
         result["objects_with_public"] = result["objects_with_public"].filter(
             cluster__featured=bool(featured)
@@ -275,10 +272,7 @@ def fetch_contents(
         decryptset = set()
         if decrypt:
             decryptset.update(
-                context["request"]
-                .headers.get("X-Key", "")
-                .replace(" ", "")
-                .split(",")
+                context["request"].headers.get("X-Key", "").replace(" ", "").split(",")
             )
             decryptset.update(context["request"].GET.getlist("key"))
         if default_decryptkeys:
@@ -290,16 +284,14 @@ def fetch_contents(
         decryptset.discard("")
 
         def gen(queryset):
-            for content in iter_decrypt_contents(
+            for content in iter_decrypt_contents_sync(
                 result,
                 queryset=queryset,
                 decryptset=decryptset,
             ):
                 yield content
 
-        page = Paginator(result["objects_with_public"], page_size).get_page(
-            page
-        )
+        page = Paginator(result["objects_with_public"], page_size).get_page(page)
         page.object_list = list(
             gen(
                 (
@@ -312,9 +304,7 @@ def fetch_contents(
 
         return page
     else:
-        return Paginator(result["objects_with_public"], page_size).get_page(
-            page
-        )
+        return Paginator(result["objects_with_public"], page_size).get_page(page)
 
 
 @register.simple_tag(takes_context=True)
@@ -345,10 +335,7 @@ def read_content_sync(
         )
 
         decryptset = set(
-            context["request"]
-            .headers.get("X-Key", "")
-            .replace(" ", "")
-            .split(",")
+            context["request"].headers.get("X-Key", "").replace(" ", "").split(",")
         )
         decryptset.update(context["request"].GET.getlist("key"))
         if default_decryptkeys:
@@ -359,13 +346,12 @@ def read_content_sync(
             )
         decryptset.discard("")
         content = next(
-            iter_decrypt_contents(result, decryptset=decryptset),
+            iter_decrypt_contents_sync(result, decryptset=decryptset),
             None,
         )
     assert isinstance(content, Content), "Can only handle Contents"
     assert hasattr(content, "tags_proxy"), (
-        "content lacks tags_proxy "
-        "(set by iter_decrypt_contents, decrypt flag)"
+        "content lacks tags_proxy " "(set by iter_decrypt_contents, decrypt flag)"
     )
     decryptqpart = {}
     if authorization:

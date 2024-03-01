@@ -13,7 +13,6 @@ from gql import gql
 from gql.client import AsyncClientSession
 
 from secretgraph.core.utils.crypto import (
-    combineKeyHashWithData,
     encrypt,
     encryptString,
     findWorkingAlgorithms,

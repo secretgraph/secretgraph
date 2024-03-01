@@ -1,6 +1,6 @@
 import base64
 import logging
-from typing import Iterable
+from collections.abc import AsyncIterable, Iterable
 
 from asgiref.sync import async_to_sync
 from cryptography import exceptions
@@ -211,16 +211,76 @@ class ProxyTags:
 sync_create_key_maps = async_to_sync(create_key_maps)
 
 
-def iter_decrypt_contents(
+class ReadDecryptIterator:
+    def __init__(self, content, decryptor):
+        self.decryptor = decryptor
+        self.content = content
+
+    def __iter__(self):
+        if self.content.start_transfer:
+            if not async_to_sync(self.content.start_transfer)():
+                return
+        with self.content.file.open() as fileob:
+            chunk = fileob.read(4096)
+            nextchunk = None
+            while chunk:
+                nextchunk = fileob.read(4096)
+                assert isinstance(chunk, bytes)
+                if nextchunk and len(nextchunk) > 16:
+                    yield self.decryptor.update(chunk)
+                else:
+                    if nextchunk:
+                        chunk += nextchunk
+                        nextchunk = None
+                    yield self.decryptor.update(chunk[:-16])
+                    try:
+                        yield self.decryptor.finalize_with_tag(chunk[-16:])
+                    except exceptions.InvalidTag:
+                        logging.warning(
+                            "Error decoding crypted content: %s (%s)",
+                            self.content.flexid,
+                            self.content.type,
+                        )
+                chunk = nextchunk
+
+    async def __aiter__(self):
+        if self.content.start_transfer:
+            if not await self.content.start_transfer():
+                return
+        with self.content.file.open() as fileob:
+            chunk = fileob.read(4096)
+            nextchunk = None
+            while chunk:
+                nextchunk = fileob.read(4096)
+                assert isinstance(chunk, bytes)
+                if nextchunk and len(nextchunk) > 16:
+                    yield self.decryptor.update(chunk)
+                else:
+                    if nextchunk:
+                        chunk += nextchunk
+                        nextchunk = None
+                    yield self.decryptor.update(chunk[:-16])
+                    try:
+                        yield self.decryptor.finalize_with_tag(chunk[-16:])
+                    except exceptions.InvalidTag:
+                        logging.warning(
+                            "Error decoding crypted content: %s (%s)",
+                            self.content.flexid,
+                            self.content.type,
+                        )
+                chunk = nextchunk
+
+
+async def iter_decrypt_contents(
     result, /, *, queryset=None, decryptset=None
-) -> Iterable[Content]:
-    from ..actions.update import sync_transfer_value
+) -> AsyncIterable[Content]:
+    from ..actions.update import transfer_value
 
     if decryptset is None:
         raise Exception("decryptset is missing")
     # copy query
     content_query = (queryset or result["objects_with_public"]).all()
-    content_map, transfer_map = sync_create_key_maps(content_query, decryptset)
+    content_map, transfer_map = await create_key_maps(content_query, decryptset)
     # main query, restricted to PublicKeys and decoded contents
     query = content_query.filter(
         Q(type="PublicKey") | Q(state__in=public_states) | Q(id__in=content_map.keys())
@@ -230,17 +290,17 @@ def iter_decrypt_contents(
         ),
     )
 
-    for content in query:
+    async for content in query:
         # check  if content should be transfered
         if content.id in transfer_map:
 
-            def _start_transfer():
+            async def _start_transfer():
                 verifiers = Content.objects.trusted_keys()
                 if not verifiers:
                     verifiers = None
                 else:
                     verifiers = content_query.filter(id__in=verifiers)
-                result = sync_transfer_value(
+                result = await transfer_value(
                     content,
                     key=transfer_map[content.id],
                     is_transfer=True,
@@ -254,7 +314,7 @@ def iter_decrypt_contents(
                     TransferResult.FAILED_VERIFICATION,
                 }:
                     content.start_transfer = None
-                    content.delete()
+                    await content.adelete()
                     return False
                 elif result != TransferResult.SUCCESS:
                     return False
@@ -271,7 +331,7 @@ def iter_decrypt_contents(
         # we can decrypt content now (transfers are also completed)
         if content.id in content_map:
             try:
-                decryptor = getDecryptor(
+                decryptor = await getDecryptor(
                     content_map[content.id], params=content.cryptoParameters
                 )
             except Exception as exc:
@@ -279,32 +339,8 @@ def iter_decrypt_contents(
                 continue
             content.tags_proxy = ProxyTags(content.tags, content_map[content.id])
 
-            def _read_decrypt() -> Iterable[bytes]:
-                if content.start_transfer:
-                    if not content.start_transfer():
-                        return
-                with content.file.open() as fileob:
-                    chunk = fileob.read(512)
-                    nextchunk = None
-                    while chunk:
-                        nextchunk = fileob.read(4096)
-                        assert isinstance(chunk, bytes)
-                        if nextchunk and len(nextchunk) > 16:
-                            yield decryptor.update(chunk)
-                        else:
-                            if nextchunk:
-                                chunk += nextchunk
-                                nextchunk = None
-                            yield decryptor.update(chunk[:-16])
-                            try:
-                                yield decryptor.finalize_with_tag(chunk[-16:])
-                            except exceptions.InvalidTag:
-                                logging.warning(
-                                    "Error decoding crypted content: %s (%s)",
-                                    content.flexid,
-                                    content.type,
-                                )
-                        chunk = nextchunk
+            def _read_decrypt() -> ReadDecryptIterator:
+                return ReadDecryptIterator(content, decryptor)
 
             _read_decrypt.key = content_map[content.id]
             content.read_decrypt = _read_decrypt
@@ -317,3 +353,16 @@ def iter_decrypt_contents(
             continue
 
         yield content
+
+
+@async_to_sync
+async def sync_anext(inp):
+    return await inp
+
+
+def iter_decrypt_contents_sync(
+    result, /, *, queryset=None, decryptset=None
+) -> Iterable[Content]:
+    aiterable = iter_decrypt_contents(result, queryset=queryset, decryptset=decryptset)
+    for value in aiterable:
+        yield sync_anext(aiterable)

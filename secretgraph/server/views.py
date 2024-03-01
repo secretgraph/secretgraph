@@ -28,7 +28,7 @@ from strawberry.django.views import AsyncGraphQLView
 
 from ..core import constants
 from .utils.auth import sync_retrieve_allowed_objects
-from .utils.encryption import iter_decrypt_contents
+from .utils.encryption import iter_decrypt_contents_sync
 from .utils.mark import freeze_contents, update_file_accessed
 from .view_decorators import (
     add_cors_headers,
@@ -73,7 +73,7 @@ def _assert_nospace(inp: set[str]):
 # range support inspired from
 # https://gist.github.com/dcwatson/cb5d8157a8fa5a4a046e
 class RangeFileWrapper(object):
-    def __init__(self, filelike, offset, length, blksize):
+    def __init__(self, filelike, blksize, length=None, offset=0):
         self.filelike = filelike
         self.filelike.seek(offset, os.SEEK_SET)
         self.remaining = length
@@ -83,15 +83,15 @@ class RangeFileWrapper(object):
         if hasattr(self.filelike, "close"):
             self.filelike.close()
 
-    def __iter__(self):
+    def __aiter__(self):
         return self
 
-    def next(self):
+    async def __anext__(self):
         if self.remaining <= 0:
-            raise StopIteration()
+            raise StopAsyncIteration()
         data = self.filelike.read(min(self.remaining, self.blksize))
         if not data:
-            raise StopIteration()
+            raise StopAsyncIteration()
         self.remaining -= len(data)
         return data
 
@@ -107,13 +107,14 @@ def get_file_response_with_range_support(request, fileob, size, name):
         if last_byte >= size:
             last_byte = size - 1
         length = last_byte - first_byte + 1
+        fwrapper = RangeFileWrapper(
+            fileob,
+            offset=first_byte,
+            length=length,
+            blksize=FileResponse.block_size,
+        )
         response = FileResponse(
-            RangeFileWrapper(
-                fileob,
-                offset=first_byte,
-                length=length,
-                blksize=FileResponse.block_size,
-            ),
+            fwrapper,
             status=206,
             as_attachment=False,
             filename=name,
@@ -124,12 +125,23 @@ def get_file_response_with_range_support(request, fileob, size, name):
             last_byte,
             size,
         )
-    else:
+    elif hasattr(fileob, "read") and getattr(
+        settings, "SECRETGRAPH_USE_RAW_FILE_WHEN_POSSIBLE", True
+    ):
+        # is a file, content-Length automatically calculated
         response = FileResponse(
             fileob,
             as_attachment=False,
             filename=name,
         )
+    else:
+        # silences warnings while testing
+        response = StreamingHttpResponse(
+            RangeFileWrapper(fileob, length=size, blksize=FileResponse.block_size),
+            as_attachment=False,
+            filename=name,
+        )
+        response["Content-Length"] = str(size)
     response["Accept-Ranges"] = "bytes"
     return response
 
@@ -227,7 +239,7 @@ class ContentView(View):
                 decryptset
             ), "whitespace in one of the keys (GET key)"
         try:
-            iterator = iter_decrypt_contents(result, decryptset=decryptset)
+            iterator = iter_decrypt_contents_sync(result, decryptset=decryptset)
             content = next(iterator)
         except StopIteration:
             if decryptset:
@@ -237,6 +249,8 @@ class ContentView(View):
             freeze_contents([content.id], request)
         names = content.tags_proxy.name
         if hasattr(content, "read_decrypt"):
+            # no range support because of AESGCM tag,
+            # Would require an crypto method to calculate the effective size
             response = StreamingHttpResponse(content.read_decrypt())
             if isinstance(names[0], str):
                 # do it according to django
@@ -253,7 +267,7 @@ class ContentView(View):
             response["X-Robots-Tag"] = "noindex,nofollow"
         else:
             response = get_file_response_with_range_support(
-                request, content.file.read("rb"), content.file.size, names[0]
+                request, content.file.open("rb"), content.file.size, names[0]
             )
             if content.cluster.featured:
                 response["X-Robots-Tag"] = "index,follow"
