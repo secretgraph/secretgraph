@@ -36,7 +36,7 @@ async def create_key_maps(contents, keyset):
         keyspec = keyspec.rsplit(":", 1)
         if len(keyspec) == 2:
             _key = base64.b64decode(keyspec[1])
-            # is hash
+            # is hash (at least 1 : is in str)
             if ":" in keyspec[0]:
                 key_map_key[f"key_hash={keyspec[0]}"] = _key
             else:

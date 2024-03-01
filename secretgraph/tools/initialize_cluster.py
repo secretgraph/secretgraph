@@ -9,13 +9,20 @@ from io import BytesIO
 from time import time
 from urllib.parse import urlencode, urljoin
 
-from cryptography.hazmat.primitives import hashes, serialization
-from cryptography.hazmat.primitives.asymmetric import padding, rsa, utils
-from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from gql import gql
 from gql.client import AsyncClientSession
 
-from secretgraph.core.utils.crypto import findWorkingAlgorithms
+from secretgraph.core.utils.crypto import (
+    combineKeyHashWithData,
+    encrypt,
+    encryptString,
+    findWorkingAlgorithms,
+    generateEncryptionKey,
+    hashKey,
+    serializeEncryptionParams,
+    sign,
+    toPublicKey,
+)
 from secretgraph.core.utils.graphql import create_client
 from secretgraph.core.utils.hashing import (
     hashObject,
@@ -34,13 +41,7 @@ parser.add_argument("--store-config", type=argparse.FileType("w"))
 
 
 async def run(argv, session: AsyncClientSession):
-    nonce_key = os.urandom(13)
-    nonce_key_b64 = base64.b64encode(nonce_key).decode("ascii")
-    nonce_config = os.urandom(13)
-    nonce_config_b64 = base64.b64encode(nonce_config).decode("ascii")
-
-    privkey_key = os.urandom(32)
-    privkey_key_b64 = base64.b64encode(privkey_key).decode("ascii")
+    private_key_key = os.urandom(32)
 
     manage_token = os.urandom(50)
     manage_token_b64 = base64.b64encode(manage_token).decode("ascii")
@@ -48,43 +49,35 @@ async def run(argv, session: AsyncClientSession):
     view_token_b64 = base64.b64encode(view_token).decode("ascii")
     config_key = os.urandom(32)
     config_key_b64 = base64.b64encode(config_key).decode("ascii")
-    priv_key = rsa.generate_private_key(public_exponent=65537, key_size=argv.bits)
-    pub_key = priv_key.public_key()
-    pub_key_bytes = pub_key.public_bytes(
-        encoding=serialization.Encoding.DER,
-        format=serialization.PublicFormat.SubjectPublicKeyInfo,
+    private_key = await generateEncryptionKey("rsa-sha512", {"bits": argv.bits})
+    encrypted_private_key = await encrypt(
+        private_key_key, private_key.key, algorithm="AESGCM"
     )
-    priv_key_bytes = priv_key.private_bytes(
-        encoding=serialization.Encoding.DER,
-        format=serialization.PrivateFormat.PKCS8,
-        encryption_algorithm=serialization.NoEncryption(),
-    )
-
+    public_key = toPublicKey(private_key, algorithm=private_key.serializedName)
     result = await session.execute(gql(serverConfigQuery))
     serverConfig = result["secretgraph"]["config"]
     hash_algos = findWorkingAlgorithms(serverConfig["hashAlgorithms"], "hash")
-    publicKey_hash = hashObject(pub_key_bytes, hash_algos[0])
+    manage_key_hash = await hashObject((b"secretgraph", manage_token), hash_algos[0])
+    view_key_hash = await hashObject((b"secretgraph", view_token), hash_algos[0])
+    publicKey_hash = await hashKey(
+        public_key, keyAlgorithm=public_key.key, deriveAlgorithm=hash_algos[0]
+    )
+
     key1 = {
-        "publicKey": BytesIO(pub_key_bytes),
+        "publicKey": BytesIO(public_key),
         "publicState": "trusted",
         "publicTags": ["name=initial key"],
     }
     if not argv.public_only:
-        key1["privateKey"] = BytesIO(
-            AESGCM(privkey_key).encrypt(nonce_key, priv_key_bytes, None)
+        key1["privateKey"] = BytesIO(encrypted_private_key.data)
+        key1["cryptoParameters"] = await serializeEncryptionParams(
+            encrypted_private_key.params, algorithm=encrypted_private_key.serializedName
         )
-        privatekey_key_enc = pub_key.encrypt(
-            privkey_key,
-            padding.OAEP(
-                mgf=padding.MGF1(algorithm=hash_algos[0].algorithm),
-                algorithm=hash_algos[0].algorithm,
-                label=None,
-            ),
-        )
-        key1["nonce"] = nonce_key_b64
         key1["privateTags"] = [
             "name=initial key",
-            "key={}".format(base64.b64encode(privatekey_key_enc)),
+            "key={}".format(
+                await encryptString(public_key, private_key_key, algorithm="rsa-sha512")
+            ),
         ]
 
     prepared_cluster = {
@@ -99,7 +92,7 @@ async def run(argv, session: AsyncClientSession):
                         "action": "view",
                         "includeTypes": ["PublicKey", "PrivateKey", "Config"],
                         "includeTags": [
-                            f"key_hash={publicKey_hash}",
+                            f"key_hash={await hashKey}",
                             f"slot={argv.slots[0]}",
                         ],
                     }
@@ -114,13 +107,12 @@ async def run(argv, session: AsyncClientSession):
         upload_files=True,
     )
     jsob_cluster = result["secretgraph"]["updateOrCreateCluster"]["cluster"]
-    manage_key_hash = hashObject(manage_token, hash_algos[0])
-    view_key_hash = hashObject(view_token, hash_algos[0])
     # config format by standard client
     config = {
         "certificates": {
             publicKey_hash: {
-                "data": base64.b64encode(priv_key_bytes).decode("ascii"),
+                "data": base64.b64encode(private_key).decode("ascii"),
+                "type": "rsa-sha512",
                 "note": "initial key",
             }
         },
@@ -170,34 +162,14 @@ async def run(argv, session: AsyncClientSession):
         "configCluster": jsob_cluster["id"],
     }
 
-    nonce_key = os.urandom(13)
-    nonce_key_b64 = base64.b64encode(nonce_key).decode("ascii")
-
-    encrypted_content = AESGCM(config_key).encrypt(
-        nonce_config, json.dumps(config).encode("utf8"), None
+    encrypted_content = await encrypt(
+        config_key, json.dumps(config).encode("utf8"), algorithm="AESGCM"
+    )
+    signature = await sign(
+        private_key.key, encrypted_content.data, algorithm=private_key.serializedName
     )
 
-    hash_ctx = hashes.Hash(hash_algos[0].algorithm)
-    hash_ctx.update(encrypted_content)
-    encrypted_content_hash_raw = hash_ctx.finalize()
-    signature = priv_key.sign(
-        encrypted_content_hash_raw,
-        padding.PSS(
-            mgf=padding.MGF1(hash_algos[0].algorithm),
-            salt_length=padding.PSS.MAX_LENGTH,
-        ),
-        utils.Prehashed(hash_algos[0].algorithm),
-    )
-
-    config_key_enc = pub_key.encrypt(
-        config_key,
-        padding.OAEP(
-            mgf=padding.MGF1(algorithm=hash_algos[0].algorithm),
-            algorithm=hash_algos[0].algorithm,
-            label=None,
-        ),
-    )
-    config_contentHash = hashTagsContentHash(
+    config_contentHash = await hashTagsContentHash(
         [f"slot={argv.slots[0]}"], "Config", hash_algos[0]
     )
 
@@ -216,22 +188,20 @@ async def run(argv, session: AsyncClientSession):
             {
                 "group": "key",
                 "target": publicKey_hash,
-                "extra": "{}:{}".format(
-                    hash_algos[0].serializedName,
-                    base64.b64encode(config_key_enc).decode("ascii"),
+                "extra": await encryptString(
+                    public_key.key, config_key, algorithm="rsa-sha512"
                 ),
             },
             {
                 "group": "signature",
                 "target": publicKey_hash,
-                "extra": "{}:{}".format(
-                    hash_algos[0].serializedName,
-                    base64.b64encode(signature).decode("ascii"),
-                ),
+                "extra": signature,
             },
         ],
-        "value": BytesIO(encrypted_content),
-        "nonce": nonce_config_b64,
+        "value": BytesIO(encrypted_content.data),
+        "cryptoParameters": serializeEncryptionParams(
+            encrypted_content.params, encrypted_content.serializedName
+        ),
         "contentHash": config_contentHash,
         "authorization": [":".join([config["configCluster"], manage_token_b64])],
     }
@@ -250,10 +220,7 @@ async def run(argv, session: AsyncClientSession):
                 view_token_b64,
             ),
             "key": [
-                "{}:{}".format(
-                    publicKey_hash,
-                    privkey_key_b64,
-                ),
+                "{}:{}".format(publicKey_hash, base64.b64encode(private_key_key)),
                 "{}:{}".format(
                     jsob_config["content"]["id"],
                     config_key_b64,

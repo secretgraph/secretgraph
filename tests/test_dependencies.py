@@ -3,12 +3,12 @@ import unittest
 
 from cryptography.hazmat.primitives.asymmetric import padding, rsa
 from cryptography.hazmat.primitives.asymmetric.utils import Prehashed
-from cryptography.hazmat.primitives.hashes import SHA3_512, SHA512, Hash
+from cryptography.hazmat.primitives.hashes import SHA256, SHA512, Hash
 
 
 class CryptographyBaseTest(unittest.TestCase):
     def test_rsa_verifying_with_prehashed(self):
-        for algo in [SHA512()]:
+        for algo in [SHA512(), SHA256()]:
             with self.subTest(algo=algo):
                 # baseline test that library is working
                 signkey = rsa.generate_private_key(public_exponent=65537, key_size=2048)

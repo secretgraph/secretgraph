@@ -34,12 +34,14 @@ import {
     unserializeToArrayBuffer,
 } from '@secretgraph/misc/utils/encoding'
 import { extractTagsRaw } from '@secretgraph/misc/utils/encryption'
-import { hashKey, hashObject } from '@secretgraph/misc/utils/hashing'
+import { hashObject } from '@secretgraph/misc/utils/hashing'
 import {
     DEFAULT_SIGNATURE_ALGORITHM,
+    hashKey,
+    toPublicKey,
     findWorkingAlgorithms,
-    unserializeToCryptoKey,
 } from '@secretgraph/misc/utils/crypto'
+import { unserializeToCryptoKey } from '@secretgraph/misc/utils/base_crypto_legacy'
 import { fallback_fetch } from '@secretgraph/misc/utils/misc'
 import { updateConfigRemoteReducer } from '@secretgraph/misc/utils/operations/config'
 import { decryptContentObject } from '@secretgraph/misc/utils/operations/content'
@@ -172,11 +174,7 @@ async function loadKeys({
                         host &&
                         nodeData?.cluster?.id &&
                         host.clusters[nodeData.cluster.id]
-                    await unserializeToCryptoKey(
-                        val.data,
-                        keyParams,
-                        'privateKey'
-                    )
+                    await toPublicKey(val.data, { algorithm: 'rsa-sha512' })
                     let certificateInConfigHash = null
                     for (const tag of (nodeData?.tags || []) as string[]) {
                         if (
@@ -226,10 +224,6 @@ async function loadKeys({
 }
 
 async function calcPublicKey(key: string) {
-    const keyParams = {
-        name: 'RSA-OAEP',
-        hash: 'SHA-512',
-    }
     // can fail, fail wanted
     const matchedPrivKey = (
         key.match(
@@ -237,11 +231,11 @@ async function calcPublicKey(key: string) {
         ) as string[]
     )[1]
     // convert
-    const publicKey = await unserializeToArrayBuffer(
-        unserializeToCryptoKey(matchedPrivKey, keyParams, 'publicKey')
-    )
+    const publicKey = await toPublicKey(matchedPrivKey, {
+        algorithm: 'rsa-sha512',
+    })
 
-    return `-----BEGIN PUBLIC KEY-----\n${Buffer.from(publicKey).toString(
+    return `-----BEGIN PUBLIC KEY-----\n${Buffer.from(publicKey.key).toString(
         'base64'
     )}\n-----END PUBLIC KEY-----`
 }
@@ -250,21 +244,13 @@ async function calcHashes(key: string, hashAlgorithms: string[]) {
     if (hashAlgorithms.length == 0) {
         return []
     }
-    // hash doesn't matter, just make sure to have one for appeasing importKey
-    const keyParams = {
-        name: 'RSA-OAEP',
-        hash: 'SHA-512',
-    }
     // can fail, fail wanted
     const matchedPubKey = (
         key.match(
             /-----BEGIN PUBLIC KEY-----\s*(.+)\s*-----END PUBLIC KEY-----/m
         ) as string[]
     )[1]
-    // should not convert, it must be a public key
-    const rawKey = await unserializeToArrayBuffer(
-        unserializeToCryptoKey(matchedPubKey, keyParams, 'publicKey', true)
-    )
+    const rawKey = await unserializeToArrayBuffer(matchedPubKey)
     return await Promise.all(
         hashAlgorithms.map(async (algo) => {
             return await hashObject(rawKey, algo)
@@ -968,11 +954,8 @@ const KeysUpdate = ({
                                 /-----BEGIN PRIVATE KEY-----\s*(.+)\s*-----END PRIVATE KEY-----/m
                             ) as string[]
                         )[1]
-                        privKey = await unserializeToCryptoKey(
-                            matchedPrivKey,
-                            keyParams,
-                            'privateKey',
-                            true
+                        privKey = await unserializeToArrayBuffer(
+                            matchedPrivKey
                         )
                     } else if (privateKey) {
                         // privateKey is empty
@@ -1005,12 +988,8 @@ const KeysUpdate = ({
                             /-----BEGIN PUBLIC KEY-----\s*(.+)\s*-----END PUBLIC KEY-----/m
                         ) as string[]
                     )[1]
-                    // can fail, is wanted to crash
-                    const pubKey = await unserializeToCryptoKey(
-                        matchedPubKey,
-                        keyParams,
-                        'publicKey',
-                        true
+                    const pubKey = await unserializeToArrayBuffer(
+                        matchedPubKey
                     )
                     if (
                         values.publicKey.trim() !=
@@ -1101,7 +1080,11 @@ const KeysUpdate = ({
                                 updateId: privateKey.nodeData.updateId,
                                 client,
                                 config,
-                                key: privKey,
+                                key: await unserializeToCryptoKey(
+                                    privKey,
+                                    {},
+                                    'privateKey'
+                                ),
                                 // encrypted shared key will be added
                                 privateTags: [
                                     `description=${values.description}`,
@@ -1163,8 +1146,11 @@ const KeysUpdate = ({
 
                     if (privKey || privateKey) {
                         const pubkeyhash = (
-                            await hashKey(pubKey, hashAlgorithmsWorking[0])
-                        ).digest
+                            await hashKey(pubKey, {
+                                keyAlgorithm: 'rsa-sha512',
+                                deriveAlgorithm: hashAlgorithmsWorking[0],
+                            })
+                        ).serialized
                         configUpdate.certificates = {
                             [pubkeyhash]: privKey
                                 ? {

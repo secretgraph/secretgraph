@@ -5,20 +5,27 @@ from contextlib import redirect_stderr
 from urllib.parse import quote_plus
 
 import httpx
-from cryptography.hazmat.primitives import hashes, serialization
-from cryptography.hazmat.primitives.asymmetric import padding, rsa, utils
-from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from django.conf import settings
 from django.core.files.base import ContentFile
-from django.test import RequestFactory, TransactionTestCase
+from django.test import RequestFactory, TestCase
 from strawberry.django.context import StrawberryDjangoContext
 
 from secretgraph.asgi import application
-from secretgraph.core.utils.crypto import findWorkingAlgorithms
+from secretgraph.core.utils.crypto import (
+    encrypt,
+    encryptString,
+    findWorkingAlgorithms,
+    generateEncryptionKey,
+    generateSignKey,
+    getSignatureHasher,
+    serializeEncryptionParams,
+    sign,
+    toPublicKey,
+)
 from secretgraph.core.utils.hashing import (
     hashObject,
 )
-from secretgraph.core.utils.verification import verify
+from secretgraph.core.utils.verification import verify_content
 from secretgraph.queries.cluster import createClusterMutation
 from secretgraph.queries.content import createContentMutation
 from secretgraph.queries.key import createKeysMutation
@@ -26,7 +33,7 @@ from secretgraph.schema import schema
 from secretgraph.server.models import Cluster, Content
 
 
-class BasicTests(TransactionTestCase):
+class BasicTests(TestCase):
     def setUp(self):
         # Every test needs access to the request factory.
         self.factory = RequestFactory()
@@ -90,11 +97,9 @@ class BasicTests(TransactionTestCase):
                 )
             self.assertTrue(result.errors)
         with self.subTest("Allow bootstrapping"):
-            encryptkey = rsa.generate_private_key(public_exponent=65537, key_size=2048)
-            pub_encryptkey = encryptkey.public_key()
-            pub_encryptkey_bytes = pub_encryptkey.public_bytes(
-                encoding=serialization.Encoding.DER,
-                format=serialization.PublicFormat.SubjectPublicKeyInfo,
+            encryptkey = await generateEncryptionKey("rsa-sha512", {"bits": 2048})
+            pub_encryptkey = await toPublicKey(
+                encryptkey.key, algorithm="rsa-sha512", sign=False
             )
             request = self.factory.get("/graphql")
             result = await schema.execute(
@@ -102,7 +107,7 @@ class BasicTests(TransactionTestCase):
                 {
                     "cluster": clusterid,
                     "publicState": "public",
-                    "publicKey": ContentFile(pub_encryptkey_bytes),
+                    "publicKey": ContentFile(pub_encryptkey.key),
                     "publicTags": [],
                     "authorization": (
                         f"{clusterid}:${base64.b64encode(manage_token).decode()}",
@@ -119,18 +124,14 @@ class BasicTests(TransactionTestCase):
         manage_token = os.urandom(50)
         view_token = os.urandom(50)
         request = self.factory.get("/graphql")
-        signkey = rsa.generate_private_key(public_exponent=65537, key_size=2048)
-        pub_signkey = signkey.public_key()
-        pub_signkey_bytes = pub_signkey.public_bytes(
-            encoding=serialization.Encoding.DER,
-            format=serialization.PublicFormat.SubjectPublicKeyInfo,
+        signkey = await generateSignKey("rsa-sha512", {"bits": 2048})
+        pub_signkey = await toPublicKey(
+            signkey.key, algorithm=signkey.serializedName, sign=True
         )
         # 1024 is too small and could not be used for OAEP
-        encryptkey = rsa.generate_private_key(public_exponent=65537, key_size=2048)
-        pub_encryptkey = encryptkey.public_key()
-        pub_encryptkey_bytes = pub_encryptkey.public_bytes(
-            encoding=serialization.Encoding.DER,
-            format=serialization.PublicFormat.SubjectPublicKeyInfo,
+        encryptkey = await generateEncryptionKey("rsa-sha512", {"bits": 2048})
+        pub_encryptkey = await toPublicKey(
+            encryptkey.key, algorithm=encryptkey.serializedName, sign=False
         )
 
         result = await schema.execute(
@@ -142,12 +143,12 @@ class BasicTests(TransactionTestCase):
                 "primary": True,
                 "keys": [
                     {
-                        "publicKey": ContentFile(pub_signkey_bytes),
+                        "publicKey": ContentFile(pub_signkey.key),
                         "publicState": "public",
                         "publicTags": ["name=initial sign key"],
                     },
                     {
-                        "publicKey": ContentFile(pub_encryptkey_bytes),
+                        "publicKey": ContentFile(pub_encryptkey.key),
                         "publicState": "trusted",
                         "publicTags": ["name=initial encrypt key"],
                     },
@@ -183,34 +184,22 @@ class BasicTests(TransactionTestCase):
         hash_algos = findWorkingAlgorithms(settings.SECRETGRAPH_HASH_ALGORITHMS, "hash")
         content = os.urandom(100)
         content_shared_key = os.urandom(32)
-        content_nonce = os.urandom(13)
-        encrypted_content = AESGCM(content_shared_key).encrypt(
-            content_nonce, content, None
+        encrypted_content = await encrypt(
+            content_shared_key, content, algorithm="AESGCM"
         )
 
-        hash_ctx = hashes.Hash(hash_algos[0].algorithm)
-        hash_ctx.update(encrypted_content)
+        hash_ctx = await getSignatureHasher("rsa-sha512")
+        hash_ctx.update(encrypted_content.data)
         encrypted_content_hash_raw = hash_ctx.finalize()
-        signature = signkey.sign(
+        signature = await sign(
+            signkey.key,
             encrypted_content_hash_raw,
-            padding.PSS(
-                mgf=padding.MGF1(hash_algos[0].algorithm),
-                salt_length=padding.PSS.MAX_LENGTH,
-            ),
-            utils.Prehashed(hash_algos[0].algorithm),
+            algorithm="rsa-sha512",
+            prehashed=True,
         )
 
-        content_shared_key_enc = pub_encryptkey.encrypt(
-            content_shared_key,
-            padding.OAEP(
-                mgf=padding.MGF1(algorithm=hash_algos[0].algorithm),
-                algorithm=hash_algos[0].algorithm,
-                label=None,
-            ),
-        )
-
-        pub_encryptKey_hash = hashObject(pub_encryptkey_bytes, hash_algos[0])
-        pub_signKey_hash = hashObject(pub_signkey_bytes, hash_algos[0])
+        pub_encryptKey_hash = await hashObject(pub_encryptkey.key, hash_algos[0])
+        pub_signKey_hash = await hashObject(pub_signkey.key, hash_algos[0])
         m_token = f"{clusterid}:{base64.b64encode(manage_token).decode()}"
         prepared_content = {
             "cluster": clusterid,
@@ -225,22 +214,20 @@ class BasicTests(TransactionTestCase):
                 {
                     "group": "key",
                     "target": pub_encryptKey_hash,
-                    "extra": "{}:{}".format(
-                        hash_algos[0].serializedName,
-                        base64.b64encode(content_shared_key_enc).decode("ascii"),
+                    "extra": await encryptString(
+                        pub_encryptkey.key, content_shared_key, algorithm="rsa-sha512"
                     ),
                 },
                 {
                     "group": "signature",
                     "target": pub_signKey_hash,
-                    "extra": "{}:{}".format(
-                        hash_algos[0].serializedName,
-                        base64.b64encode(signature).decode("ascii"),
-                    ),
+                    "extra": signature,
                 },
             ],
-            "value": ContentFile(encrypted_content),
-            "nonce": base64.b64encode(content_nonce).decode(),
+            "value": ContentFile(encrypted_content.data),
+            "cryptoParameters": await serializeEncryptionParams(
+                encrypted_content.params, algorithm=encrypted_content.serializedName
+            ),
             "authorization": [m_token],
         }
         url = ""
@@ -271,7 +258,7 @@ class BasicTests(TransactionTestCase):
         with self.subTest("check signature without item"):
             client = httpx.AsyncClient(app=application)
             # NOTE: quote_plus is required for urlencoding
-            rets, errors = await verify(
+            rets, errors = await verify_content(
                 client,
                 f"{url}?token={quote_plus(m_token)}",
                 exit_first=True,
@@ -281,7 +268,7 @@ class BasicTests(TransactionTestCase):
         with self.subTest("check signature with item"):
             client = httpx.AsyncClient(app=application)
             # NOTE: quote_plus is required for urlencoding
-            rets, errors = await verify(
+            rets, errors = await verify_content(
                 client,
                 f"{url}?token={quote_plus(m_token)}&item={quote_plus(item_id)}",
                 exit_first=True,

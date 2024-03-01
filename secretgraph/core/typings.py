@@ -48,6 +48,7 @@ class ConfigTokenValue(TypedDict):
 
 class ConfigCertificateValue(TypedDict):
     data: str
+    type: str
     note: str
 
 

@@ -3,6 +3,8 @@ import {
     unserializeToArrayBuffer,
     splitFirstOnly,
     b64tobuffer,
+    utf8encoder,
+    utf8decoder,
 } from './encoding'
 import { MaybePromise } from '../typing'
 import {
@@ -443,7 +445,9 @@ export async function hashKey(
     key: ArrayBuffer
     serialized: string
 }> {
-    const hashableKey = (await toHashableKey(key)).key
+    const hashableKey = (
+        await toHashableKey(key, { sign, algorithm: keyAlgorithm })
+    ).key
     const result = await derive(hashableKey, {
         algorithm: deriveAlgorithm,
         params: deriveParams,
@@ -465,4 +469,34 @@ export async function hashKeyString(
 ): Promise<string> {
     const result = await hashKey(key, options)
     return result.serialized
+}
+
+export async function buildKeyHashSignature(
+    key: MaybePromise<FullKeyType>,
+    data: MaybePromise<ArrayBuffer>,
+    {
+        keyAlgorithm,
+        deriveAlgorithm,
+    }: {
+        keyAlgorithm: string
+        deriveAlgorithm: string
+    }
+): Promise<string> {
+    const signaturePromise = sign(key, data, { algorithm: keyAlgorithm })
+    const result = await hashKey(key, {
+        sign: true,
+        keyAlgorithm: keyAlgorithm,
+        deriveAlgorithm: deriveAlgorithm,
+    })
+    return `${Buffer.from(utf8encoder.encode(result.serialized)).toString(
+        'base64'
+    )}:${await signaturePromise}`
+}
+
+export function splitKeyHashSignature(data: string): [string, string] {
+    const splitted = splitFirstOnly(data)
+    if (!splitted[0]) {
+        throw Error('not a keyHashSignature string')
+    }
+    return [utf8decoder.decode(b64tobuffer(splitted[0])), splitted[1]]
 }

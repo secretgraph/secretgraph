@@ -4,17 +4,17 @@ import logging
 import os
 from contextlib import redirect_stderr
 
+from asgiref.sync import async_to_sync
 from django.conf import settings
 from django.core.files.base import ContentFile
 from django.test import RequestFactory, TestCase
 from strawberry.django.context import StrawberryDjangoContext
 
 from secretgraph.core.utils.crypto import (
+    buildKeyHashSignature,
     findWorkingAlgorithms,
-    generateEncryptionKey,
     generateSignKey,
-    hashKey,
-    sign,
+    splitKeyHashSignature,
     toPublicKey,
     verify,
 )
@@ -31,7 +31,7 @@ from secretgraph.server.models import Action
 
 
 class AuthTests(TestCase):
-    async def setUp(self):
+    def setUp(self):
         # Every test needs access to the request factory.
         self.factory = RequestFactory()
 
@@ -44,19 +44,23 @@ class AuthTests(TestCase):
         self.hash_algos = findWorkingAlgorithms(
             settings.SECRETGRAPH_HASH_ALGORITHMS, "hash"
         )
-        self.signkey = await generateSignKey("rsa-sha512", params={"bits": 2048})
+        self.signkey = async_to_sync(generateSignKey)(
+            "rsa-sha512", params={"bits": 2048}
+        ).key
         self.signature_base_data = f"{self.requester}{self.challenge}".encode("utf8")
-        self.signature = await sign(
-            self.signkey,
-            self.signature_base_data,
-            self.hash_algos[0],
-        )
 
     async def test_auth_workflow(self):
-        fake_signature = await sign(
+        signature = await buildKeyHashSignature(
+            self.signkey,
+            self.signature_base_data,
+            keyAlgorithm="rsa-sha512",
+            deriveAlgorithm=self.hash_algos[0],
+        )
+        fake_signature = await buildKeyHashSignature(
             self.signkey,
             self.signature_base_data + b"sdkdsk",
-            self.hash_algos[0],
+            keyAlgorithm="rsa-sha512",
+            deriveAlgorithm=self.hash_algos[0],
         )
 
         request = self.factory.get("/graphql")
@@ -105,7 +109,7 @@ class AuthTests(TestCase):
                                 "action": "auth",
                                 "requester": self.requester,
                                 "challenge": self.challenge,
-                                "signatures": [fake_signature, self.signature],
+                                "signatures": [fake_signature, signature],
                             }
                         ),
                         "key": base64.b64encode(self.auth_token).decode(),
@@ -141,14 +145,13 @@ class AuthTests(TestCase):
         valid_signature_found = False
         invalid_signature_found = False
         for signature in filter(
-            lambda x: x.startswith(self.pub_signKey_hash),
+            lambda x: x.startswith(signature.split(":", 1)[0]),
             node["auth"]["signatures"],
         ):
-            # strip hash prefix and decode
-            signature = base64.b64decode(signature.rsplit(":", 1)[-1])
-            if verify(
+            signature_tuple = splitKeyHashSignature(signature)
+            if await verify(
                 self.signkey,
-                signature,
+                signature_tuple[1],
                 f'{node["auth"]["requester"]}{node["auth"]["challenge"]}'.encode(
                     "utf8"
                 ),
@@ -160,6 +163,12 @@ class AuthTests(TestCase):
         self.assertTrue(invalid_signature_found)
 
     async def test_fail_double_auth_same_request(self):
+        signature = await buildKeyHashSignature(
+            self.signkey,
+            self.signature_base_data,
+            keyAlgorithm="rsa-sha512",
+            deriveAlgorithm=self.hash_algos[0],
+        )
         request = self.factory.get("/graphql")
         with redirect_stderr(None):
             result = await schema.execute(
@@ -193,9 +202,7 @@ class AuthTests(TestCase):
                                     "action": "auth",
                                     "requester": self.requester,
                                     "challenge": self.challenge,
-                                    "signatures": [
-                                        f"{self.hash_algos[0].serializedName}:{self.pub_signKey_hash}:{base64.b64encode(self.signature).decode()}"
-                                    ],
+                                    "signatures": [signature],
                                 }
                             ),
                             "key": base64.b64encode(self.auth_token).decode(),
@@ -206,9 +213,7 @@ class AuthTests(TestCase):
                                     "action": "auth",
                                     "requester": self.requester,
                                     "challenge": self.challenge,
-                                    "signatures": [
-                                        f"{self.hash_algos[0].serializedName}:{self.pub_signKey_hash}:{base64.b64encode(self.signature).decode()}"
-                                    ],
+                                    "signatures": [signature],
                                 }
                             ),
                             "key": base64.b64encode(self.auth_token).decode(),
@@ -220,6 +225,12 @@ class AuthTests(TestCase):
         self.assertTrue(result.errors)
 
     async def test_warn_multiple_auth_instances(self):
+        signature = await buildKeyHashSignature(
+            self.signkey,
+            self.signature_base_data,
+            keyAlgorithm="rsa-sha512",
+            deriveAlgorithm=self.hash_algos[0],
+        )
         request = self.factory.get("/graphql")
         result = await schema.execute(
             createClusterMutation,
@@ -230,7 +241,11 @@ class AuthTests(TestCase):
                 "primary": True,
                 "keys": [
                     {
-                        "publicKey": ContentFile(self.pub_signkey_bytes),
+                        "publicKey": ContentFile(
+                            (
+                                await toPublicKey(self.signkey, "rsa-sha512", sign=True)
+                            ).key
+                        ),
                         "publicState": "public",
                         "publicTags": ["name=initial sign key"],
                     },
@@ -246,9 +261,7 @@ class AuthTests(TestCase):
                                 "action": "auth",
                                 "requester": self.requester,
                                 "challenge": self.challenge,
-                                "signatures": [
-                                    f"{self.hash_algos[0].serializedName}:{self.pub_signKey_hash}:{base64.b64encode(self.signature).decode()}"
-                                ],
+                                "signatures": [signature],
                             }
                         ),
                         "key": base64.b64encode(self.auth_token).decode(),
@@ -277,9 +290,7 @@ class AuthTests(TestCase):
                                 "action": "auth",
                                 "requester": self.requester,
                                 "challenge": self.challenge,
-                                "signatures": [
-                                    f"{self.hash_algos[0].serializedName}:{self.pub_signKey_hash}:{base64.b64encode(self.signature).decode()}"
-                                ],
+                                "signatures": [signature],
                             }
                         ),
                         "key": base64.b64encode(self.auth_token).decode(),
@@ -301,6 +312,12 @@ class AuthTests(TestCase):
         self.assertFalse(result.errors)
 
     async def test_replace_auth(self):
+        signature = await buildKeyHashSignature(
+            self.signkey,
+            self.signature_base_data,
+            keyAlgorithm="rsa-sha512",
+            deriveAlgorithm=self.hash_algos[0],
+        )
         request = self.factory.get("/graphql")
         result = await schema.execute(
             createClusterMutation,
@@ -311,7 +328,11 @@ class AuthTests(TestCase):
                 "primary": True,
                 "keys": [
                     {
-                        "publicKey": ContentFile(self.pub_signkey_bytes),
+                        "publicKey": ContentFile(
+                            (
+                                await toPublicKey(self.signkey, "rsa-sha512", sign=True)
+                            ).key
+                        ),
                         "publicState": "public",
                         "publicTags": ["name=initial sign key"],
                     },
@@ -327,9 +348,7 @@ class AuthTests(TestCase):
                                 "action": "auth",
                                 "requester": self.requester,
                                 "challenge": self.challenge,
-                                "signatures": [
-                                    f"{self.hash_algos[0].serializedName}:{self.pub_signKey_hash}:{base64.b64encode(self.signature).decode()}"
-                                ],
+                                "signatures": [signature],
                             }
                         ),
                         "key": base64.b64encode(self.auth_token).decode(),
@@ -357,12 +376,10 @@ class AuthTests(TestCase):
                                 "action": "auth",
                                 "requester": self.requester,
                                 "challenge": self.challenge,
-                                "signatures": [
-                                    f"{self.hash_algos[0].serializedName}:{self.pub_signKey_hash}:{base64.b64encode(self.signature).decode()}"
-                                ],
+                                "signatures": [signature],
                             }
                         ),
-                        "existingHash": hashObject(
+                        "existingHash": await hashObject(
                             (b"secretgraph", self.auth_token),
                             self.hash_algos[0],
                         ),

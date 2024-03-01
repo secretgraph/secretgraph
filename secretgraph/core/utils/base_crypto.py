@@ -3,9 +3,11 @@ import copy
 import hashlib
 from abc import ABC, abstractmethod
 from base64 import b64decode, b64encode
+from collections.abc import Callable
 from dataclasses import dataclass, field
+from inspect import isclass
 from os import urandom
-from typing import Iterable, Literal, Optional, TypeVar
+from typing import Any, Iterable, Literal, NoReturn, Optional, TypeVar
 
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives import hashes, serialization
@@ -23,11 +25,15 @@ def addWithVariants(
     targetDict: dict[str, T], variants: list[str], entry: Optional[T] = None
 ):
     def wrapper(entry):
+        if isclass(entry):
+            initialized = entry()
+        else:
+            initialized = entry
         for variant in variants:
-            targetDict[variant] = entry
+            targetDict[variant] = initialized
         return entry
 
-    if entry:
+    if entry is not None:
         return wrapper(entry)
     return wrapper
 
@@ -35,7 +41,7 @@ def addWithVariants(
 @dataclass(frozen=True, kw_only=True)
 class DeriveResult:
     data: bytes
-    params: ParamsType
+    params: ParamsType = field(default_factory=dict)
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -60,104 +66,90 @@ class DeserializeDeriveResult(DeserializeResult):
     data: bytes
 
 
+@dataclass(frozen=True, kw_only=True)
+class Hasher:
+    update: Callable[[bytes], NoReturn]
+    finalize: Callable[[], bytes]
+
+
 class DeriveAlgorithm(ABC):
     serializedName: str
     type: Literal["hash"] | Literal["derive"]
 
-    @classmethod
     @abstractmethod
     async def derive(
-        cls, data: bytes | Iterable[bytes], params: Optional[ParamsType] = None
+        self, data: bytes | Iterable[bytes], params: Optional[ParamsType] = None
     ) -> CryptoResult:
         pass
 
-    @classmethod
-    async def serialize(cls, result: DeriveResult) -> str:
+    async def serialize(self, result: DeriveResult) -> str:
         return b64encode(result.data).decode()
 
-    @classmethod
     async def deserialize(
-        cls, inp: str, params: Optional[ParamsType] = None
+        self, inp: str, params: Optional[ParamsType] = None
     ) -> DeserializeDeriveResult:
-        return DeserializeDeriveResult(data=b64decode(inp), params=params)
+        return DeserializeDeriveResult(data=b64decode(inp), params=params or {})
 
 
 class EncryptionAlgorithm(ABC):
     serializedName: str
     type: Literal["asymmetric"] | Literal["symmetric"]
 
-    @classmethod
     @abstractmethod
     async def encrypt(
-        cls, key: KeyType, data: bytes, params: ParamsType
+        self, key: KeyType, data: bytes, params: ParamsType
     ) -> CryptoResult:
         pass
 
-    @classmethod
-    async def encryptor(cls, key: KeyType, params: ParamsType):
+    async def encryptor(self, key: KeyType, params: ParamsType):
         raise NotImplementedError()
 
-    @classmethod
     @abstractmethod
     async def decrypt(
-        cls, key: KeyType, data: bytes, params: ParamsType
+        self, key: KeyType, data: bytes, params: ParamsType
     ) -> CryptoResult:
         pass
 
-    @classmethod
-    async def decryptor(cls, key: KeyType, params: ParamsType) -> CryptoResult:
+    async def decryptor(self, key: KeyType, params: ParamsType) -> CryptoResult:
         raise NotImplementedError()
 
-    @classmethod
     @abstractmethod
-    def toHashableKey(cls, key: KeyType) -> bytes:
+    def toHashableKey(self, key: KeyType, raw: bool) -> bytes | Any:
         pass
 
-    @classmethod
     @abstractmethod
-    async def generateKey(cls, params: ParamsType) -> KeyType:
+    async def generateKey(self, params: ParamsType) -> KeyType:
         pass
 
-    @classmethod
-    async def serializeParams(cls, result: CryptoResult) -> str:
+    async def serializeParams(self, result: CryptoResult) -> str:
         return ""
 
-    @classmethod
-    async def deserialize(cls, data: str, params: ParamsType) -> DeserializeResult:
+    async def deserialize(self, data: str, params: ParamsType) -> DeserializeResult:
         return DeserializeResult(data=b64decode(data), params=params or {})
 
 
 class SignatureAlgorithm(ABC):
     serializedName: str
 
-    @classmethod
     @abstractmethod
-    async def sign(cls, key: KeyType, inp: bytes, prehashed: bool = False) -> str:
+    async def sign(self, key: KeyType, inp: bytes, prehashed: bool = False) -> str:
         pass
 
-    @classmethod
     @abstractmethod
     async def verify(
-        cls, key: KeyType, signature: str, inp: bytes, prehashed: bool = False
+        self, key: KeyType, signature: str, inp: bytes, prehashed: bool = False
     ) -> bool:
         pass
 
-    @classmethod
-    async def getHasher(cls):
+    async def getHasher(self) -> Hasher:
         raise NotImplementedError()
 
-    @classmethod
-    async def finalize(cls) -> bytes:
-        raise NotImplementedError()
-
-    @classmethod
     @abstractmethod
-    def toHashableKey(cls, key: KeyType) -> bytes:
+    def toHashableKey(self, key: KeyType, raw: bool) -> bytes | Any:
         pass
 
-    @classmethod
     @abstractmethod
-    async def generateKey(cls, params: ParamsType) -> KeyType:
+    async def generateKey(self, params: ParamsType) -> KeyType:
         pass
 
 
@@ -171,9 +163,8 @@ class SHA512Algo(DeriveAlgorithm):
     type = "hash"
     serializedName = "sha512"
 
-    @classmethod
-    def _execute(cls, data: bytes | Iterable[bytes]):
-        hashCtx = hashlib.new(cls.serializedName)
+    def _execute(self, data: bytes | Iterable[bytes]):
+        hashCtx = hashlib.new(self.serializedName)
         if isinstance(data, bytes):
             hashCtx.update(data)
         else:
@@ -181,16 +172,13 @@ class SHA512Algo(DeriveAlgorithm):
                 hashCtx.update(chunk)
         return hashCtx.digest()
 
-    @classmethod
-    async def execute(cls, data: bytes | Iterable[bytes]):
-        return await asyncio.get_event_loop().run_in_executor(None, cls._execute, data)
+    async def execute(self, data: bytes | Iterable[bytes]):
+        return await asyncio.get_event_loop().run_in_executor(None, self._execute, data)
 
-    @classmethod
-    async def derive(cls, inp: bytes | Iterable[bytes], params=None) -> CryptoResult:
-        return DeriveResult(data=await cls.execute(inp), params={})
+    async def derive(self, inp: bytes | Iterable[bytes], params=None) -> CryptoResult:
+        return DeriveResult(data=await self.execute(inp), params={})
 
-    @classmethod
-    async def serialize(cls, result: CryptoResult) -> str:
+    async def serialize(self, result: CryptoResult) -> str:
         return b64encode(result.data).decode()
 
 
@@ -204,26 +192,23 @@ class PBKDF2sha512(DeriveAlgorithm):
     type = "derive"
     serializedName = "PBKDF2-sha512"
 
-    @classmethod
-    def _execute(cls, iterations, salt, data):
+    def _execute(self, iterations, salt, data):
         if not isinstance(data, bytes):
             data = b"".join(data)
         return hashlib.pbkdf2_hmac(
-            cls.serializedName.split("-")[1],
+            self.serializedName.split("-")[1],
             data,
             iterations=iterations,
             salt=salt,
             dklen=32,
         ).digest()
 
-    @classmethod
-    async def execute(cls, iterations, salt, data):
+    async def execute(self, iterations, salt, data):
         return await asyncio.get_event_loop().run_in_executor(
-            None, cls._execute, iterations, salt, data
+            None, self._execute, iterations, salt, data
         )
 
-    @classmethod
-    async def derive(cls, inp: bytes, params=None) -> CryptoResult:
+    async def derive(self, inp: bytes, params=None) -> CryptoResult:
         if not params:
             params = {}
         else:
@@ -237,12 +222,11 @@ class PBKDF2sha512(DeriveAlgorithm):
 
         # for AESGCM compatibility cap at 32
         return DeriveResult(
-            data=await cls.execute(params["iterations"], params["salt"], inp),
+            data=await self.execute(params["iterations"], params["salt"], inp),
             params=params,
         )
 
-    @classmethod
-    async def deserialize(cls, inp: str, params=None):
+    async def deserialize(self, inp: str, params=None):
         if not params:
             params = {}
         else:
@@ -260,8 +244,7 @@ class PBKDF2sha512(DeriveAlgorithm):
             params["salt"] = b64decode(params["salt"])
         return DeserializeDeriveResult(data=b64decode(splitted[-1]), params=params)
 
-    @classmethod
-    async def serialize(cls, result):
+    async def serialize(self, result):
         return f"""{result.params['iterations']},{
             result.params['salt']
         }:${b64encode(result.data).decode()}"""
@@ -277,15 +260,10 @@ class OEAPsha512(EncryptionAlgorithm):
     type = "asymmetric"
     serializedName = "rsa-sha512"
 
-    @classmethod
-    async def encrypt(cls, key, data, params=None):
-        if isinstance(key, str):
-            key = b64decode(key)
-        if isinstance(key, bytes):
-            key = serialization.load_der_public_key(key)
-        elif isinstance(key, rsa.RSAPrivateKey):
-            key = key.public_key()
-        hashalgo = cls.serializedName.split("-")[1].upper()
+    async def encrypt(self, key, data, params=None):
+        # to publicKey
+        key = await self.toHashableKey(key, raw=True)
+        hashalgo = self.serializedName.split("-")[1].upper()
         hashalgo = getattr(hashes, hashalgo)()
         return CryptoResult(
             data=key.encrypt(
@@ -302,28 +280,29 @@ class OEAPsha512(EncryptionAlgorithm):
             ),
         )
 
-    @classmethod
-    async def toHashableKey(cls, key):
+    async def toHashableKey(self, key, raw):
         if isinstance(key, str):
             key = b64decode(key)
         if isinstance(key, bytes):
-            key = serialization.load_der_public_key(key)
-        elif isinstance(key, rsa.RSAPrivateKey):
-            key = key.public_key()
+            try:
+                key = serialization.load_der_public_key(key)
+            except Exception:
+                key = serialization.load_der_private_key(key, None)
         if hasattr(key, "public_key"):
             key = key.public_key()
+        if raw:
+            return key
         return key.public_bytes(
             encoding=serialization.Encoding.DER,
             format=serialization.PublicFormat.SubjectPublicKeyInfo,
         )
 
-    @classmethod
-    async def decrypt(cls, key, data, params=None):
+    async def decrypt(self, key, data, params=None):
         if isinstance(key, str):
             key = b64decode(key)
         if isinstance(key, bytes):
-            key = serialization.load_der_private_key(key)
-        hashalgo = cls.serializedName.split("-")[1].upper()
+            key = serialization.load_der_private_key(key, None)
+        hashalgo = self.serializedName.split("-")[1].upper()
         hashalgo = getattr(hashes, hashalgo)()
         return CryptoResult(
             data=key.decrypt(
@@ -337,10 +316,10 @@ class OEAPsha512(EncryptionAlgorithm):
             key=key.private_bytes(
                 encoding=serialization.Encoding.DER,
                 format=serialization.PrivateFormat.PKCS8,
+                encryption_algorithm=serialization.NoEncryption(),
             ),
         )
 
-    @classmethod
     async def generateKey(cls, params=None):
         if not params:
             params = {}
@@ -354,6 +333,7 @@ class OEAPsha512(EncryptionAlgorithm):
             ).private_bytes(
                 encoding=serialization.Encoding.DER,
                 format=serialization.PrivateFormat.PKCS8,
+                encryption_algorithm=serialization.NoEncryption(),
             ),
             params=params,
         )
@@ -369,8 +349,7 @@ class AESGCMAlgo(EncryptionAlgorithm):
     type = "symmetric"
     serializedName = "AESGCM"
 
-    @classmethod
-    async def encrypt(cls, key, data, params=None):
+    async def encrypt(self, key, data, params=None):
         if not params:
             params = {}
         else:
@@ -379,15 +358,15 @@ class AESGCMAlgo(EncryptionAlgorithm):
             key = b64decode(key)
         if isinstance(key, bytes):
             key = AESGCM(key)
-        params["nonce"] = params.get("nonce", urandom(13))
+        if not params.get("nonce"):
+            params["nonce"] = urandom(13)
         if isinstance(params["nonce"], str):
             params["nonce"] = b64decode(params["nonce"])
         return CryptoResult(
             data=key.encrypt(params["nonce"], data, None), params=params, key=key._key
         )
 
-    @classmethod
-    async def encryptor(cls, key, params):
+    async def encryptor(self, key, params):
         params = copy.copy(params)
         if isinstance(params["nonce"], str):
             params["nonce"] = b64decode(params["nonce"])
@@ -398,8 +377,7 @@ class AESGCMAlgo(EncryptionAlgorithm):
             modes.GCM(params["nonce"]),
         ).encryptor()
 
-    @classmethod
-    async def decrypt(cls, key, data, params):
+    async def decrypt(self, key, data, params):
         params = copy.copy(params)
         if isinstance(params["nonce"], str):
             params["nonce"] = b64decode(params["nonce"])
@@ -411,8 +389,7 @@ class AESGCMAlgo(EncryptionAlgorithm):
             data=key.decrypt(params["nonce"], data, None), params=params, key=key._key
         )
 
-    @classmethod
-    async def decryptor(cls, key, params):
+    async def decryptor(self, key, params):
         params = copy.copy(params)
         if isinstance(params["nonce"], str):
             params["nonce"] = b64decode(params["nonce"])
@@ -423,12 +400,10 @@ class AESGCMAlgo(EncryptionAlgorithm):
             modes.GCM(params["nonce"]),
         ).decryptor()
 
-    @classmethod
-    async def serializeParams(params):
-        return b64encode(params.nonce).decode()
+    async def serializeParams(self, params):
+        return b64encode(params["nonce"]).decode()
 
-    @classmethod
-    async def toHashableKey(cls, key: KeyType):
+    async def toHashableKey(self, key: KeyType, raw):
         # already strengthed
         if len(key) >= 50:
             return key
@@ -436,8 +411,7 @@ class AESGCMAlgo(EncryptionAlgorithm):
             raise ValueError("invalid key length for hashing")
         return urandom(18) + key
 
-    @classmethod
-    async def generateKey(params=None):
+    async def generateKey(self, params=None):
         if not params:
             params = {}
         else:
@@ -453,14 +427,14 @@ class AESGCMAlgo(EncryptionAlgorithm):
 class RSASignsha512(SignatureAlgorithm):
     serializedName = "rsa-sha512"
     generateKey = OEAPsha512.generateKey
+    toHashableKey = OEAPsha512.toHashableKey
 
-    @classmethod
-    async def sign(cls, key, data, prehashed=False):
+    async def sign(self, key, data, prehashed=False):
         if isinstance(key, str):
             key = b64decode(key)
         if isinstance(key, bytes):
-            key = serialization.load_der_private_key(key)
-        hashalgo = cls.serializedName.split("-")[1].upper()
+            key = serialization.load_der_private_key(key, None)
+        hashalgo = self.serializedName.split("-")[1].upper()
         hashalgo = getattr(hashes, hashalgo)()
         if prehashed:
             hash2 = utils.Prehashed(hashalgo)
@@ -476,42 +450,19 @@ class RSASignsha512(SignatureAlgorithm):
             )
         ).decode()
 
-    @classmethod
-    async def getHasher(cls):
-        hashalgo = cls.serializedName.split("-")[1].upper()
+    async def getHasher(self):
+        hashalgo = self.serializedName.split("-")[1].upper()
         hashalgo = getattr(hashes, hashalgo)()
-        return Hash(hashalgo)
+        hashCtx = Hash(hashalgo)
+        return Hasher(update=hashCtx.update, finalize=hashCtx.finalize)
 
-    @classmethod
-    async def finalize(cls, hasher):
-        return hasher.finalize()
-
-    @classmethod
-    async def toHashableKey(cls, key):
-        if isinstance(key, str):
-            key = b64decode(key)
-        if isinstance(key, bytes):
-            key = serialization.load_der_public_key(key)
-        elif isinstance(key, rsa.RSAPrivateKey):
-            key = key.public_key()
-        if hasattr(key, "public_key"):
-            key = key.public_key()
-        return key.public_bytes(
-            encoding=serialization.Encoding.DER,
-            format=serialization.PublicFormat.SubjectPublicKeyInfo,
-        )
-
-    @classmethod
-    async def verify(cls, key, signature, data, prehashed=False):
-        if isinstance(key, str):
-            key = b64decode(key)
-        if isinstance(key, bytes):
-            key = serialization.load_der_public_key(key)
+    async def verify(self, key, signature, data, prehashed=False):
+        key = await self.toHashableKey(key, raw=True)
         if isinstance(signature, str):
             signature = b64decode(signature)
         if isinstance(data, str):
             data = b64decode(data)
-        hashalgo = cls.serializedName.split("-")[1].upper()
+        hashalgo = self.serializedName.split("-")[1].upper()
         hashalgo = getattr(hashes, hashalgo)()
         if prehashed:
             hash2 = utils.Prehashed(hashalgo)

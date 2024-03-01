@@ -122,7 +122,9 @@ def findWorkingAlgorithms(
 
 
 async def derive(
-    data: DataInputType, params: ParamsInputType = None, algorithm: str = ""
+    data: DataInputType,
+    params: ParamsInputType = None,
+    algorithm: str = "",
 ) -> FullDeriveResult:
     data = await data_helper(data)
     if not algorithm and isinstance(data, str):
@@ -379,7 +381,7 @@ async def getSignatureHasher(algorithm: str):
     entry = mapSignatureAlgorithms.get(algorithm)
     if not entry:
         raise UnknownAlgorithm("invalid algorithm: " + algorithm)
-    return entry.getHasher()
+    return await entry.getHasher()
 
 
 async def verify(
@@ -405,7 +407,7 @@ async def verify(
     if isinstance(key, str):
         key = b64decode(key)
 
-    return entry.verify(key, signature, data, prehashed=prehashed)
+    return await entry.verify(key, signature, data, prehashed=prehashed)
 
 
 async def toHashableKey(
@@ -426,7 +428,7 @@ async def toHashableKey(
     key = await data_helper(key)
     if isinstance(key, str):
         key = b64decode(key)
-    hashableKey = await keyEntry.toHashableKey(key)
+    hashableKey = await keyEntry.toHashableKey(key, False)
     return FullKeyResult(key=hashableKey, serializedName=keyEntry.serializedName)
 
 
@@ -460,3 +462,48 @@ async def hashKey(
         serialized=result2.serialized,
         key=result1.key,
     )
+
+
+async def hashKeyString(
+    key: KeyType | Awaitable[KeyType],
+    keyAlgorithm: str,
+    deriveAlgorithm: str,
+    sign: bool | None = None,
+    deriveParams: ParamsType = None,
+) -> FullHashKeyResult:
+    result = await hashKey(
+        key,
+        keyAlgorithm=keyAlgorithm,
+        deriveAlgorithm=deriveAlgorithm,
+        sign=sign,
+        deriveParams=deriveParams,
+    )
+    return result.serialized
+
+
+def combineKeyHashWithSignature(keyHash: str, signature: str) -> str:
+    return f"{b64encode(keyHash.encode('utf-8')).decode()}:{signature}"
+
+
+async def buildKeyHashSignature(
+    key: KeyType | Awaitable[KeyType],
+    data: DataInputType,
+    keyAlgorithm: str,
+    deriveAlgorithm: str,
+) -> str:
+    signPromise = sign(key, data=data, algorithm=keyAlgorithm)
+    return combineKeyHashWithSignature(
+        await hashKeyString(
+            key, keyAlgorithm=keyAlgorithm, deriveAlgorithm=deriveAlgorithm, sign=True
+        ),
+        await signPromise,
+    )
+
+
+def splitKeyHashSignature(
+    data: str,
+) -> tuple[str, str]:
+    splitted = data.split(":", 1)
+    if len(splitted) != 2:
+        raise ValueError("not a keyHash:data string")
+    return b64decode(splitted[0]).decode(), splitted[1]

@@ -580,11 +580,11 @@ async def create_key_fn(request, objdata: ContentInput, authset=None):
         private.net = objdata.net
     publickey_content = None
     if objdata.cluster.id:
-        publickey_content = Content.objects.filter(
+        publickey_content = await Content.objects.filter(
             cluster=objdata.cluster,
             type="PublicKey",
             tags__tag__in=map(lambda x: f"key_hash={x}", hashes),
-        ).first()
+        ).afirst()
     publickey_content = publickey_content or Content(cluster=objdata.cluster)
     # ensure public key values is not updated
     # note: public has objdata format for _update_or_create_content_or_key

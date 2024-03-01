@@ -166,13 +166,13 @@ async def _update_or_create_cluster(
     # cleanup after scope
     del net
     create_net = not cluster.net.id
-    if objdata.primary or not cluster.net.primaryCluster:
-        if cluster.net.primaryCluster and (
+    if objdata.primary or not cluster.net.primaryCluster_id:
+        if cluster.net.primaryCluster_id and (
             "manage_update"
             not in await aget_cached_net_properties(request, ensureInitialized=True)
         ):
             try:
-                await manage.aget(id=cluster.net.primaryCluster.id)
+                await manage.aget(id=cluster.net.primaryCluster_id)
             except ObjectDoesNotExist:
                 raise ValueError("No permission to move primary mark")
         if old_net and old_net.primaryCluster == cluster:
@@ -343,7 +343,7 @@ async def create_cluster_fn(
     return save_fn
 
 
-def update_cluster_fn(request, cluster, objdata, updateId, authset=None):
+async def update_cluster_fn(request, cluster, objdata, updateId, authset=None):
     assert cluster.id
     if not isinstance(updateId, UUID):
         try:
@@ -351,7 +351,9 @@ def update_cluster_fn(request, cluster, objdata, updateId, authset=None):
         except Exception:
             raise ValueError("updateId is not an uuid")
 
-    cluster_fn = _update_or_create_cluster(request, cluster, objdata, authset=authset)
+    cluster_fn = await _update_or_create_cluster(
+        request, cluster, objdata, authset=authset
+    )
 
     @django_resolver
     def save_fn(

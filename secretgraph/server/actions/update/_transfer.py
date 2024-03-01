@@ -17,7 +17,7 @@ from secretgraph.core.exceptions import LockedResourceError
 
 from ....core.constants import TransferResult, public_states
 from ....core.utils.crypto import decryptString
-from ....core.utils.verification import verify
+from ....core.utils.verification import verify_content
 from ...models import Content, ContentReference, ContentTag, Net
 from ...utils.conf import get_httpx_params
 
@@ -186,7 +186,7 @@ async def transfer_value(
     signatures = None
     try:
         with content.file.open("wb") as f:
-            signatures, errors = await verify(
+            signatures, errors = await verify_content(
                 s,
                 response,
                 key_hashes=key_hashes if key_hashes is not None else (),

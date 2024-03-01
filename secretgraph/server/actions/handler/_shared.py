@@ -1,5 +1,6 @@
 from functools import lru_cache
 
+from asgiref.sync import sync_to_async
 from django.db.models import Q
 
 
@@ -84,18 +85,19 @@ async def only_owned_helper(
         ]
 
 
+@sync_to_async
 @lru_cache(maxsize=4)
-async def get_forbidden_content_ids(request):
+def get_forbidden_content_ids(request):
     from ...utils.auth import get_cached_result
 
     # now add exclude infos of authset
     s = set()
-    result = await get_cached_result(
+    result = get_cached_result(
         request,
         scope="manage",
         cacheName="secretgraphCleanResult",
         ensureInitialized=True,
-    ).aat("Action")
+    )["Action"]
     # note: manage always resolves, so using Action is possible
     # it also has the advantage of honoring admin
 

@@ -6,7 +6,6 @@ from urllib.parse import parse_qs, urljoin
 import httpx
 
 from ...queries.content import contentVerificationQuery
-from ..constants import HashNameItem
 from .crypto import findWorkingAlgorithms, mapSignatureAlgorithms
 from .crypto import verify as crypto_verify
 from .hashing import (
@@ -21,7 +20,7 @@ async def _fetch_certificate(
     url: str,
     authorization: str,
     key_hashes: set[str],
-    hashAlgorithms: Iterable[HashNameItem],
+    hashAlgorithms: Iterable[str],
 ):
     keyResponse = await session.get(url, headers={"Authorization": authorization})
     keyResponse.raise_for_status()
@@ -55,7 +54,7 @@ async def _verify_helper(
         }
 
 
-async def verify(
+async def verify_content(
     session: httpx.AsyncClient,
     url: str | httpx.Response,
     /,

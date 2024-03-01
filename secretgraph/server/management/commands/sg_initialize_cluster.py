@@ -1,13 +1,10 @@
+import asyncio
 import json
 import os
 from base64 import b64decode, b64encode
 from time import time
 from urllib.parse import urlencode, urljoin
 
-from asgiref.sync import async_to_sync
-from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.primitives.asymmetric import padding, rsa
-from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.db import transaction
@@ -17,6 +14,16 @@ from django.urls import reverse
 
 from ....core import constants
 from ....core.typings import ConfigInterface
+from ....core.utils.crypto import (
+    encrypt,
+    encryptString,
+    findWorkingAlgorithms,
+    generateEncryptionKey,
+    hashKey,
+    serializeEncryptionParams,
+    sign,
+    toPublicKey,
+)
 from ...actions.update import (
     ActionInput,
     ContentInput,
@@ -32,7 +39,8 @@ from ...utils.auth import update_cached_net_properties
 from ...utils.hashing import hashObject, hashTagsContentHash
 
 
-def _gen_key_vars_nohash(inp: bytes | str):
+def _gen_data_b64(inp: bytes | str):
+    # returns bytes, b64bytes
     if isinstance(inp, str):
         return (
             b64decode(inp),
@@ -41,16 +49,14 @@ def _gen_key_vars_nohash(inp: bytes | str):
     return inp, b64encode(inp).decode("ascii")
 
 
-@async_to_sync
-async def _gen_key_vars(inp: bytes | str):
-    ret = _gen_key_vars_nohash(inp)
+async def _gen_data_b64_hash(inp: bytes | str):
+    ret = _gen_data_b64(inp)
     return *ret, await hashObject(ret[0])
 
 
-@async_to_sync
-async def _gen_token_vars(inp: bytes | str):
+async def _gen_token_data_b64_hash(inp: bytes | str):
     # tokens are
-    ret = _gen_key_vars_nohash(inp)
+    ret = _gen_data_b64(inp)
     if len(ret[0]) < 50:
         raise ValueError("Token too short")
     return *ret, await hashObject((b"secretgraph", ret[0]))
@@ -75,14 +81,14 @@ class Command(BaseCommand):
             choices=["trusted", "required"],
         )
 
-    def handle(self, **options):
+    async def _handle(self, **options):
         if not options["token"]:
             options["token"] = b64encode(os.urandom(50)).decode("ascii")
         if options["net"]:
             if options["net"].isdigit():
-                net = Net.objects.get(id=options["net"])
+                net = await Net.objects.aget(id=options["net"])
             else:
-                net = Net.objects.get(
+                net = await Net.objects.aget(
                     Q(cluster__flexid=options["net"])
                     | Q(cluster__flexid_cached=options["net"])
                 )
@@ -99,31 +105,30 @@ class Command(BaseCommand):
                 net.max_upload_size = options["max_upload_size"]
             else:
                 net.reset_max_upload_size()
-        hash_algo = constants.mapHashNames[settings.SECRETGRAPH_HASH_ALGORITHMS[0]]
-        nonce_config = os.urandom(13)
-        nonce_privkey = os.urandom(13)
-        view_token, view_token_b64, view_token_hash = _gen_token_vars(options["token"])
-        manage_key, manage_key_b64, manage_key_hash = _gen_token_vars(os.urandom(50))
-        privkey_key, privkey_key_b64 = _gen_key_vars_nohash(os.urandom(32))
-        config_shared_key, config_shared_key_b64 = _gen_key_vars_nohash(os.urandom(32))
-        privateKey = rsa.generate_private_key(
-            public_exponent=65537, key_size=options["bits"]
+        hash_algo = findWorkingAlgorithms(settings.SECRETGRAPH_HASH_ALGORITHMS, "hash")[
+            0
+        ]
+        view_token, view_token_b64, view_token_hash = await _gen_token_data_b64_hash(
+            options["token"]
         )
-        privateKey_bytes, privateKey_b64 = _gen_key_vars_nohash(
-            privateKey.private_bytes(
-                encoding=serialization.Encoding.DER,
-                format=serialization.PrivateFormat.PKCS8,
-                encryption_algorithm=serialization.NoEncryption(),
-            )
+        manage_key, manage_key_b64, manage_key_hash = await _gen_token_data_b64_hash(
+            os.urandom(50)
         )
-        publicKey = privateKey.public_key()
-        publicKey_bytes, publicKey_b64, publicKey_hash = _gen_key_vars(
-            publicKey.public_bytes(
-                encoding=serialization.Encoding.DER,
-                format=serialization.PublicFormat.SubjectPublicKeyInfo,
-            )
+        config_shared_key, config_shared_key_b64 = _gen_data_b64(os.urandom(32))
+        private_key_key, private_key_key_b64 = _gen_data_b64(os.urandom(32))
+        private_key = await generateEncryptionKey(
+            "rsa-sha512", {"bits": options["bits"]}
         )
 
+        encrypted_private_key = await encrypt(private_key_key, algorithm="AESGCM")
+        public_key = await toPublicKey(
+            private_key.key, algorithm=private_key.serializedName
+        )
+        publicKey_hash = await hashKey(
+            public_key.key,
+            keyAlgorithm=public_key.serializedName,
+            deriveAlgorithm=hash_algo,
+        )
         url = reverse("graphql-plain")
         request = RequestFactory().get(url)
         update_cached_net_properties(
@@ -135,7 +140,7 @@ class Command(BaseCommand):
             ],
             emptyOk=True,
         )
-        clusterfn = create_cluster_fn(
+        clusterfn = await create_cluster_fn(
             request,
             ClusterInput(
                 net=net,
@@ -163,28 +168,19 @@ class Command(BaseCommand):
                 ],
                 keys=[
                     ContentKeyInput(
-                        publicKey=publicKey_bytes,
+                        publicKey=public_key,
                         publicState=options["public_key_state"],
-                        privateKey=AESGCM(privkey_key).encrypt(
-                            nonce_privkey, privateKey_bytes, None
+                        privateKey=encrypted_private_key.data,
+                        cryptoParameters=await serializeEncryptionParams(
+                            encrypted_private_key.params,
+                            encrypted_private_key.serializedName,
                         ),
-                        nonce=nonce_privkey,
                         privateTags=(
                             "name=initial private key generated by command",
-                            "key={}:{}".format(
-                                hash_algo.serializedName,
-                                b64encode(
-                                    publicKey.encrypt(
-                                        privkey_key,
-                                        padding.OAEP(
-                                            mgf=padding.MGF1(
-                                                algorithm=hash_algo.algorithm
-                                            ),
-                                            algorithm=hash_algo.algorithm,
-                                            label=None,
-                                        ),
-                                    )
-                                ).decode("ascii"),
+                            "key={}".format(
+                                await encryptString(
+                                    public_key, private_key_key, algorithm="rsa-sha512"
+                                )
                             ),
                         ),
                         publicTags=["name=initial key generated by command"],
@@ -192,127 +188,106 @@ class Command(BaseCommand):
                 ],
             ),
         )
-        with transaction.atomic():
-            if not net.id:
-                net.save()
-            cluster = clusterfn()["cluster"]
-            pkey = cluster.contents.get(type="PublicKey")
-            config: ConfigInterface = {
-                "baseUrl": url,
-                "configCluster": cluster.flexid_cached,
-                "certificates": {
-                    publicKey_hash: {
-                        "data": privateKey_b64,
-                        "note": "initial certificate",
-                    }
+        if not net.id:
+            await net.asave()
+        cluster = (await clusterfn(transaction.atomic))["cluster"]
+        pkey = await cluster.contents.aget(type="PublicKey")
+        config: ConfigInterface = {
+            "baseUrl": url,
+            "configCluster": cluster.flexid_cached,
+            "certificates": {
+                publicKey_hash: {
+                    "data": b64encode(private_key).decode(),
+                    "type": "rsa-sha512",
+                    "note": "initial certificate",
+                }
+            },
+            "tokens": {
+                view_token_hash: {
+                    "data": view_token_b64,
+                    "system": True,
+                    "note": "config token",
                 },
-                "tokens": {
-                    view_token_hash: {
-                        "data": view_token_b64,
-                        "system": True,
-                        "note": "config token",
-                    },
-                    manage_key_hash: {
-                        "data": manage_key_b64,
-                        "system": False,
-                        "note": "initial token",
-                    },
+                manage_key_hash: {
+                    "data": manage_key_b64,
+                    "system": False,
+                    "note": "initial token",
                 },
-                "slots": options["slots"],
-                "signWith": {options["slots"][0]: [publicKey_hash]},
-                "hosts": {
-                    url: {
-                        "clusters": {
-                            cluster.flexid_cached: {
-                                "hashes": {
-                                    view_token_hash: ["view"],
-                                    manage_key_hash: ["manage"],
-                                    publicKey_hash: [],
-                                }
+            },
+            "slots": options["slots"],
+            "signWith": {options["slots"][0]: [publicKey_hash]},
+            "hosts": {
+                url: {
+                    "clusters": {
+                        cluster.flexid_cached: {
+                            "hashes": {
+                                view_token_hash: ["view"],
+                                manage_key_hash: ["manage"],
+                                publicKey_hash: [],
                             }
-                        },
-                        "contents": {},
-                    }
-                },
-                "trustedKeys": {
-                    publicKey_hash: {
-                        "links": [urljoin(url, pkey.link)],
-                        "level": 1,
-                        "note": "",
-                        "lastChecked": int(time()),
-                    }
-                },
-            }
-            configEncoded = json.dumps(config)
-            ecnryptedContent = AESGCM(config_shared_key).encrypt(
-                nonce_config,
-                configEncoded.encode("utf8"),
-                None,
-            )
-            content = create_content_fn(
-                request,
-                ContentInput(
-                    net=net,
-                    cluster=cluster,
-                    value=ContentValueInput(
-                        value=ecnryptedContent,
-                        state="protected",
-                        type="Config",
-                        nonce=nonce_config,
-                        tags=[
-                            "name=config.json",
-                            "mime=application/json",
-                            f"key_hash={publicKey_hash}",
-                            "slot={}".format(options["slots"][0]),
-                        ],
-                        references=[
-                            ReferenceInput(
-                                target=publicKey_hash,
-                                group="key",
-                                extra="{}:{}".format(
-                                    hash_algo.serializedName,
-                                    b64encode(
-                                        publicKey.encrypt(
-                                            config_shared_key,
-                                            padding.OAEP(
-                                                mgf=padding.MGF1(
-                                                    algorithm=hash_algo.algorithm
-                                                ),
-                                                algorithm=hash_algo.algorithm,
-                                                label=None,
-                                            ),
-                                        )
-                                    ).decode("ascii"),
-                                ),
-                                deleteRecursive=(constants.DeleteRecursive.NO_GROUP),
-                            ),
-                            ReferenceInput(
-                                target=publicKey_hash,
-                                group="signature",
-                                extra="{}:{}".format(
-                                    hash_algo.serializedName,
-                                    b64encode(
-                                        privateKey.sign(
-                                            ecnryptedContent,
-                                            padding.PSS(
-                                                mgf=padding.MGF1(hash_algo.algorithm),
-                                                salt_length=padding.PSS.MAX_LENGTH,  # noqa E501
-                                            ),
-                                            hash_algo.algorithm,
-                                        )
-                                    ).decode("ascii"),
-                                ),
-                                deleteRecursive=(constants.DeleteRecursive.NO_GROUP),
-                            ),
-                        ],
+                        }
+                    },
+                    "contents": {},
+                }
+            },
+            "trustedKeys": {
+                publicKey_hash: {
+                    "links": [urljoin(url, pkey.link)],
+                    "level": 1,
+                    "note": "",
+                    "lastChecked": int(time()),
+                }
+            },
+        }
+        configEncrypted = await encrypt(
+            config_shared_key, json.dumps(config).encode("utf8"), algorithm="AESGCM"
+        )
+        content = await create_content_fn(
+            request,
+            ContentInput(
+                net=net,
+                cluster=cluster,
+                value=ContentValueInput(
+                    value=configEncrypted.data,
+                    state="protected",
+                    type="Config",
+                    cryptoParameters=serializeEncryptionParams(
+                        configEncrypted.params, algorithm="AESGCM"
                     ),
-                    contentHash=hashTagsContentHash(
-                        map(lambda x: f"slot={x}", options["slots"]),
-                        "Config",
-                    ),
+                    tags=[
+                        "name=config.json",
+                        "mime=application/json",
+                        f"key_hash={publicKey_hash}",
+                        "slot={}".format(options["slots"][0]),
+                    ],
+                    references=[
+                        ReferenceInput(
+                            target=publicKey_hash,
+                            group="key",
+                            extra=await encryptString(
+                                public_key, config_shared_key, algorithm="rsa-sha512"
+                            ),
+                            deleteRecursive=(constants.DeleteRecursive.NO_GROUP),
+                        ),
+                        ReferenceInput(
+                            target=publicKey_hash,
+                            group="signature",
+                            extra=await sign(
+                                private_key,
+                                configEncrypted.data,
+                                algorithm="rsa-sha512",
+                            ),
+                            deleteRecursive=(constants.DeleteRecursive.NO_GROUP),
+                        ),
+                    ],
                 ),
-                authset=[f"{cluster.flexid_cached}:{manage_key}"],
-            )()["content"]
+                contentHash=hashTagsContentHash(
+                    map(lambda x: f"slot={x}", options["slots"]),
+                    "Config",
+                ),
+            ),
+            authset=[f"{cluster.flexid_cached}:{manage_key}"],
+        )()["content"]
         search = urlencode(
             {
                 "token": "{}:{}".format(
@@ -322,7 +297,7 @@ class Command(BaseCommand):
                 "key": [
                     "{}:{}".format(
                         publicKey_hash,
-                        privkey_key_b64,
+                        private_key_key_b64,
                     ),
                 ],
             },
@@ -330,3 +305,6 @@ class Command(BaseCommand):
         )
         print("Cluster:", cluster.flexid_cached)
         print("Initialization url: {}?{}".format(urljoin(url, content.link), search))
+
+    def handle(self, **options):
+        asyncio.run(self._handle(options))

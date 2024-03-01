@@ -5,7 +5,6 @@ from typing import Iterable, Optional
 import argon2
 from cryptography.hazmat.primitives import serialization
 
-from .. import constants
 from ..typings import PrivateCryptoKey, PublicCryptoKey
 from .crypto import deriveString, findWorkingAlgorithms, mapDeriveAlgorithms
 
@@ -97,7 +96,7 @@ def sortedRegistryHash(inp: Iterable[str], url: str, domain: str) -> str:
 async def hashTagsContentHash(
     inp: Iterable[str],
     domain: str,
-    hashAlgorithm: constants.HashNameItem | str,
+    hashAlgorithm: str,
 ) -> str:
     return "%s:%s" % (domain, await sortedHash(inp, hashAlgorithm))
 

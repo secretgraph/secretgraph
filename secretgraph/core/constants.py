@@ -1,9 +1,7 @@
 import enum
 import re
 import string
-from dataclasses import dataclass
 
-from cryptography.hazmat.primitives import hashes
 from rdflib import Namespace
 
 from .typings import ContentState
@@ -135,27 +133,6 @@ class MetadataOperations(enum.StrEnum):
 MetadataOperations.valid_values = frozenset(
     map(lambda x: x.value, MetadataOperations.__members__.values())
 )
-
-
-@dataclass(frozen=True)
-class HashNameItem:
-    algorithm: hashes.HashAlgorithm
-    serializedName: str
-
-
-mapHashNames: dict[str, HashNameItem] = {}
-for item, variants in [
-    (
-        HashNameItem(algorithm=hashes.SHA512(), serializedName="sha512"),
-        ["sha512", "SHA-512"],
-    ),
-    (
-        HashNameItem(algorithm=hashes.SHA256(), serializedName="sha256"),
-        ["sha256", "SHA-256"],
-    ),
-]:
-    for variant in variants:
-        mapHashNames[variant] = item
 
 
 class TransferResult(enum.Enum):
