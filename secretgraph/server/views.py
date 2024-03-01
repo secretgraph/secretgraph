@@ -138,10 +138,12 @@ def get_file_response_with_range_support(request, fileob, size, name):
         # silences warnings while testing
         response = StreamingHttpResponse(
             RangeFileWrapper(fileob, length=size, blksize=FileResponse.block_size),
-            as_attachment=False,
-            filename=name,
         )
         response["Content-Length"] = str(size)
+        header = 'attachment; filename="{}"'.format(
+            name.replace("\\", "\\\\").replace('"', r"\"")
+        )
+        response["Content-Disposition"] = header
     response["Accept-Ranges"] = "bytes"
     return response
 
@@ -251,6 +253,7 @@ class ContentView(View):
         if hasattr(content, "read_decrypt"):
             # no range support because of AESGCM tag,
             # Would require an crypto method to calculate the effective size
+            # always async
             response = StreamingHttpResponse(content.read_decrypt())
             if isinstance(names[0], str):
                 # do it according to django

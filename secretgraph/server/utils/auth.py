@@ -86,6 +86,11 @@ class LazyViewResult(object):
             if i in self._result_dict:
                 del self._result_dict[i]
 
+    async def _wait_when_exist(self, ops):
+        if not ops:
+            return
+        await asyncio.wait(ops)
+
     def preinit(self, *fields, refresh=False):
         try:
             loop = asyncio.get_event_loop()
@@ -101,7 +106,7 @@ class LazyViewResult(object):
                 else:
                     ops.append(asyncio.ensure_future(self.aat(i)))
         if loop:
-            return asyncio.wait(ops)
+            return self._wait_when_exist(ops)
 
 
 _valid_lengths = {32, 50}

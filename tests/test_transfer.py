@@ -160,7 +160,7 @@ class TransferTests(TransactionTestCase):
             transfer_shared_key, header.encode("utf8"), algorithm="AESGCM"
         )
         transfer_shared_key_enc = await encrypt(
-            pub_encryptkey, transfer_shared_key, algorithm="rsa-sha512"
+            pub_encryptkey.key, transfer_shared_key, algorithm="rsa-sha512"
         )
 
         prepared_transfer = {
