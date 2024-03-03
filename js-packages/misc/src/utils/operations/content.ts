@@ -459,10 +459,10 @@ export async function decryptContentObject({
         }
     }
 
-    // skip decryption as always unencrypted
     if (
-        _node.type == 'PublicKey' ||
+        // skip decryption as always unencrypted
         _node.state == 'public' ||
+        // skip decryption when no cryptoParameters were specified
         !_node.cryptoParameters
     ) {
         return {

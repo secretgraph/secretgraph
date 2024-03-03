@@ -747,7 +747,7 @@ class Content(FlexidModel):
         if self.type == "PrivateKey":
             if self.state != "protected":
                 errors.setdefault(
-                    NON_FIELD_ERRORS if "state" in exclude else "state"
+                    NON_FIELD_ERRORS if "state" in exclude else "state", []
                 ).append(
                     ValidationError(
                         "%(state)s is an invalid state for private key",
@@ -766,7 +766,7 @@ class Content(FlexidModel):
                 )
             if not self.contentHash or not self.contentHash.startswith("Key:"):
                 errors.setdefault(
-                    NON_FIELD_ERRORS if "contentHash" in exclude else "contentHash"
+                    NON_FIELD_ERRORS if "contentHash" in exclude else "contentHash", []
                 ).append(
                     ValidationError(
                         "%(contentHash)s is invalid contentHash for public key. Needs domain: Key:",
@@ -776,7 +776,7 @@ class Content(FlexidModel):
         else:
             if self.type == "Config" and self.state != "protected":
                 errors.setdefault(
-                    NON_FIELD_ERRORS if "state" in exclude else "state"
+                    NON_FIELD_ERRORS if "state" in exclude else "state", []
                 ).append(
                     ValidationError(
                         "%(state)s is an invalid state for a Config",
@@ -785,21 +785,22 @@ class Content(FlexidModel):
                 )
             elif self.state not in constants.nonkey_content_states:
                 errors.setdefault(
-                    NON_FIELD_ERRORS if "state" in exclude else "state"
+                    NON_FIELD_ERRORS if "state" in exclude else "state", []
                 ).append(
                     ValidationError(
                         "%(state)s is an invalid state for a content",
                         params={"state": self.state},
                     )
                 )
-        if self.state not in constants.public_states and not self.cryptoParameters:
-            errors.setdefault(
-                NON_FIELD_ERRORS
-                if "cryptoParameters" in exclude
-                else "cryptoParameters"
-            ).append(
-                ValidationError("cryptoParameters empty", code="cryptoParameters_empty")
-            )
+        # if self.state not in constants.public_states and not self.cryptoParameters:
+        #    errors.setdefault(
+        #        NON_FIELD_ERRORS
+        #        if "cryptoParameters" in exclude
+        #        else "cryptoParameters",
+        #        [],
+        #    ).append(
+        #        ValidationError("cryptoParameters empty", code="cryptoParameters_empty")
+        #    )
         if errors:
             raise ValidationError(errors)
 

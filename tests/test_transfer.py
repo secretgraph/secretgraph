@@ -188,9 +188,7 @@ class TransferTests(TransactionTestCase):
                 },
             ],
             "value": ContentFile(b""),
-            "cryptoParameters": await serializeEncryptionParams(
-                transfer_shared_key_enc.params, transfer_shared_key_enc.serializedName
-            ),
+            "cryptoParameters": "",
             "authorization": [m_token],
         }
         result = await schema.execute(
@@ -255,6 +253,7 @@ class TransferTests(TransactionTestCase):
         ).tag.split("=", 1)[1]
         url = (await decryptString(transfer_key, encoded_bytes)).data.decode()
         headers = {}
+        counter = 0
         async for tag in content.tags.only("tag").filter(
             tag__startswith="~transfer_header="
         ):
@@ -266,6 +265,8 @@ class TransferTests(TransactionTestCase):
             )
             if len(header) == 2:
                 headers[header[0]] = header[1]
+                counter += 1
+        self.assertEqual(counter, 1)
         prepared_transfer2 = {
             "headers": headers,
             "url": url,

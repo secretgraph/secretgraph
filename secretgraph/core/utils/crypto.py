@@ -239,7 +239,7 @@ async def encrypt(
 
 
 async def encryptString(
-    key: KeyboardInterrupt,
+    key: KeyInputType,
     data: DataInputType,
     params: ParamsInputType = None,
     algorithm: str = "",
@@ -275,10 +275,10 @@ async def deserializeEncryptedString(
     if not entry:
         raise UnknownAlgorithm("unknown algorithm")
 
-    result = await entry.deserialize(data, params)
+    result = await entry.deserialize(data=data, params=params)
     return FullDeserializeResult(
         params=result.params,
-        data=result.data,
+        data=result.data or data,
         serializedName=entry.serializedName,
     )
 
@@ -354,7 +354,9 @@ async def decryptString(
     algorithm: str = "",
 ) -> FullCryptoResult:
     result = await deserializeEncryptedString(data, params=params, algorithm=algorithm)
-    return await decrypt(key, data, algorithm=result.serializedName, params=params)
+    return await decrypt(
+        key, result.data, algorithm=result.serializedName, params=result.params
+    )
 
 
 async def sign(

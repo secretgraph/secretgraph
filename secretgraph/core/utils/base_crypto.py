@@ -226,12 +226,12 @@ class PBKDF2sha512(DeriveAlgorithm):
             params=params,
         )
 
-    async def deserialize(self, inp: str, params=None):
+    async def deserialize(self, data: str, params=None):
         if not params:
             params = {}
         else:
             params = copy.copy(params)
-        splitted = inp.split(":")
+        splitted = data.split(":")
         if splitted.length >= 2:
             splitted2 = splitted[0].split(",")
             params["iterations"] = int(splitted2[0])
@@ -402,6 +402,19 @@ class AESGCMAlgo(EncryptionAlgorithm):
 
     async def serializeParams(self, params):
         return b64encode(params["nonce"]).decode()
+
+    async def deserialize(self, data: str, params=None):
+        if not params:
+            params = {}
+        else:
+            params = copy.copy(params)
+        splitted = data.split(":", 1)
+        if splitted[0]:
+            params["nonce"] = b64decode(splitted[0])
+        if len(splitted) == 2 and splitted[1]:
+            return DeserializeResult(data=b64decode(splitted[1]), params=params)
+
+        return DeserializeResult(params=params)
 
     async def toHashableKey(self, key: KeyType, raw):
         # already strengthed

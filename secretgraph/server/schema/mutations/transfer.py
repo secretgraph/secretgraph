@@ -110,7 +110,7 @@ async def mutate_transfer(
     ).aat("Content")
     # allow admin pulls
     if id:
-        if "manage_update" in aget_cached_net_properties(info.context["request"]):
+        if "manage_update" in await aget_cached_net_properties(info.context["request"]):
             transfer_target: Content = await id.resolve_node(
                 info, required=True, ensure_type=Content
             )

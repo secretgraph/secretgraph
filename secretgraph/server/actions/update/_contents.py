@@ -319,11 +319,11 @@ async def _update_or_create_content_or_key(
         if content.state in constants.public_states:
             objdata.cryptoParameters = ""
         # is public key or public? then ignore cryptoParameters checks
-        if not content.type == "PublicKey" and content.state != "public":
-            if not objdata.cryptoParameters:
-                raise ValueError(
-                    "Content must be encrypted and cryptoParameters specified"
-                )
+        # if not content.type == "PublicKey" and content.state != "public":
+        #    if not objdata.cryptoParameters:
+        #        raise ValueError(
+        #            "Content must be encrypted and cryptoParameters specified"
+        #        )
         content.cryptoParameters = objdata.cryptoParameters
         # otherwise file size calculation causes error
         if objdata.value is sys.stdin:
