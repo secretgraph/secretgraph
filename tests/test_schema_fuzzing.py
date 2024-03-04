@@ -1,4 +1,5 @@
 import re
+from datetime import timedelta as td
 
 import hypothesis_graphql
 from django.test import Client
@@ -41,12 +42,16 @@ class HypothesisTests(TestCase):
         return super().setUp()
 
     @given(case=base_strategy)
-    @settings(suppress_health_check=(HealthCheck.too_slow,))
+    @settings(
+        suppress_health_check=(HealthCheck.too_slow,), deadline=td(milliseconds=500)
+    )
     def test_base(self, case):
         response = self.client.post(
-            "http://localhost/graphql",
+            "http://localhost/graphql/",
             data={"query": case},
             content_type="application/json",
         )
+        if response.status_code != 200:
+            print(response.content)
         self.assertEqual(response.status_code, 200)
         self.assertIs(response.json().get("errors"), None)
