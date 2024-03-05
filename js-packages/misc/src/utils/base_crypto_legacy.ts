@@ -63,6 +63,9 @@ export async function toPublicKey(inp: KeyInput, params: any) {
         )
     }
     const tempkey = await crypto.subtle.exportKey('jwk', _key)
+    // bug: alg contains now invalid params and fails, so we just remove it
+    delete tempkey.alg
+    //tempkey.alg = tempkey.alg?.replace('-512', '')?.replace('-256', '')
     // remove private data from JWK
     delete tempkey.d
     delete tempkey.dp

@@ -54,6 +54,7 @@ async function extractInfo({
     tokens,
     hashAlgorithms,
     permissions,
+    netPermissions,
     serverConfig,
 }: {
     config: Interfaces.ConfigInterface
@@ -61,7 +62,8 @@ async function extractInfo({
     url: string
     tokens: string[]
     hashAlgorithms: string[]
-    permissions: string[]
+    permissions: Set<string>
+    netPermissions: Set<string>
     serverConfig: {
         netGroups: {
             name: string
@@ -104,6 +106,7 @@ async function extractInfo({
         url,
         hashAlgorithm: hashAlgorithms[0],
         permissions,
+        netPermissions,
         serverConfig,
     }
 }
@@ -121,7 +124,8 @@ interface ClusterInternProps {
     mapper: UnpackPromise<ReturnType<typeof generateActionMapper>>
     hashAlgorithm: string
     viewOnly?: boolean
-    permissions: string[]
+    permissions: Set<string>
+    netPermissions: Set<string>
     serverConfig: {
         netGroups: {
             name: string
@@ -457,7 +461,7 @@ const ClusterIntern = ({
                                                 return
                                             }
                                             if (
-                                                !permissions.includes(
+                                                !permissions.has(
                                                     'allow_global_name'
                                                 )
                                             ) {
@@ -518,9 +522,7 @@ const ClusterIntern = ({
                                         disabled={
                                             disabled ||
                                             loading ||
-                                            !permissions.includes(
-                                                'allow_featured'
-                                            )
+                                            !permissions.has('allow_featured')
                                         }
                                     />
                                     <Field
@@ -536,6 +538,9 @@ const ClusterIntern = ({
                                 <Grid xs={12}>
                                     <Typography>Cluster Groups</Typography>
                                     <SplittedGroupSelectList
+                                        admin={permissions.has(
+                                            'manage_cluster_groups'
+                                        )}
                                         name="clusterGroups"
                                         initial={!mainCtx.item}
                                         groups={
@@ -549,6 +554,12 @@ const ClusterIntern = ({
                                     <GroupSelectList
                                         name="netGroups"
                                         initial={!mainCtx.item}
+                                        admin={
+                                            values.primary &&
+                                            permissions.has(
+                                                'manage_net_groups'
+                                            )
+                                        }
                                         groups={props.serverConfig.netGroups}
                                         disabled={
                                             !values.primary ||
@@ -644,9 +655,10 @@ const EditCluster = ({ viewOnly = false }: { viewOnly?: boolean }) => {
             ) {
                 updateOb.deleted = false
             }
-            const permissions = new Set([
+            const netPermissions = new Set<string>([
                 ...dataUnfinished.secretgraph.permissions,
             ])
+            const permissions = new Set<string>(netPermissions)
             const clusterGroups = new Set<string>(
                 dataUnfinished.secretgraph.node.groups
             )
@@ -664,7 +676,8 @@ const EditCluster = ({ viewOnly = false }: { viewOnly?: boolean }) => {
                 url: mainCtx.url as string,
                 tokens: mainCtx.tokens,
                 hashAlgorithms,
-                permissions: [...permissions],
+                permissions,
+                netPermissions,
                 serverConfig: dataUnfinished.secretgraph.config,
             })
             if (active) {
@@ -735,6 +748,9 @@ const CreateCluster = () => {
 
             const hashKey = await hashToken(manage_key, hashAlgorithms[0])
             if (active) {
+                const permissionsNew = new Set<string>(
+                    dataUnfinished.secretgraph.permissions
+                )
                 const data: Omit<ClusterInternProps, 'disabled' | 'url'> & {
                     key: string
                 } = {
@@ -750,7 +766,8 @@ const CreateCluster = () => {
                                     v.properties.includes('default')
                             )
                             .map((val: { name: string }) => val.name),
-                    permissions: dataUnfinished.secretgraph.permissions,
+                    permissions: permissionsNew,
+                    netPermissions: permissionsNew,
                     serverConfig: dataUnfinished.secretgraph.config,
                     mapper: {
                         [hashKey]: {

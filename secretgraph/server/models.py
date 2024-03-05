@@ -180,7 +180,7 @@ class Net(models.Model):
     @staticmethod
     def _size_references(net_id) -> int:
         refs = (
-            ContentReference.objects.filter(content__net_id=net_id)
+            ContentReference.objects.filter(source__net_id=net_id)
             .annotate(size=Length("extra"))
             .aggregate(size_sum=models.Sum("size"), count=models.Count("id"))
         )

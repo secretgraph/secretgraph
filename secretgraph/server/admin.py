@@ -225,6 +225,7 @@ class NetAdmin(admin.ModelAdmin):
     search_fields = ["id", "user_name"]
     sortable_by = [admin_repr, "user_name"]
     inlines = [NetGroupInline]
+    actions = ["recalculate_bytes_in_use"]
 
     @admin.action(
         permissions=["view", "change"], description="Recalculate bytes_in_use"
@@ -259,7 +260,11 @@ class NetAdmin(admin.ModelAdmin):
     has_view_permission = has_module_permission
 
     def has_delete_permission(self, request, obj=None) -> bool:
-        return False
+        if getattr(
+            request.user, "is_superuser", False
+        ) or "manage_user" in get_cached_net_properties(request):
+            return True
+        return obj and obj.user_name == request.user.username
 
     def has_change_permission(self, request, obj=None) -> bool:
         return getattr(

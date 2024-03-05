@@ -357,12 +357,15 @@ async def iter_decrypt_contents(
 
 @async_to_sync
 async def sync_anext(inp):
-    return await inp
+    return await anext(inp)
 
 
 def iter_decrypt_contents_sync(
     result, /, *, queryset=None, decryptset=None
 ) -> Iterable[Content]:
     aiterable = iter_decrypt_contents(result, queryset=queryset, decryptset=decryptset)
-    for value in aiterable:
-        yield sync_anext(aiterable)
+    while True:
+        try:
+            yield sync_anext(aiterable)
+        except StopAsyncIteration:
+            break

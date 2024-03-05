@@ -241,7 +241,7 @@ addWithVariants(mapDeriveAlgorithms, new PBKDF2Algos('SHA-256'), [
 class RSAOEAPAlgos extends EncryptionAlgorithm {
     type = 'asymmetric' as const
     operationName: string
-    declare keyParams: {
+    keyParams: {
         name: 'RSA-OAEP'
         hash: string
     }

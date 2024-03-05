@@ -7,6 +7,7 @@ import Stack from '@mui/material/Stack'
 import { useTheme } from '@mui/material/styles'
 import Typography from '@mui/material/Typography'
 import {
+    serverConfigQueryWithPermissions,
     serverConfigQuery,
     serverLogout,
 } from '@secretgraph/graphql-queries/server'
@@ -45,6 +46,7 @@ function Register() {
               activeUser?: string
               hashAlgorithms: string[]
               errors: string[]
+              netPermissions: Set<string>
               netGroups: {
                   name: string
                   description: string
@@ -126,6 +128,7 @@ function Register() {
                             ? false
                             : true
                     )
+                    // we need no permissions here
                     const result: any = await client.query({
                         query: serverConfigQuery,
                     })
@@ -258,7 +261,7 @@ function Register() {
                             undefined
                         try {
                             result = await client.query({
-                                query: serverConfigQuery,
+                                query: serverConfigQueryWithPermissions,
                             })
                             if (!active) {
                                 return
@@ -272,6 +275,7 @@ function Register() {
                                 registerUrl: undefined,
                                 loginUrl: undefined,
                                 canDirectRegister: false,
+                                netPermissions: new Set<string>(),
                                 activeUser: undefined,
                                 hashAlgorithms: [],
                                 netGroups: [],
@@ -292,6 +296,9 @@ function Register() {
                             hashAlgorithms: findWorkingAlgorithms(
                                 sconfig.hashAlgorithms,
                                 'hash'
+                            ),
+                            netPermissions: new Set<string>(
+                                result.data.secretgraph.permissions
                             ),
                             netGroups: sconfig.netGroups,
                             clusterGroups: sconfig.clusterGroups,
@@ -415,6 +422,9 @@ function Register() {
                                 <SplittedGroupSelectList
                                     name="clusterGroups"
                                     initial
+                                    admin={registerContext?.netPermissions?.has(
+                                        'manage_cluster_groups'
+                                    )}
                                     groups={
                                         registerContext?.clusterGroups || []
                                     }
@@ -425,6 +435,9 @@ function Register() {
                                 <Typography>Net Groups</Typography>
                                 <GroupSelectList
                                     name="netGroups"
+                                    admin={registerContext?.netPermissions?.has(
+                                        'manage_net_groups'
+                                    )}
                                     initial
                                     groups={registerContext?.netGroups || []}
                                     disabled={isSubmitting}

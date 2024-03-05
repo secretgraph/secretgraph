@@ -579,22 +579,6 @@ async def ids_to_results(
     return results
 
 
-def get_net_properties_q(request, query):
-    assert issubclass(query.model, (Cluster, Net)), (
-        "Not a cluster/net query: %s" % query.model
-    )
-    q = (
-        models.Q(nets__in=query)
-        if issubclass(query.model, Net)
-        else models.Q(nets__primaryCluster__in=query)
-    )
-    if getattr(settings, "SECRETGRAPH_USE_USER", True):
-        user = getattr(request, "user", None)
-        if user:
-            q |= models.Q(nets__user_name=user.get_username())
-    return q
-
-
 def get_cached_result(
     request,
     *viewResults,
@@ -622,6 +606,30 @@ def get_cached_result(
     return getattr(request, cacheName)
 
 
+@sync_to_async
+def _get_user(request):
+    user = getattr(request, "user", None)
+    if user:
+        getattr(user, "pk")
+    return user
+
+
+async def aget_net_properties_q(request, query):
+    assert issubclass(query.model, (Cluster, Net)), (
+        "Not a cluster/net query: %s" % query.model
+    )
+    q = (
+        models.Q(nets__in=query)
+        if issubclass(query.model, Net)
+        else models.Q(nets__primaryCluster__in=query)
+    )
+    if getattr(settings, "SECRETGRAPH_USE_USER", True):
+        user = await _get_user(request)
+        if user:
+            q |= models.Q(nets__user_name=user.get_username())
+    return q
+
+
 async def aget_cached_net_properties(
     request,
     permissions_name="secretgraphNetProperties",
@@ -646,7 +654,9 @@ async def aget_cached_net_properties(
                 authset=authset,
             )
         )["objects_without_public"]
-        net_groups = NetGroup.objects.filter(get_net_properties_q(request, query))
+        net_groups = NetGroup.objects.filter(
+            await aget_net_properties_q(request, query)
+        )
         all_props = frozenset(
             [
                 val

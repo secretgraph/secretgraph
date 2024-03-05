@@ -39,7 +39,6 @@ export const serverConfigQueryWithPermissions = gql`
         $authorization: [String!]
     ) {
         secretgraph(authorization: $authorization) {
-            permissions
             config {
                 id
                 hashAlgorithms
@@ -67,6 +66,7 @@ export const serverConfigQueryWithPermissions = gql`
                 loginUrl
             }
             activeUser
+            permissions
         }
     }
 `
