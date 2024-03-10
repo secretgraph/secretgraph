@@ -142,9 +142,15 @@ export function cleanConfig(
     for (const host of Object.values(config.hosts)) {
         if (!host['clusters']) {
             host['clusters'] = {}
+            hasChanges = true
         }
         if (!host['contents']) {
             host['contents'] = {}
+            hasChanges = true
+        }
+        if (!host['primary']) {
+            host['primary'] = {}
+            hasChanges = true
         }
     }
     if (domain) {
@@ -161,8 +167,20 @@ export function cleanConfig(
                     config.hosts[nhost] = {
                         clusters: {},
                         contents: {},
+                        primary: {},
                     }
                 }
+                const newPrimary = mergeDeleteObjects(
+                    config.hosts[nhost].primary,
+                    config.hosts[host].primary,
+                    (old, newobj) => {
+                        if (!old) {
+                            return [[...new Set(newobj)] as string[], 1]
+                        }
+                        return [[...new Set([...old, ...newobj])], 1]
+                    }
+                )[0]
+                config.hosts[nhost].primary = newPrimary
 
                 const new_clusters = mergeDeleteObjects(
                     config.hosts[nhost].clusters,
@@ -183,10 +201,17 @@ export function cleanConfig(
                                 newval.hashes,
                                 (old, newobj) => {
                                     if (!old) {
-                                        return [[...new Set(newobj)], 1]
+                                        return [
+                                            [
+                                                ...new Set(newobj),
+                                            ].sort() as string[],
+                                            1,
+                                        ]
                                     }
                                     return [
-                                        [...new Set([...old, ...newobj])],
+                                        [
+                                            ...new Set([...old, ...newobj]),
+                                        ].sort() as string[],
                                         1,
                                     ]
                                 }
@@ -217,10 +242,17 @@ export function cleanConfig(
                                 newval.hashes,
                                 (old, newobj) => {
                                     if (!old) {
-                                        return [[...new Set(newobj)], 1]
+                                        return [
+                                            [
+                                                ...new Set(newobj),
+                                            ].sort() as string[],
+                                            1,
+                                        ]
                                     }
                                     return [
-                                        [...new Set([...old, ...newobj])],
+                                        [
+                                            ...new Set([...old, ...newobj]),
+                                        ].sort() as string[],
                                         1,
                                     ]
                                 }
@@ -280,10 +312,10 @@ function _updateFromConfigFromHashes({
     readonly id: string
     readonly require: Set<string>
     readonly searchToken?: string
-    readonly limit: number
+    readonly limit: number | undefined
     tokens: Set<string>
     tokenHashes: Set<string>
-    certificateHashes: Set<string>
+    certificateHashes: Set<string> | undefined
     types: Set<string>
 }) {
     let limitReached = false
@@ -291,7 +323,7 @@ function _updateFromConfigFromHashes({
     let certificateCount = 0
     for (const hash in hashes) {
         const perms = hashes[hash]
-        if (config.certificates[hash]) {
+        if (certificateHashes !== undefined && config.certificates[hash]) {
             certificateHashes.add(hash)
             certificateCount++
         } else if (
@@ -300,7 +332,7 @@ function _updateFromConfigFromHashes({
         ) {
             if (limit && tokens.size > limit) {
                 limitReached = true
-                continue
+                break
             }
             tokenHashes.add(hash)
             if (!config.tokens[hash] || !hash) {
@@ -326,12 +358,15 @@ function _updateFromConfigFromHashes({
 }
 
 const _manageSet = new Set(['manage'])
+const _adminSet = new Set(['admin'])
 export function authInfoFromConfig({
     config,
     url,
     require = new Set(['view', 'update', 'manage']),
     excludeClusters = new Set(),
     limit,
+    withPrimary,
+    limitPrimary,
     ...props
 }: {
     readonly config: Interfaces.ConfigInterface
@@ -342,12 +377,15 @@ export function authInfoFromConfig({
     readonly require?: Set<string>
     readonly searchToken?: string
     readonly limit?: number
+    readonly limitPrimary?: number
+    withPrimary?: string | boolean
 }): Interfaces.AuthInfoInterface {
     const tokens = new Set<string>()
     const tokenHashes = new Set<string>()
     const certificateHashes = new Set<string>()
     const types = new Set<string>()
     let limitReached = false
+    let limitIncrease = 0
     const limitWarning = limit === undefined ? false : true
     limit = limit !== undefined ? limit : 100
     if (url === undefined || url === null) {
@@ -355,7 +393,32 @@ export function authInfoFromConfig({
     }
     const host = config.hosts[new URL(url, window.location.href).href]
     if (host) {
-        // first are contents
+        // first are primary
+        if (withPrimary) {
+            if (withPrimary === true) {
+                withPrimary = config.slots[0]
+            }
+            const primaryClusterIds = host.primary[withPrimary] || []
+            for (const cluster_id of primaryClusterIds) {
+                const clusterconf = host.clusters[cluster_id]
+                if (clusterconf) {
+                    // first try manage tokens if require set includes manage
+                    let res = _updateFromConfigFromHashes({
+                        config,
+                        hashes: clusterconf.hashes,
+                        id: cluster_id,
+                        require: _adminSet,
+                        limit: limitPrimary,
+                        tokens,
+                        tokenHashes,
+                        certificateHashes: undefined,
+                        types,
+                    })
+                    limitIncrease += res.tokenCount
+                }
+            }
+        }
+        // second are contents
         if (props.contents) {
             for (const content_id of props.contents) {
                 const contentconf = host.contents[content_id]
@@ -367,7 +430,7 @@ export function authInfoFromConfig({
                         id: content_id,
                         require: require.has('manage') ? _manageSet : require,
                         searchToken: props.searchToken,
-                        limit,
+                        limit: limit ? limit + limitIncrease : limit,
                         tokens,
                         tokenHashes,
                         certificateHashes,
@@ -380,7 +443,7 @@ export function authInfoFromConfig({
                             id: content_id,
                             require,
                             searchToken: props.searchToken,
-                            limit,
+                            limit: limit ? limit + limitIncrease : limit,
                             tokens,
                             tokenHashes,
                             certificateHashes,
@@ -410,7 +473,7 @@ export function authInfoFromConfig({
                         id: cluster_id,
                         require: require.has('manage') ? _manageSet : require,
                         searchToken: props.searchToken,
-                        limit,
+                        limit: limit ? limit + limitIncrease : limit,
                         tokens,
                         tokenHashes,
                         certificateHashes,
@@ -423,7 +486,7 @@ export function authInfoFromConfig({
                             id: cluster_id,
                             require,
                             searchToken: props.searchToken,
-                            limit,
+                            limit: limit ? limit + limitIncrease : limit,
                             tokens,
                             tokenHashes,
                             certificateHashes,
@@ -913,7 +976,28 @@ export function updateConfig(
                                 : {
                                       clusters: {},
                                       contents: {},
+                                      primary: {},
                                   }
+                        if (newval.primary) {
+                            const res = mergeDeleteObjects(
+                                newState.primary,
+                                newval.primary,
+                                // replace if not undefined, we have arrays
+                                (old, newobj) => {
+                                    if (!(newobj instanceof Array)) {
+                                        throw new InvalidMergeError(
+                                            'primary value not an array'
+                                        )
+                                    }
+                                    if (old && compareArray(old, newobj)) {
+                                        return undefined
+                                    }
+                                    return [newobj, 1]
+                                }
+                            )
+                            newState.primary = res[0]
+                            count += res[1]
+                        }
                         if (newval.clusters) {
                             const res = mergeDeleteObjects(
                                 newState.clusters,
@@ -940,7 +1024,7 @@ export function updateConfig(
                                                     !(newobj instanceof Array)
                                                 ) {
                                                     throw new InvalidMergeError(
-                                                        'hashes not an array'
+                                                        'hashes value not an array'
                                                     )
                                                 }
                                                 newobj.sort()
@@ -1091,6 +1175,51 @@ export function saveConfig(
         config = JSON.stringify(config)
     }
     storage.setItem('secretgraphConfig', config)
+}
+
+export function updatePrimary({
+    config,
+    host,
+    cluster,
+    isPrimary,
+    slot,
+}: {
+    config: Interfaces.ConfigInterface
+    host: string
+    cluster: string
+    isPrimary: boolean
+    slot?: string
+}): Interfaces.ConfigInputInterface {
+    const update: Interfaces.ConfigInputInterface = {}
+    const hostconf = config.hosts[host]
+    slot = slot || config.slots[0]
+    if (hostconf) {
+        let primaryForSlot = hostconf.primary[slot]
+        if (!primaryForSlot) {
+            primaryForSlot = []
+        }
+        if (isPrimary && !primaryForSlot.includes(cluster)) {
+            primaryForSlot.push(cluster)
+            update.hosts = {
+                [host]: {
+                    primary: {
+                        [slot]: primaryForSlot,
+                    },
+                },
+            }
+        } else if (!isPrimary && primaryForSlot.includes(cluster)) {
+            primaryForSlot = primaryForSlot.filter((val) => val != cluster)
+            update.hosts = {
+                [host]: {
+                    primary: {
+                        [slot]: primaryForSlot,
+                    },
+                },
+            }
+        }
+    }
+
+    return update
 }
 
 async function loadConfigUrl_helper(

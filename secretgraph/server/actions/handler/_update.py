@@ -206,7 +206,9 @@ class UpdateHandlers:
 
         if action_dict.get("allowedActions"):
             result["allowedActions"].extend(
-                action_dict["allowedActions"].filter(lambda x: x != "manage")
+                action_dict["allowedActions"].filter(
+                    lambda x: x not in {"manage", "admin"}
+                )
             )
 
         if action_dict.get("injectedTags"):
@@ -413,6 +415,9 @@ class UpdateHandlers:
 
     @staticmethod
     async def do_manage(action_dict, scope, sender, action, **kwargs):
+        # can handle all scopes except admin
+        if scope == "admin":
+            return None
         # handles Action, Content, Cluster
         type_name = sender.__name__
         excl_filters = Q(id__in=action_dict["exclude"][type_name])
@@ -497,8 +502,72 @@ class UpdateHandlers:
             s = {val for val in objs.values_list("id", flat=True)}
             # now add exclude infos (if not admin)
             # note: manage always resolves, so this is valid
-            for action in res_action["action_results"]:
-                if action["value"]["action"] == "manage":
+            for action in res_action["action_results"].values():
+                if action["value"]["action"] in {"manage", "admin"}:
+                    s.update(action["exclude"].get(type_name, []))
+            result["exclude"][type_name] = list(s)
+        return result
+
+    @staticmethod
+    async def do_admin(action_dict, scope, sender, action, **kwargs):
+        # handles Cluster
+        type_name = sender.__name__
+
+        if (
+            scope != "admin"
+            or type_name != "Cluster"
+            or not await Net.objects.filter(primaryCluster=action.cluster).aexists()
+        ):
+            return None
+        excl_filters = Q(id__in=action_dict["exclude"][type_name])
+        return {
+            "nets": action_dict.get("nets", []),
+            "filters": ~excl_filters,
+            "accesslevel": 3,
+        }
+
+    @staticmethod
+    async def clean_admin(action_dict, request, cluster, content, admin):
+        from ...utils.auth import fetch_by_id, get_cached_result
+
+        if content:
+            raise ValueError("admin cannot be used for content")
+        result = {
+            "action": "admin",
+            "nets": [],
+            "exclude": {"Cluster": []},
+        }
+
+        res_cluster = await get_cached_result(
+            request,
+            scope="manage",
+            cacheName="secretgraphCleanResult",
+            ensureInitialized=True,
+        ).aat("Cluster")
+        for klass in [Content, Action]:
+            type_name = klass.__name__
+            if isinstance(klass, Action):
+                objs = res_cluster["objects_without_public"].filter(
+                    keyHash__in=result["exclude"][type_name]
+                )
+            else:
+                r = await get_cached_result(
+                    request,
+                    scope="manage",
+                    cacheName="secretgraphCleanResult",
+                    ensureInitialized=True,
+                ).aat(type_name)
+                objs = fetch_by_id(
+                    r["objects_without_public"],
+                    result["exclude"][type_name],
+                    limit_ids=None,
+                )
+
+            s = {val for val in objs.values_list("id", flat=True)}
+            # now add exclude infos (if not admin)
+            # note: manage always resolves, so this is valid
+            for action in res_cluster["action_results"].values():
+                if action["value"]["action"] in {"manage", "admin"}:
                     s.update(action["exclude"].get(type_name, []))
             result["exclude"][type_name] = list(s)
         return result

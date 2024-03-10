@@ -81,10 +81,11 @@ async def run(argv, session: AsyncClientSession):
 
     prepared_cluster = {
         "publicTags": [],
-        "state": "public",
+        "primary": True,
         "keys": [key1],
         "actions": [
             {"value": '{"action": "manage"}', "key": manage_token_b64},
+            {"value": '{"action": "admin"}', "key": manage_token_b64},
             {
                 "value": json.dumps(
                     {
@@ -134,12 +135,14 @@ async def run(argv, session: AsyncClientSession):
                 "clusters": {
                     jsob_cluster["id"]: {
                         "hashes": {
-                            manage_key_hash: ["manage"],
+                            manage_key_hash: ["manage", "admin"],
                             view_key_hash: ["view"],
                             publicKey_hash: [],
                         }
                     }
                 },
+                "contents": {},
+                "primary": {argv.slots[0]: jsob_cluster["id"]},
             }
         },
         "trustedKeys": {

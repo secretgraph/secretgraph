@@ -213,9 +213,9 @@ async def retrieve_allowed_objects(
     now = timezone.now()
     # for sorting. First action is always the most important action
     # importance is higher by start date, newest (here id)
-    pre_filtered_actions = Action.objects.select_related("cluster").order_by(
-        "-start", "-id"
-    )
+    pre_filtered_actions = Action.objects.select_related(
+        "cluster", "contentAction"
+    ).order_by("-start", "-id")
     if not ignore_restrictions:
         pre_filtered_actions = pre_filtered_actions.filter(
             cluster__net__active=True, start__lte=now
@@ -307,14 +307,25 @@ async def retrieve_allowed_objects(
                 returnval["objects_with_public"] = query.none()
                 returnval["objects_without_public"] = query.none()
                 return returnval
+            # don't create too many empty objects, so don't use setdefault
             if hasattr(action, "contentAction"):
-                action_info_dict_ref = returnval["action_info_contents"].setdefault(
-                    action.contentAction.content_id, {}
+                action_info_dict_ref = returnval["action_info_contents"].get(
+                    action.contentAction.content_id
                 )
+                if action_info_dict_ref is None:
+                    action_info_dict_ref = {}
+                    returnval["action_info_contents"][
+                        action.contentAction.content_id
+                    ] = action_info_dict_ref
             else:
-                action_info_dict_ref = returnval["action_info_clusters"].setdefault(
-                    action.cluster_id, {}
+                action_info_dict_ref = returnval["action_info_clusters"].get(
+                    action.cluster_id
                 )
+                if action_info_dict_ref is None:
+                    action_info_dict_ref = {}
+                    returnval["action_info_clusters"][action.cluster_id] = (
+                        action_info_dict_ref
+                    )
             returnval["action_results"].setdefault(action.id, action_result)
 
             newaccesslevel = action_result["accesslevel"]
@@ -606,15 +617,16 @@ def get_cached_result(
     return getattr(request, cacheName)
 
 
-@sync_to_async
-def _get_user(request):
-    user = getattr(request, "user", None)
-    if user:
-        getattr(user, "pk")
-    return user
+async def get_user(request):
+    auser = getattr(request, "auser", None)
+    if auser:
+        user = await auser()
+        if getattr(user, "is_authenticated", False):
+            return user
+    return None
 
 
-async def aget_net_properties_q(request, query):
+async def aget_net_properties_q(request, query, use_user_nets):
     assert issubclass(query.model, (Cluster, Net)), (
         "Not a cluster/net query: %s" % query.model
     )
@@ -623,19 +635,22 @@ async def aget_net_properties_q(request, query):
         if issubclass(query.model, Net)
         else models.Q(nets__primaryCluster__in=query)
     )
-    if getattr(settings, "SECRETGRAPH_USE_USER", True):
-        user = await _get_user(request)
+    if use_user_nets:
+        user = await get_user(request)
         if user:
             q |= models.Q(nets__user_name=user.get_username())
     return q
 
 
+# note there is an cookie attack surface with SECRETGRAPH_USE_USER=Ture
 async def aget_cached_net_properties(
     request,
     permissions_name="secretgraphNetProperties",
     result_name="secretgraphResult",
     authset=None,
     ensureInitialized=False,
+    use_user_nets=None,
+    scope="admin",
 ) -> frozenset[str]:
     if getattr(request, permissions_name, None) is None:
         if ensureInitialized:
@@ -650,10 +665,12 @@ async def aget_cached_net_properties(
             await retrieve_allowed_objects(
                 request,
                 Cluster.objects.filter(markForDestruction__isnull=True),
-                scope="manage",
+                scope=scope,
                 authset=authset,
             )
         )["objects_without_public"]
+        if use_user_nets is None:
+            use_user_nets = getattr(settings, "SECRETGRAPH_USE_USER", True)
         net_groups = NetGroup.objects.filter(
             await aget_net_properties_q(request, query)
         )
@@ -709,3 +726,34 @@ def update_cached_net_properties(
 
 
 aupdate_cached_net_properties = sync_to_async(update_cached_net_properties)
+
+
+# should only be used for admin or for very special operations
+# in grapqhl we have no csrf because cookies are blocked
+def ain_cached_net_properties_or_user_special(
+    request,
+    *properties,
+    check_net=None,
+    use_is_superuser=None,
+    use_check_net=None,
+    **kwargs,
+):
+    user = None
+    if use_is_superuser is None:
+        use_is_superuser = getattr(settings, "SECRETGRAPH_USE_USER", True)
+    if use_check_net:
+        use_check_net = getattr(settings, "SECRETGRAPH_USE_USER", True)
+    if use_is_superuser:
+        user = await get_user(request)
+        if user and getattr(user, "is_superuser", False):
+            return True
+    if user and use_check_net and check_net and check_net.get_user() == user:
+        return True
+    return not (await get_cached_net_properties(request, **kwargs)).isdisjoint(
+        properties
+    )
+
+
+in_cached_net_properties_or_user_special = sync_to_async(
+    ain_cached_net_properties_or_user_special
+)

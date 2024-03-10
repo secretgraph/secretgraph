@@ -2,7 +2,8 @@
 
 ## Permissions (cluster or content)
 
--   manage: can change and create clusters, full access like admin
+-   admin: can execute admin actions, populates (a)get_cached_net_properties
+-   manage: can change and create clusters, nearly full access. Can add admin action
 -   create: can add or move contents to cluster TODO: should check permission of cluster it moves from
 -   delete: can delete contents or clusters and contents (depending on scope)
 -   update: update contents or clusters

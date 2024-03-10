@@ -144,11 +144,16 @@ class Command(BaseCommand):
             request,
             ClusterInput(
                 net=net,
+                primary=True,
                 name=options["name"],
                 description=options["description"],
                 actions=[
                     ActionInput(
                         value='{"action": "manage"}',
+                        key=manage_key,
+                    ),
+                    ActionInput(
+                        value='{"action": "admin"}',
                         key=manage_key,
                     ),
                     ActionInput(
@@ -228,6 +233,7 @@ class Command(BaseCommand):
                         }
                     },
                     "contents": {},
+                    "primary": {options["slots"][0]: [cluster.flexid_cached]},
                 }
             },
             "trustedKeys": {

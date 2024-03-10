@@ -253,6 +253,7 @@ export async function initializeCluster({
         client,
         actions: [
             { value: '{"action": "manage"}', key: manage_keyb64 },
+            { value: '{"action": "admin"}', key: manage_keyb64 },
             {
                 value: JSON.stringify({
                     action: 'view',
@@ -291,7 +292,7 @@ export async function initializeCluster({
     config.configCluster = clusterResult.cluster['id']
     config.hosts[config['baseUrl']].clusters[clusterResult.cluster['id']] = {
         hashes: {
-            [digestManageKey]: ['manage'],
+            [digestManageKey]: ['manage', 'admin'],
             [digestViewKey]: ['view'],
             [digestPublicKey]: [],
         },

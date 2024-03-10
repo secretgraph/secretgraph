@@ -19,8 +19,10 @@ from ....core.exceptions import ResourceLimitExceeded
 from ...models import Cluster, ClusterGroup, Net, NetGroup, SGroupProperty
 from ...utils.auth import (
     aget_cached_net_properties,
+    ain_cached_net_properties_or_user_special,
     fetch_by_id,
     get_cached_result,
+    get_user,
     retrieve_allowed_objects,
 )
 from ._actions import manage_actions_fn
@@ -64,11 +66,13 @@ async def _update_or_create_cluster(
     else:
         size_new = size_old
 
-    net = getattr(objdata, "net", None)
+    net = objdata.net
     old_net = None
+    old_net_primary_updated = False
     if not create_cluster:
         old_net = cluster.net
     manage = Cluster.objects.none()
+    # predefine manage query
     if (
         create_cluster
         or objdata.primary
@@ -84,6 +88,7 @@ async def _update_or_create_cluster(
                 authset=authset,
             )
         )["objects_without_public"]
+    # set net explicitly
     if net:
         if isinstance(net, Net):
             cluster.net = net
@@ -96,46 +101,59 @@ async def _update_or_create_cluster(
                     check_short_id=True,
                     check_short_name=True,
                     limit_ids=None,
-                ).aget(primaryFor__isnull=False)
+                ).aget()
             ).net
+            # for transfering cluster with primary mark
+            if old_net and old_net != net and old_net.primaryCluster == cluster:
+                old_net.primaryCluster = None
+                old_net_primary_updated = True
     elif create_cluster:
         user = None
 
         if manage:
-            net = await manage.afirst()
-            if net:
-                net = net.net
+            net_cluster = await manage.afirst()
+            if net_cluster:
+                net = net_cluster.net
+            del net_cluster
+        # fallback if no net was provided
         if not net:
-            if await (
-                await retrieve_allowed_objects(
-                    request,
-                    "Cluster",
-                    scope="manage",
-                    authset=authset,
-                    ignore_restrictions=True,
-                )
-            )["objects_without_public"].aexists():
+            # check if the tokens provided are valid
+            # TODO: provide a simpler method
+            if (
+                authset
+                and await (
+                    await retrieve_allowed_objects(
+                        request,
+                        "Cluster",
+                        scope="manage",
+                        authset=authset,
+                        ignore_restrictions=True,
+                    )
+                )["objects_without_public"].aexists()
+            ):
                 raise ValueError(
-                    "not allowed - net disabled or " "not in actions time range"
+                    "not allowed - net disabled or not in actions time range"
                 )
-            user = getattr(request, "user", None)
-            if user and not user.is_authenticated:
-                user = None
+            # use user
+            user = await get_user(request)
             if user:
-                net = await Net.objects.filter(user_name=user.get_username()).afirst()
+                username = user.get_username()
+                net = await Net.objects.filter(user_name=username).afirst()
                 if net and await net.clusters.aexists():
                     logger.info(
                         "User '%s' has already registered some cluster, "
                         "but doesn't use them for registering new ones. "
                         "He may has trouble.",
-                        user.get_username(),
+                        username,
                     )
             else:
                 if getattr(settings, "SECRETGRAPH_REQUIRE_USER", False):
                     raise ValueError("Must be logged in")
                 elif not getattr(settings, "SECRETGRAPH_ALLOW_REGISTER", False):
                     raise ValueError("Cannot register")
+        # no net could be retrieved from user (not initialized?)
         if not net:
+            # no user was found
             if not user:
                 rate = settings.SECRETGRAPH_RATELIMITS.get("ANONYMOUS_REGISTER")
                 if rate:
@@ -153,6 +171,7 @@ async def _update_or_create_cluster(
                             "too many attempts to register from ip",
                             ratelimit=r,
                         )
+            # now create a new net with username
             net = Net()
             if user:
                 net.user_name = user.get_username()
@@ -161,28 +180,22 @@ async def _update_or_create_cluster(
             net.reset_max_upload_size()
         cluster.net = net
         del user
+    # set old_net to None if the same as net
     if old_net == cluster.net:
         old_net = None
     # cleanup after scope
     del net
     create_net = not cluster.net.id
-    if objdata.primary or not cluster.net.primaryCluster_id:
-        if cluster.net.primaryCluster_id and (
-            "manage_update"
-            not in await aget_cached_net_properties(request, ensureInitialized=True)
+    # check primary flag permissions
+    if objdata.primary and not create_net and cluster.net.primaryCluster_id:
+        # has superuser permission, has manage_update permission or is logged in as user
+        if await ain_cached_net_properties_or_user_special(
+            request, "manage_update", check_net=cluster.net
         ):
             try:
                 await manage.aget(id=cluster.net.primaryCluster_id)
             except ObjectDoesNotExist:
                 raise ValueError("No permission to move primary mark")
-        if old_net and old_net.primaryCluster == cluster:
-            if objdata.primary:
-                raise ValueError(
-                    "Cannot transfer a cluster with primary mark between nets"
-                )
-            objdata.primary = False
-        else:
-            objdata.primary = True
     await sync_to_async(cluster.full_clean)(["net"])
     assert size_new > 0, "Every cluster should have a size > 0"
     if old_net is None:
@@ -242,17 +255,17 @@ async def _update_or_create_cluster(
     )[0]
 
     def cluster_save_fn():
-        update_fields = None
+        update_net_fields = None
         primary_updated = False
         if not create_net:
-            update_fields = ["bytes_in_use", "last_used"]
-        if update_fields and not create_cluster and objdata.primary:
-            cluster.net.primaryCluster = cluster
-            update_fields.append("primaryCluster")
+            update_net_fields = ["bytes_in_use", "last_used"]
+        if update_net_fields and not create_cluster and objdata.primary is not None:
+            cluster.net.primaryCluster = cluster if objdata.primary else None
+            update_net_fields.append("primaryCluster")
             primary_updated = True
 
         # first net in case of net is not persisted yet
-        cluster.net.save(update_fields=update_fields)
+        cluster.net.save(update_fields=update_net_fields)
         # first net must be created
         if create_net:
             cluster.net.groups.set(dProperty.netGroups.all())
@@ -275,18 +288,24 @@ async def _update_or_create_cluster(
         )
 
         # save only once
-        if objdata.primary and not primary_updated:
-            cluster.net.primaryCluster = cluster
+        if objdata.primary is not None and not primary_updated:
+            cluster.net.primaryCluster = cluster if objdata.primary else None
             cluster.net.save(update_fields=["primaryCluster"])
         # only save a persisted old_net
         if old_net and old_net.id:
+            fields = ["bytes_in_use"]
+            if old_net_primary_updated:
+                fields.append("primaryCluster")
             # don't update last_used
-            old_net.save(update_fields=["bytes_in_use"])
+            old_net.save(update_fields=fields)
 
     # path: actions are specified
     if getattr(objdata, "actions", None) is not None:
         action_save_fn = await manage_actions_fn(
-            request, cluster, objdata.actions, authset=authset
+            request,
+            cluster,
+            objdata.actions,
+            authset=authset,
         )
 
         m_actions = filter(lambda x: x.action_type == "manage", action_save_fn.actions)

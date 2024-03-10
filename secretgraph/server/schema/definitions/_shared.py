@@ -52,7 +52,7 @@ class SBaseTypesMixin:
         name = self.__class__.__name__.replace("Node", "", 1)
         results = get_cached_result(info.context["request"], ensureInitialized=True)
         # only show some actions if not set
-        has_manage = False
+        has_manage_or_admin = False
         if isinstance(self, Content):
             # if content: check cluster and content keys
             mappers = [
@@ -66,8 +66,8 @@ class SBaseTypesMixin:
         # prevent copy
         for mapper in mappers:
             for key_val in mapper.items():
-                if key_val[0][0] == "manage":
-                    has_manage = True
+                if key_val[0][0] in {"manage", "admin"}:
+                    has_manage_or_admin = True
                 # auth is protected so it...
                 if key_val[0][0] not in constants.protectedActions:
                     seen_ids.update(key_val[1])
@@ -88,7 +88,7 @@ class SBaseTypesMixin:
                         type=key_val[0][0],
                         allowedTags=allowedTags,
                     )
-        if has_manage:
+        if has_manage_or_admin:
             await results.preinit("Action")
             # use results["Action"] for ensuring exclusion of hidden actions
             # this is ensured by having manage in action set

@@ -2,7 +2,7 @@ from typing import Any, Literal, Protocol, TypedDict, Union, runtime_checkable
 
 from cryptography.hazmat.primitives import serialization
 
-Scope = Literal["manage", "create", "delete", "update", "push", "view"]
+Scope = Literal["admin", "manage", "create", "delete", "update", "push", "view"]
 ContentState = Literal[
     "required", "trusted", "public", "protected", "draft", "sensitive"
 ]
@@ -67,6 +67,8 @@ class ConfigClusterInterface(TypedDict):
 class HostInterface(TypedDict):
     clusters: dict[str, ConfigClusterInterface]
     contents: dict[str, ConfigContentInterface]
+    # slot primaries
+    primary: dict[str, list[str]]
 
 
 class ConfigInterface(TypedDict):

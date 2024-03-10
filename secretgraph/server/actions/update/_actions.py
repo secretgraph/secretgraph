@@ -27,7 +27,12 @@ _valid_lengths = {32, 50}
 
 
 async def manage_actions_fn(
-    request, obj, actionlist: List[ActionInput], authset=None, admin=False
+    request,
+    obj,
+    actionlist: List[ActionInput],
+    authset=None,
+    admin=False,
+    is_primary=False,
 ):
     add_actions = []
     delete_actions = set()

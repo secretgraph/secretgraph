@@ -102,6 +102,6 @@ def get_forbidden_content_ids(request):
     # it also has the advantage of honoring admin
 
     for action in result["action_results"].values():
-        if action["value"]["action"] == "manage":
-            s.update(action["value"]["exclude"].get("Content", []))
+        if action["value"]["action"] in {"manage", "admin"}:
+            s.update(action["exclude"].get("Content", []))
     return frozenset(s)

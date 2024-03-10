@@ -1,5 +1,8 @@
 # TODO
 
+-   protect graphql with csrf at least initializeCluster
+-   permissions: use primaryCluster too for admin actions, add special action type primary for manage token
+    -   introduce: admin/primary action type, so even manage can create primary there is still a seperation
 -   python tools have to be adapted
 -   python tests have to be adapted
 -   expand hashing to to general derive tool, argon2id

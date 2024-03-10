@@ -58,6 +58,8 @@ export interface ConfigClusterInterface<N = never, T = string> {
 interface BaseHostInterface<ClusterType, ContentType> {
     clusters: { [flexid: string]: ClusterType }
     contents: { [flexid: string]: ContentType }
+    // primary Token cluster ids
+    primary: { [slot: string]: string[] }
 }
 
 interface BaseConfigInterface<N = never> {
