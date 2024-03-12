@@ -226,16 +226,12 @@ class Net(models.Model):
     @property
     def properties(self) -> list[str]:
         if not self.id:
-            return SGroupProperty.objects.defaultNetProperties().values_list(
-                "name", flat=True
-            )
-        return SGroupProperty.objects.filter(netGroups__nets=self).values_list(
-            "name", flat=True
-        )
+            return SGroupProperty.objects.defaultNetProperties()  #
+        return SGroupProperty.objects.filter(netGroups__nets=self)
 
     @sync_to_async
     def aproperties(self):
-        return self.properties
+        return list(self.properties.values_list("name", flat=True))
 
     @cached_property
     def user(self) -> Optional[usermodel]:
@@ -342,16 +338,12 @@ class Cluster(FlexidModel):
     @property
     def properties(self) -> list[str]:
         if not self.id:
-            return SGroupProperty.objects.defaultClusterProperties().values_list(
-                "name", flat=True
-            )
-        return SGroupProperty.objects.filter(clusterGroups__clusters=self).values_list(
-            "name", flat=True
-        )
+            return SGroupProperty.objects.defaultClusterProperties()
+        return SGroupProperty.objects.filter(clusterGroups__clusters=self)
 
     @sync_to_async
     def aproperties(self):
-        return self.properties
+        return list(self.properties.values_list("name", flat=True))
 
     @property
     def nonhidden_properties(self) -> list[str]:
@@ -365,7 +357,7 @@ class Cluster(FlexidModel):
 
     @sync_to_async
     def anonhidden_properties(self):
-        return self.nonhidden_properties
+        return list(self.nonhidden_properties)
 
     def clean(self):
         super().clean()
@@ -598,7 +590,7 @@ class Content(FlexidModel):
 
     @sync_to_async
     def aproperties(self):
-        return self.properties
+        return list(self.properties.values_list("name", flat=True))
 
     @property
     def nonhidden_properties(self) -> list[str]:
@@ -606,7 +598,7 @@ class Content(FlexidModel):
 
     @sync_to_async
     def anonhidden_properties(self):
-        return self.nonhidden_properties
+        return list(self.nonhidden_properties)
 
     @property
     def needs_signature(self) -> bool:

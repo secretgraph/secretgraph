@@ -11,8 +11,8 @@ from strawberry.types import Info
 from ...models import Cluster, Content
 from ...utils.auth import (
     fetch_by_id_noconvert,
-    get_cached_net_properties,
     ids_to_results,
+    in_cached_net_properties_or_user_special,
 )
 from ..arguments import AuthList
 
@@ -32,8 +32,8 @@ def mutate_delete_content_or_cluster(
 ) -> DeleteContentOrClusterMutation:
     now = timezone.now()
 
-    manage_deletion = "manage_deletion" in get_cached_net_properties(
-        info.context["request"], authset=authorization
+    manage_deletion = in_cached_net_properties_or_user_special(
+        info.context["request"], "manage_deletion", authset=authorization
     )
     if manage_deletion:
         contents = fetch_by_id_noconvert(Content.objects.all(), ids)
@@ -52,23 +52,19 @@ def mutate_delete_content_or_cluster(
         contents = results["Content"]["objects_without_public"]
         clusters = results["Cluster"]["objects_without_public"]
     if when:
-        when_safe = (
-            when if manage_deletion else max(now + timedelta(minutes=20), when)
-        )
+        when_safe = when if manage_deletion else max(now + timedelta(minutes=20), when)
         contents.update(markForDestruction=when_safe)
-        Content.objects.filter(
-            cluster_id__in=Subquery(clusters.values("id"))
-        ).update(markForDestruction=when_safe)
+        Content.objects.filter(cluster_id__in=Subquery(clusters.values("id"))).update(
+            markForDestruction=when_safe
+        )
         clusters.update(markForDestruction=when)
     else:
         now_plus_x = now + timedelta(minutes=20)
         contents.filter(
-            Q(markForDestruction__isnull=True)
-            | Q(markForDestruction__gt=now_plus_x)
+            Q(markForDestruction__isnull=True) | Q(markForDestruction__gt=now_plus_x)
         ).update(markForDestruction=now_plus_x)
         Content.objects.filter(
-            Q(markForDestruction__isnull=True)
-            | Q(markForDestruction__gt=now_plus_x),
+            Q(markForDestruction__isnull=True) | Q(markForDestruction__gt=now_plus_x),
             cluster_id__in=Subquery(clusters.values("id")),
         ).update(markForDestruction=now_plus_x)
         clusters.filter(
@@ -95,9 +91,10 @@ def mutate_reset_deletion_content_or_cluster(
     ids: List[strawberry.ID],  # ID or cluster global name
     authorization: Optional[AuthList] = None,
 ) -> ResetDeletionContentOrClusterMutation:
-    if "manage_deletion" in get_cached_net_properties(
-        info.context["request"], authset=authorization
-    ):
+    manage_deletion = in_cached_net_properties_or_user_special(
+        info.context["request"], "manage_deletion", authset=authorization
+    )
+    if manage_deletion:
         contents = fetch_by_id_noconvert(Content.objects.all(), ids)
         clusters = fetch_by_id_noconvert(Cluster.objects.all(), ids)
     else:
@@ -130,11 +127,11 @@ def mutate_reset_deletion_content_or_cluster(
     contents.update(markForDestruction=None)
     return ResetDeletionContentOrClusterMutation(
         restored=[
-            *contents.filter(
-                id__in=Subquery(contents.values("id"))
-            ).values_list("flexid_cached", flat=True),
-            *clusters.filter(
-                id__in=Subquery(clusters.values("id"))
-            ).values_list("flexid_cached", flat=True),
+            *contents.filter(id__in=Subquery(contents.values("id"))).values_list(
+                "flexid_cached", flat=True
+            ),
+            *clusters.filter(id__in=Subquery(clusters.values("id"))).values_list(
+                "flexid_cached", flat=True
+            ),
         ],
     )

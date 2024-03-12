@@ -13,8 +13,8 @@ from ...models import Action, Content, ContentReference
 from ...utils.auth import (
     ain_cached_net_properties_or_user_special,
     fetch_by_id_noconvert,
-    get_cached_net_properties,
     get_cached_result,
+    in_cached_net_properties_or_user_special,
 )
 from ..filters import ContentFilter, ContentReferenceFilter
 from ..shared import UseCriteria, UseCriteriaPublic
@@ -261,9 +261,8 @@ class ContentNode(SBaseTypesMixin, strawberry.relay.Node):
 
         if (
             filters.hidden != UseCriteria.FALSE
-            and "allow_hidden"
-            in get_cached_net_properties(
-                info.context["request"],
+            and in_cached_net_properties_or_user_special(
+                info.context["request"], "allow_hidden"
             )
         ):
             hidden = filters.hidden
@@ -303,8 +302,9 @@ class ContentNode(SBaseTypesMixin, strawberry.relay.Node):
         if (
             filters.deleted != UseCriteria.FALSE
             and not allowDeleted
-            and "manage_deletion"
-            not in get_cached_net_properties(info.context["request"])
+            and not in_cached_net_properties_or_user_special(
+                info.context["request"], "manage_deletion"
+            )
         ):
             del_result = get_cached_result(
                 info.context["request"],
@@ -321,8 +321,8 @@ class ContentNode(SBaseTypesMixin, strawberry.relay.Node):
             )
 
         #  required for enforcing permissions
-        if get_cached_net_properties(info.context["request"]).isdisjoint(
-            {"manage_update", "allow_view"}
+        if not in_cached_net_properties_or_user_special(
+            info.context["request"], "manage_update", "allow_view"
         ):
             queryset = queryset.filter(
                 id__in=Subquery(
@@ -338,9 +338,8 @@ class ContentNode(SBaseTypesMixin, strawberry.relay.Node):
             queryset,
             states=filters.states,
             clustersAreRestrictedOrAdmin=fixedCluster
-            or "allow_view"
-            in get_cached_net_properties(
-                info.context["request"],
+            or in_cached_net_properties_or_user_special(
+                info.context["request"], "allow_view"
             )
             or filters.clusters is not None,
             includeTypes=filters.includeTypes,

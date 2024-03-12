@@ -11,7 +11,7 @@ from strawberry.types import Info
 from ....core import constants
 from ...models import Cluster, Content
 from ...utils.auth import (
-    get_cached_net_properties,
+    ain_cached_net_properties_or_user_special,
     get_cached_result,
     retrieve_allowed_objects,
 )
@@ -188,10 +188,12 @@ class SBaseTypesMixin:
         return self.markForDestruction
 
     @strawberry_django.field()
-    def properties(self: Union[Content, Cluster], info: Info) -> list[str]:
+    async def properties(self: Union[Content, Cluster], info: Info) -> list[str]:
         if self.limited or self.reduced:
             return []
-        if "allow_hidden" in get_cached_net_properties(info.context["request"]):
-            return list(self.properties)
+        if await ain_cached_net_properties_or_user_special(
+            info.context["request"], "allow_hidden"
+        ):
+            return await self.aproperties()
         else:
-            return list(self.nonhidden_properties)
+            return await self.anonhidden_properties()

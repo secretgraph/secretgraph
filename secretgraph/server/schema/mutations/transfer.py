@@ -23,7 +23,7 @@ from ...models import Cluster, Content, ContentTag
 from ...typings import AllowedObjectsResult
 from ...utils.arguments import pre_clean_content_spec
 from ...utils.auth import (
-    aget_cached_net_properties,
+    ain_cached_net_properties_or_user_special,
     fetch_by_id,
     get_cached_result,
     ids_to_results,
@@ -110,7 +110,9 @@ async def mutate_transfer(
     ).aat("Content")
     # allow admin pulls
     if id:
-        if "manage_update" in await aget_cached_net_properties(info.context["request"]):
+        if await ain_cached_net_properties_or_user_special(
+            info.context["request"], "manage_update"
+        ):
             transfer_target: Content = await id.resolve_node(
                 info, required=True, ensure_type=Content
             )
@@ -187,7 +189,9 @@ async def mutate_pull(
     )["Content"]
     if id.type_name == "Content":
         # allow admin pulls
-        if "manage_update" in await aget_cached_net_properties(info.context["request"]):
+        if await ain_cached_net_properties_or_user_special(
+            info.context["request"], "manage_update"
+        ):
             target: Content = await id.resolve_node(
                 info, required=True, ensure_type=Content
             )
@@ -206,7 +210,9 @@ async def mutate_pull(
             cluster = await Cluster.objects.aget(id=target.cluster_id)
     else:
         # allow admin pulls
-        if "manage_update" in await aget_cached_net_properties(info.context["request"]):
+        if await ain_cached_net_properties_or_user_special(
+            info.context["request"], "manage_update"
+        ):
             target: Cluster = await id.resolve_node(
                 info, required=True, ensure_type=Cluster
             )
@@ -227,8 +233,9 @@ async def mutate_pull(
     signature_and_key_retrieval_rate = settings.SECRETGRAPH_RATELIMITS.get("PULL")
     if (
         signature_and_key_retrieval_rate
-        and "bypass_pull_ratelimit"
-        not in await aget_cached_net_properties(info.context["request"])
+        and await ain_cached_net_properties_or_user_special(
+            info.context["request"], "bypass_pull_ratelimit"
+        )
         and not await cluster.groups.filter(
             properties__name="bypass_pull_ratelimit"
         ).aexists()

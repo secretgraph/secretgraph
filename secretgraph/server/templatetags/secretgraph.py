@@ -18,8 +18,8 @@ from ..actions.fetch import fetch_contents as _fetch_contents
 from ..models import Cluster, Content, ContentTag
 from ..utils.auth import (
     fetch_by_id,
-    get_cached_net_properties,
     get_cached_result,
+    in_cached_net_properties_or_user_special,
 )
 from ..utils.encryption import iter_decrypt_contents_sync
 
@@ -260,7 +260,7 @@ def fetch_contents(
         ids=_split_comma(includeIds),
         limit_ids=None,
         clustersAreRestrictedOrAdmin=bool(clusters)
-        or "allow_hidden" in get_cached_net_properties(context["request"]),
+        or in_cached_net_properties_or_user_special(context["request"], "allow_hidden"),
         states=states,
         includeTypes=_split_comma(includeTypes),
         excludeTypes=_split_comma(excludeTypes),

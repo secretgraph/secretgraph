@@ -27,10 +27,10 @@ from ...models import (
 from ...signals import generateFlexidAndDownloadId
 from ...utils.arguments import check_actions, pre_clean_update_content_args
 from ...utils.auth import (
-    aget_cached_net_properties,
+    ain_cached_net_properties_or_user_special,
     fetch_by_id_noconvert,
-    get_cached_net_properties,
     ids_to_results,
+    in_cached_net_properties_or_user_special,
 )
 from ..arguments import ActionInput, AuthList, ReferenceInput
 from ..shared import MetadataOperations
@@ -48,8 +48,8 @@ def mutate_regenerate_flexid(
     ids: list[strawberry.ID],  # ID or cluster global name
     authorization: Optional[AuthList] = None,
 ) -> RegenerateFlexidMutation:
-    if "manage_update" in get_cached_net_properties(
-        info.context["request"], authset=authorization
+    if in_cached_net_properties_or_user_special(
+        info.context["request"], "manage_update", authset=authorization
     ):
         results = {
             "Content": {
@@ -97,15 +97,18 @@ async def mutate_update_mark(
     authorization: Optional[AuthList] = None,
 ) -> MarkMutation:
     if active is not None:
-        if get_cached_net_properties(
-            info.context["request"], authset=authorization
-        ).isdisjoint({"manage_active", "manage_user"}):
+        if in_cached_net_properties_or_user_special(
+            info.context["request"],
+            "manage_active",
+            "manage_user",
+            authset=authorization,
+        ):
             active = None
     contents = Content.objects.none()
     clusters = Cluster.objects.none()
     if hidden is not None:
-        if "allow_hidden" in get_cached_net_properties(
-            info.context["request"], authset=authorization
+        if in_cached_net_properties_or_user_special(
+            info.context["request"], "allow_hidden", authset=authorization
         ):
             contents = Content.objects.all()
         else:
@@ -120,8 +123,8 @@ async def mutate_update_mark(
             Cluster.objects.all(), ids, check_short_name=True
         )
         if featured is not None:
-            if "allow_featured" in get_cached_net_properties(
-                info.context["request"], authset=authorization
+            if in_cached_net_properties_or_user_special(
+                info.context["request"], "allow_featured", authset=authorization
             ):
                 clusters = clusters_all
             else:
@@ -167,8 +170,8 @@ async def mutate_update_metadata(
     operation: Optional[MetadataOperations] = MetadataOperations.APPEND,
     authorization: Optional[AuthList] = None,
 ) -> MetadataUpdateMutation:
-    manage_update = "manage_update" in await aget_cached_net_properties(
-        info.context["request"], authset=authorization
+    manage_update = await ain_cached_net_properties_or_user_special(
+        info.context["request"], "manage_update", authset=authorization
     )
     if manage_update:
         contents = fetch_by_id_noconvert(

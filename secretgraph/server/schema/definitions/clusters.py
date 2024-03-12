@@ -12,8 +12,8 @@ from ...models import Cluster
 from ...utils.auth import (
     ain_cached_net_properties_or_user_special,
     fetch_by_id_noconvert,
-    get_cached_net_properties,
     get_cached_result,
+    in_cached_net_properties_or_user_special,
 )
 from ..filters import ClusterFilter, ContentFilterCluster
 from ..shared import UseCriteria, UseCriteriaPublic
@@ -90,18 +90,24 @@ class ClusterNode(SBaseTypesMixin, relay.Node):
         return self.description
 
     @strawberry_django.field()
-    def groups(self, info: Info) -> list[str]:
+    async def groups(self, info: Info) -> list[str]:
         if self.limited or self.reduced:
             return []
         # permissions allows to see the hidden cluster groups
         # allow_hidden: have mod rights,
         #   so the groups are handy for communication
         # manage_cluster_groups: required for correctly updating groups
-        props = get_cached_net_properties(info.context["request"])
-        if "allow_hidden" in props or "manage_cluster_groups" in props:
-            return list(self.groups.values_list("name", flat=True))
+        if await ain_cached_net_properties_or_user_special(
+            info.context["request"], "allow_hidden", "manage_cluster_groups"
+        ):
+            return [name async for name in self.groups.values_list("name", flat=True)]
         else:
-            return list(self.groups.filter(hidden=False).values_list("name", flat=True))
+            return [
+                name
+                async for name in self.groups.filter(hidden=False).values_list(
+                    "name", flat=True
+                )
+            ]
 
     @strawberry_django.connection(strawberry.relay.ListConnection[ContentNode])
     def contents(
@@ -195,8 +201,9 @@ class ClusterNode(SBaseTypesMixin, relay.Node):
         deleted = False if not filters else filters.deleted
         if (
             deleted != UseCriteria.FALSE
-            and "manage_deletion"
-            not in get_cached_net_properties(info.context["request"])
+            and not in_cached_net_properties_or_user_special(
+                info.context["request"], "manage_deletion"
+            )
         ):
             del_result = get_cached_result(
                 info.context["request"],
@@ -251,8 +258,8 @@ class ClusterNode(SBaseTypesMixin, relay.Node):
                 markForDestruction__isnull=deleted == UseCriteria.FALSE
             )
         #  required for enforcing permissions
-        if get_cached_net_properties(info.context["request"]).isdisjoint(
-            {"manage_update", "allow_view"}
+        if in_cached_net_properties_or_user_special(
+            info.context["request"], "manage_update", "allow_view"
         ):
             queryset = queryset.filter(
                 id__in=Subquery(

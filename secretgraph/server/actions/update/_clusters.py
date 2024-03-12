@@ -18,7 +18,6 @@ from ....core import constants
 from ....core.exceptions import ResourceLimitExceeded
 from ...models import Cluster, ClusterGroup, Net, NetGroup, SGroupProperty
 from ...utils.auth import (
-    aget_cached_net_properties,
     aget_user,
     ain_cached_net_properties_or_user_special,
     fetch_by_id,
@@ -234,8 +233,9 @@ async def _update_or_create_cluster(
             ClusterGroup,
             groups=objdata.clusterGroups,
             operation=constants.MetadataOperations.REPLACE,
-            admin="manage_cluster_groups"
-            in await aget_cached_net_properties(request, ensureInitialized=True),
+            admin=await ain_cached_net_properties_or_user_special(
+                request, "manage_cluster_groups", ensureInitialized=True
+            ),
             initial=create_cluster,
         )
         assert isinstance(clusterGroups_qtuple, tuple)
@@ -245,8 +245,9 @@ async def _update_or_create_cluster(
             NetGroup,
             groups=objdata.netGroups,
             operation=constants.MetadataOperations.REPLACE,
-            admin="manage_net_groups"
-            in await aget_cached_net_properties(request, ensureInitialized=True),
+            admin=await ain_cached_net_properties_or_user_special(
+                request, "manage_net_groups", ensureInitialized=True
+            ),
             initial=create_net,
         )
         assert isinstance(clusterGroups_qtuple, tuple)

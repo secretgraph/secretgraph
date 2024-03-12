@@ -360,7 +360,7 @@ class ClusterAdmin(BeautifyNetMixin, FlexidMixin, admin.ModelAdmin):
                 request, user_validate_origin=False
             )
             if "allow_featured" not in net_properties and not (
-                "allow_featured" in set(obj.properties)
+                "allow_featured" in set(obj.properties.values_list("name", flat=True))
                 if obj
                 else SGroupProperty.objects.defaultClusterProperties()
                 .filter("allow_featured")

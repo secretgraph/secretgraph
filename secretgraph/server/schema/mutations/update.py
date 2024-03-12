@@ -18,7 +18,7 @@ from ...actions.update import (
 from ...models import Cluster, Content, SGroupProperty
 from ...utils.arguments import pre_clean_content_spec
 from ...utils.auth import (
-    aget_cached_net_properties,
+    ain_cached_net_properties_or_user_special,
     aupdate_cached_net_properties,
     fetch_by_id,
     get_cached_result,
@@ -43,11 +43,11 @@ async def mutate_cluster(
     updateId: Optional[strawberry.ID] = None,
     authorization: Optional[AuthList] = None,
 ) -> ClusterMutation:
-    net_props = await aget_cached_net_properties(
-        info.context["request"], authset=authorization
-    )
     if cluster.featured is not None:
-        if "allow_featured" not in net_props:
+        if not await ain_cached_net_properties_or_user_special(
+            info.context["request"],
+            "allow_featured",
+        ):
             cluster.featured = None
 
     if id:
@@ -66,7 +66,10 @@ async def mutate_cluster(
         cluster_obj = await result["objects_without_public"].aget()
         if cluster.name is not None and cluster.name.startswith("@"):
             if (
-                "allow_global_name" not in net_props
+                not await ain_cached_net_properties_or_user_special(
+                    info.context["request"],
+                    "allow_global_name",
+                )
                 and not await cluster_obj.groups.filter(
                     properties__name="allow_global_name"
                 ).aexists()
@@ -89,13 +92,13 @@ async def mutate_cluster(
             await aupdate_cached_net_properties(
                 info.context["request"], groups=dProperty.netGroups.all()
             )
-            net_props = await aget_cached_net_properties(
-                info.context["request"], ensureInitialized=True
-            )
 
             if cluster.name is not None and cluster.name.startswith("@"):
                 if (
-                    "allow_global_name" not in net_props
+                    not await ain_cached_net_properties_or_user_special(
+                        info.context["request"],
+                        "allow_global_name",
+                    )
                     and not await SGroupProperty.objects.defaultClusterProperties()
                     .filter(name="allow_global_name")
                     .aexists()
@@ -139,7 +142,9 @@ async def mutate_content(
             )
         )["Content"]
         # allow admin updates
-        if "manage_update" in await aget_cached_net_properties(info.context["request"]):
+        if await ain_cached_net_properties_or_user_special(
+            info.context["request"], "manage_update", authset=authorization
+        ):
             content_obj = await Content.objects.filter(locked__isnull=True).aget()
 
         else:
@@ -148,9 +153,8 @@ async def mutate_content(
             )
         if content.hidden is not None:
             if (
-                "allow_hidden"
-                not in await aget_cached_net_properties(
-                    info.context["request"], authset=authorization
+                not await ain_cached_net_properties_or_user_special(
+                    info.context["request"], "allow_hidden", authset=authorization
                 )
                 and "allow_hidden" not in await content_obj.aproperties()
             ):
@@ -207,9 +211,8 @@ async def mutate_content(
 
         if content.hidden is not None:
             if (
-                "allow_hidden"
-                not in await aget_cached_net_properties(
-                    info.context["request"], authset=authorization
+                not await ain_cached_net_properties_or_user_special(
+                    info.context["request"], "allow_hidden", authset=authorization
                 )
                 and "allow_hidden" not in await cluster_obj.aproperties()
             ):

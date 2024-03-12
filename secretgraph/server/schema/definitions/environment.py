@@ -9,7 +9,10 @@ from strawberry import relay
 from strawberry.types import Info
 
 from ...models import ClusterGroup, Content, NetGroup
-from ...utils.auth import get_cached_net_properties
+from ...utils.auth import (
+    ain_cached_net_properties_or_user_special,
+    in_cached_net_properties_or_user_special,
+)
 from ..shared import UserSelectable
 
 
@@ -55,13 +58,20 @@ class NetGroupNode(relay.Node):
     hidden: bool
 
     @strawberry_django.field()
-    def properties(self, info: Info) -> list[str]:
-        props = get_cached_net_properties(info.context["request"])
-        if "allow_hidden_net_props" in props or "manage_net_groups" in props:
-            return list(self.properties.values_list("name", flat=True))
-        return list(
-            self.properties.filter(name="default").values_list("name", flat=True)
-        )
+    async def properties(self, info: Info) -> list[str]:
+        if await ain_cached_net_properties_or_user_special(
+            info.context["request"], "allow_hidden_net_props", "manage_net_groups"
+        ):
+            return [
+                name async for name in self.properties.values_list("name", flat=True)
+            ]
+        # only visible if net group is default
+        return [
+            name
+            async for name in self.properties.filters(name="default").values_list(
+                "name", flat=True
+            )
+        ]
 
 
 @strawberry.type()
@@ -88,8 +98,9 @@ class SecretgraphConfig(relay.Node):
         # allow_hidden: have mod rights,
         #   so the groups are handy for communication
         # manage_cluster_groups: required for correctly updating groups
-        props = get_cached_net_properties(info.context["request"])
-        if "allow_hidden" in props or "manage_cluster_groups" in props:
+        if in_cached_net_properties_or_user_special(
+            info.context["request"], "allow_hidden", "manage_cluster_groups"
+        ):
             return ClusterGroup.objects.all()
         else:
             return ClusterGroup.objects.filter(hidden=False)
@@ -102,11 +113,8 @@ class SecretgraphConfig(relay.Node):
         # allow_hidden: have mod rights,
         #   so the groups are handy for communication
         # manage_net_groups: required for correctly updating groups
-        props = get_cached_net_properties(info.context["request"])
-        if (
-            "allow_hidden" in props
-            or "manage_net_groups" in props
-            or "manage_user" in props
+        if in_cached_net_properties_or_user_special(
+            info.context["request"], "allow_hidden", "manage_net_groups", "manage_user"
         ):
             return NetGroup.objects.all()
         else:
