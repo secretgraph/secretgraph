@@ -22,9 +22,11 @@ def global_id_strategy(draw: st.DrawFn):
     is_real = draw(st.booleans())
     if is_real:
         if prefix == "Content":
-            uuid = draw(st.sampled_from(["3155509f-5006-4d2a-839e-0a290f19bc25", "Content"]))
+            # BROKEN: we need a better fixture
+            uuid = draw(st.sampled_from(["3155509f-5006-4d2a-839e-0a290f19bc25"]))
         else:
-            uuid = 
+            # BROKEN: we need a better fixture
+            uuid = draw(st.sampled_from(["3155509f-5006-4d2a-839e-0a290f19bc25"]))
     else:
         uuid = draw(st.uuids())
     return nodes.String(to_base64(prefix, str(uuid)))
@@ -36,11 +38,15 @@ def local_global_id_strategy(draw: st.DrawFn):
     is_real = draw(st.booleans())
     if is_real:
         if prefix == "Content":
+            # BROKEN: we need a better fixture
+            uuid = draw(st.sampled_from(["3155509f-5006-4d2a-839e-0a290f19bc25"]))
         else:
-            uuid = 
+            # BROKEN: we need a better fixture
+            uuid = draw(st.sampled_from(["3155509f-5006-4d2a-839e-0a290f19bc25"]))
     else:
         uuid = draw(st.uuids())
     is_local = draw(st.booleans())
+    if is_local:
         return nodes.String(str(uuid))
     return nodes.String(to_base64(prefix, str(uuid)))
 
@@ -48,7 +54,7 @@ def local_global_id_strategy(draw: st.DrawFn):
 schemathesis.graphql.scalar("GlobalID", global_id_strategy())
 schemathesis.graphql.scalar("ID", local_global_id_strategy())
 schemathesis.graphql.scalar("Int", st.integers(0, 500).map(nodes.Int))
-schema = schemathesis.graphql.from_asgi(application)
+schema = schemathesis.graphql.from_asgi("/graphql/", application)
 
 
 def recursive_exclude(node):

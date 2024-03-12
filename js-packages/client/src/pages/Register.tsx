@@ -172,6 +172,7 @@ function Register() {
                         newConfig.hosts[newConfig.baseUrl] = {
                             clusters: {},
                             contents: {},
+                            primary: {},
                         }
                         const result = await initializeCluster({
                             client,

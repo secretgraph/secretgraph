@@ -453,6 +453,9 @@ class UpdateHandlers:
             "nets": [],
             "exclude": {"Cluster": [], "Content": [], "Action": []},
         }
+        # FIXME: exclude Cluster and add documentation
+        # FIXME: exclusion broken
+        # add additional nets which can be used
         nets = action_dict.get("nets")
         if nets:
             clusters = await only_owned_helper(
@@ -471,15 +474,19 @@ class UpdateHandlers:
             ]
             del clusters
         del nets
+        # extract exclusion
         for idtuple in action_dict.get("exclude") or []:
             type_name, id = relay.from_base64(idtuple)
-            result["exclude"][type_name].append(id)
+            if type_name in {"Cluster", "Content", "Action"}:
+                # FIXME: only flexid is added not id
+                result["exclude"][type_name].append(id)
         res_action = await get_cached_result(
             request,
             scope="manage",
             cacheName="secretgraphCleanResult",
             ensureInitialized=True,
         ).aat("Action")
+        # ???????????????????
         for klass in [Content, Action]:
             type_name = klass.__name__
             if isinstance(klass, Action):
@@ -504,7 +511,7 @@ class UpdateHandlers:
             # note: manage always resolves, so this is valid
             for action in res_action["action_results"].values():
                 if action["value"]["action"] in {"manage", "admin"}:
-                    s.update(action["exclude"].get(type_name, []))
+                    s.update(action["value"]["exclude"].get(type_name, []))
             result["exclude"][type_name] = list(s)
         return result
 
@@ -519,7 +526,7 @@ class UpdateHandlers:
             or not await Net.objects.filter(primaryCluster=action.cluster).aexists()
         ):
             return None
-        excl_filters = Q(id__in=action_dict["exclude"][type_name])
+        excl_filters = Q(id__in=action_dict["exclude"])
         return {
             "nets": action_dict.get("nets", []),
             "filters": ~excl_filters,
@@ -535,39 +542,34 @@ class UpdateHandlers:
         result = {
             "action": "admin",
             "nets": [],
-            "exclude": {"Cluster": []},
+            "exclude": [],
         }
-
-        res_cluster = await get_cached_result(
+        result_clusters = await get_cached_result(
             request,
             scope="manage",
             cacheName="secretgraphCleanResult",
             ensureInitialized=True,
         ).aat("Cluster")
-        for klass in [Content, Action]:
-            type_name = klass.__name__
-            if isinstance(klass, Action):
-                objs = res_cluster["objects_without_public"].filter(
-                    keyHash__in=result["exclude"][type_name]
-                )
-            else:
-                r = await get_cached_result(
-                    request,
-                    scope="manage",
-                    cacheName="secretgraphCleanResult",
-                    ensureInitialized=True,
-                ).aat(type_name)
-                objs = fetch_by_id(
-                    r["objects_without_public"],
-                    result["exclude"][type_name],
-                    limit_ids=None,
-                )
+        exclude_flexids = set()
+        for idtuple in action_dict.get("exclude") or []:
+            type_name, id = relay.from_base64(idtuple)
+            if type_name == "Cluster":
+                exclude_flexids.add(id)
+        ids = fetch_by_id(
+            result_clusters["objects_without_public"],
+            exclude_flexids,
+            limit_ids=None,
+            check_long=False,
+            check_short_id=True,
+            check_short_name=True,
+        ).values_list("id", flat=True)
+        exclude_ids = {plainid async for plainid in ids}
+        for action in result_clusters["action_results"].values():
+            # only defined for cluster
+            if action["value"]["action"] == "manage":
+                exclude_ids.update(action["value"]["exclude"].get("Cluster", []))
+            elif action["value"]["action"] == "admin":
+                exclude_ids.update(action["value"]["exclude"])
+        result["exclude"].extend(exclude_ids)
 
-            s = {val for val in objs.values_list("id", flat=True)}
-            # now add exclude infos (if not admin)
-            # note: manage always resolves, so this is valid
-            for action in res_cluster["action_results"].values():
-                if action["value"]["action"] in {"manage", "admin"}:
-                    s.update(action["exclude"].get(type_name, []))
-            result["exclude"][type_name] = list(s)
         return result

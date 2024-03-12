@@ -248,6 +248,10 @@ class Net(models.Model):
             ).first()
         return None
 
+    @sync_to_async
+    def auser(self):
+        return self.user
+
     def __repr__(self) -> str:
         if self.primaryCluster and self.primaryCluster.name == "@system":
             return "<Systemnet>"

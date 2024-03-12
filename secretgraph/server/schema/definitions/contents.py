@@ -11,7 +11,7 @@ from ....core.constants import public_states
 from ...actions.fetch import fetch_contents
 from ...models import Action, Content, ContentReference
 from ...utils.auth import (
-    aget_cached_net_properties,
+    ain_cached_net_properties_or_user_special,
     fetch_by_id_noconvert,
     get_cached_net_properties,
     get_cached_result,
@@ -205,8 +205,10 @@ class ContentNode(SBaseTypesMixin, strawberry.relay.Node):
         if len(node_ids) > settings.SECRETGRAPH_STRAWBERRY_MAX_RESULTS:
             raise ValueError("too many nodes requested")
 
-        if not (await aget_cached_net_properties(info.context["request"])).isdisjoint(
-            {"manage_update", "allow_view"}
+        if not (
+            await ain_cached_net_properties_or_user_special(
+                info.context["request"], "manage_update", "allow_view"
+            )
         ):
             query = Content.objects.all()
         else:

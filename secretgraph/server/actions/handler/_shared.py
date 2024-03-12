@@ -103,5 +103,5 @@ def get_forbidden_content_ids(request):
 
     for action in result["action_results"].values():
         if action["value"]["action"] in {"manage", "admin"}:
-            s.update(action["exclude"].get("Content", []))
+            s.update(action["value"]["exclude"].get("Content", []))
     return frozenset(s)

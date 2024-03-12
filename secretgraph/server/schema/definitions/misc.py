@@ -5,9 +5,8 @@ from typing import Optional
 from django.conf import settings
 from django.utils.translation import get_language, gettext, override
 from strawberry.types import Info
-from strawberry_django import django_resolver
 
-from ...utils.auth import aget_cached_net_properties
+from ...utils.auth import aget_cached_net_properties, aget_user
 from ._shared import Language
 
 _valid_permissions = re.compile(r"^(?:manage_|allow_|bypass_)")
@@ -24,11 +23,8 @@ async def get_permissions(info: Info) -> list[str]:
     )
 
 
-@django_resolver
-def get_active_user(info: Info) -> Optional[str]:
-    user = getattr(info.context["request"], "user", None)
-    if user and not user.is_authenticated:
-        user = None
+async def get_active_user(info: Info) -> Optional[str]:
+    user = await aget_user(info.context["request"])
     if user:
         user = user.get_username()
     return user

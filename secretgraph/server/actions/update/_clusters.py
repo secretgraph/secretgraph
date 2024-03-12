@@ -19,10 +19,10 @@ from ....core.exceptions import ResourceLimitExceeded
 from ...models import Cluster, ClusterGroup, Net, NetGroup, SGroupProperty
 from ...utils.auth import (
     aget_cached_net_properties,
+    aget_user,
     ain_cached_net_properties_or_user_special,
     fetch_by_id,
     get_cached_result,
-    get_user,
     retrieve_allowed_objects,
 )
 from ._actions import manage_actions_fn
@@ -135,7 +135,7 @@ async def _update_or_create_cluster(
                     "not allowed - net disabled or not in actions time range"
                 )
             # use user
-            user = await get_user(request)
+            user = await aget_user(request)
             if user:
                 username = user.get_username()
                 net = await Net.objects.filter(user_name=username).afirst()
@@ -190,7 +190,7 @@ async def _update_or_create_cluster(
     if objdata.primary and not create_net and cluster.net.primaryCluster_id:
         # has superuser permission, has manage_update permission or is logged in as user
         if await ain_cached_net_properties_or_user_special(
-            request, "manage_update", check_net=cluster.net
+            request, "manage_update", check_net=cluster.net, ensureInitialized=True
         ):
             try:
                 await manage.aget(id=cluster.net.primaryCluster_id)

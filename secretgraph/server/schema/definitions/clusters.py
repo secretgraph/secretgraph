@@ -10,7 +10,7 @@ from strawberry.types import Info
 from ...actions.fetch import fetch_clusters
 from ...models import Cluster
 from ...utils.auth import (
-    aget_cached_net_properties,
+    ain_cached_net_properties_or_user_special,
     fetch_by_id_noconvert,
     get_cached_net_properties,
     get_cached_result,
@@ -33,8 +33,9 @@ class ClusterNode(SBaseTypesMixin, relay.Node):
             return None
 
         if (
-            "manage_user"
-            not in await aget_cached_net_properties(info.context["request"])
+            not await ain_cached_net_properties_or_user_special(
+                info.context["request"], "manage_user"
+            )
             and not await (
                 await get_cached_result(
                     info.context["request"],
@@ -145,8 +146,8 @@ class ClusterNode(SBaseTypesMixin, relay.Node):
             node_ids = list(node_ids)
         if len(node_ids) > settings.SECRETGRAPH_STRAWBERRY_MAX_RESULTS:
             raise ValueError("too many nodes requested")
-        if not (await aget_cached_net_properties(info.context["request"])).isdisjoint(
-            {"manage_update", "allow_view"}
+        if not await ain_cached_net_properties_or_user_special(
+            info.context["request"], "manage_update", "manage_view"
         ):
             query = Cluster.objects.all()
         else:

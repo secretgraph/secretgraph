@@ -9,8 +9,7 @@ from strawberry.types import Info
 from ...actions.fetch import fetch_clusters
 from ...models import Cluster, Net
 from ...utils.auth import (
-    aget_cached_net_properties,
-    get_cached_net_properties,
+    ain_cached_net_properties_or_user_special,
     get_cached_result,
 )
 
@@ -21,18 +20,22 @@ class NetNode(relay.Node):
     user_name: str
 
     @strawberry_django.field()
-    def groups(self, info: Info) -> list[str]:
+    async def groups(self, info: Info) -> list[str]:
         # permissions allows to see the nonselectable net groups
         # allow_hidden_net: have mod  rights plus allowance to see nets,
         #   so the groups are handy for communication
         # manage_net_groups: required for correctly updating groups
-        props = get_cached_net_properties(info.context["request"])
-        if "allow_hidden_net" in props or "manage_net_groups" in props:
-            return list(self.groups.values_list("name", flat=True))
+        if await ain_cached_net_properties_or_user_special(
+            info.context["request"], "allow_hidden_net", "manage_net_groups"
+        ):
+            return [val async for val in self.groups.values_list("name", flat=True)]
         else:
-            return list(
-                self.groups.filter(hidden=False).values_list("name", flat=True)
-            )
+            return [
+                val
+                async for val in self.groups.filter(hidden=False).values_list(
+                    "name", flat=True
+                )
+            ]
 
     @classmethod
     async def resolve_nodes(
@@ -46,8 +49,8 @@ class NetNode(relay.Node):
             node_ids = list(node_ids)
         if len(node_ids) > settings.SECRETGRAPH_STRAWBERRY_MAX_RESULTS:
             raise ValueError("too many nodes requested")
-        if "manage_user" in aget_cached_net_properties(
-            info.context["request"]
+        if await ain_cached_net_properties_or_user_special(
+            info.context["request"], "manage_user"
         ):
             query = Cluster.objects.all()
         else:

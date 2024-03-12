@@ -182,14 +182,15 @@ class SideEffectsHandlers:
 
     @staticmethod
     async def clean_storedUpdate(action_dict, request, cluster, content, admin):
-        from ...utils.auth import aget_cached_net_properties
+        from ...utils.auth import ain_cached_net_properties_or_user_special
 
         if content:
             raise ValueError("storedUpdate cannot be used as contentaction")
         if (
-            "allow_dangerous_actions"
-            not in await aget_cached_net_properties(
-                request, authset=request.secretgraphCleanResult.authset
+            not await ain_cached_net_properties_or_user_special(
+                request,
+                "allow_dangerous_actions",
+                authset=request.secretgraphCleanResult.authset,
             )
             and "allow_dangerous_actions" not in await cluster.aproperties()
         ):
