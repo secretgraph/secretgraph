@@ -68,7 +68,7 @@ class NetGroupNode(relay.Node):
         # only visible if net group is default
         return [
             name
-            async for name in self.properties.filters(name="default").values_list(
+            async for name in self.properties.filter(name="default").values_list(
                 "name", flat=True
             )
         ]

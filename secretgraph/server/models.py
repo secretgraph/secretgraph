@@ -229,10 +229,6 @@ class Net(models.Model):
             return SGroupProperty.objects.defaultNetProperties()  #
         return SGroupProperty.objects.filter(netGroups__nets=self)
 
-    @sync_to_async
-    def aproperties(self):
-        return list(self.properties.values_list("name", flat=True))
-
     @cached_property
     def user(self) -> Optional[usermodel]:
         username = self.user_name
@@ -336,28 +332,18 @@ class Cluster(FlexidModel):
         return hasattr(self, "primaryFor")
 
     @property
-    def properties(self) -> list[str]:
+    def properties(self) -> models.QuerySet[SGroupProperty]:
         if not self.id:
             return SGroupProperty.objects.defaultClusterProperties()
         return SGroupProperty.objects.filter(clusterGroups__clusters=self)
 
-    @sync_to_async
-    def aproperties(self):
-        return list(self.properties.values_list("name", flat=True))
-
     @property
-    def nonhidden_properties(self) -> list[str]:
+    def nonhidden_properties(self) -> models.QuerySet[SGroupProperty]:
         if not self.id:
-            return SGroupProperty.objects.defaultClusterProperties().values_list(
-                "name", flat=True
-            )
+            return SGroupProperty.objects.defaultClusterProperties()
         return SGroupProperty.objects.filter(
             clusterGroups__in=self.groups.filter(hidden=False)
-        ).values_list("name", flat=True)
-
-    @sync_to_async
-    def anonhidden_properties(self):
-        return list(self.nonhidden_properties)
+        )
 
     def clean(self):
         super().clean()
@@ -585,20 +571,12 @@ class Content(FlexidModel):
         return self.is_mutable
 
     @property
-    def properties(self) -> list[str]:
+    def properties(self) -> models.QuerySet[SGroupProperty]:
         return self.cluster.properties
 
-    @sync_to_async
-    def aproperties(self):
-        return list(self.properties.values_list("name", flat=True))
-
     @property
-    def nonhidden_properties(self) -> list[str]:
+    def nonhidden_properties(self) -> models.QuerySet[SGroupProperty]:
         return self.cluster.nonhidden_properties
-
-    @sync_to_async
-    def anonhidden_properties(self):
-        return list(self.nonhidden_properties)
 
     @property
     def needs_signature(self) -> bool:

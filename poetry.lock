@@ -529,13 +529,13 @@ bcrypt = ["bcrypt"]
 
 [[package]]
 name = "django-fast-iprestrict"
-version = "0.19.1"
+version = "0.19.2"
 description = "Restrict access to django project to trusted ips and optionally apply ratelimits. Like WAF in django."
 optional = false
 python-versions = ">=3.9,<4.0"
 files = [
-    {file = "django_fast_iprestrict-0.19.1-py3-none-any.whl", hash = "sha256:d1dd8789bf4f4dcf09de2e8198f284a54fc1cd2ddad3615dfe8f29800a298c35"},
-    {file = "django_fast_iprestrict-0.19.1.tar.gz", hash = "sha256:8a74ca9c03d24a9a39433e1a8f5bb1ed20c20b7db50022b1a43b98a6fc9738ec"},
+    {file = "django_fast_iprestrict-0.19.2-py3-none-any.whl", hash = "sha256:420b9755aa5e14fd1a9fc1137b2627d589eb89344e77e68b0cd76d2965481da8"},
+    {file = "django_fast_iprestrict-0.19.2.tar.gz", hash = "sha256:4862560ba2d87ad783c48d321e318c28875bedcf5911a2c6ecdaf8850b399996"},
 ]
 
 [package.dependencies]
@@ -783,13 +783,13 @@ idna = ">=2.5"
 
 [[package]]
 name = "hypothesis"
-version = "6.99.4"
+version = "6.99.5"
 description = "A library for property-based testing"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "hypothesis-6.99.4-py3-none-any.whl", hash = "sha256:20ca59622b002b3b4d6c5913c37149e233240e7d7ea632e8da7f77629b2f7040"},
-    {file = "hypothesis-6.99.4.tar.gz", hash = "sha256:edc8f984dba5d1b69a6a4564246b7850fa7ec351d2b27c9e7a43c91deab8d45c"},
+    {file = "hypothesis-6.99.5-py3-none-any.whl", hash = "sha256:0ab4968fa4c38ba6d3cd9f54f3d637e3c72fe136bff11373355f2e06416c6a7d"},
+    {file = "hypothesis-6.99.5.tar.gz", hash = "sha256:1f795b71abe46f3919591acf7fc05cbcd9b601b97806d97433e0eb9bdb200861"},
 ]
 
 [package.dependencies]

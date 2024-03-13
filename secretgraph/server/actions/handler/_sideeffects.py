@@ -192,7 +192,9 @@ class SideEffectsHandlers:
                 "allow_dangerous_actions",
                 authset=request.secretgraphCleanResult.authset,
             )
-            and "allow_dangerous_actions" not in await cluster.aproperties()
+            and not await cluster.properties.filter(
+                name="allow_dangerous_actions"
+            ).aexists()
         ):
             raise ValueError("No permission to register dangerous actions")
         now_plus_x = timezone.now() + td(minutes=20)

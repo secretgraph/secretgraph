@@ -24,7 +24,7 @@ from ...models import (
     NetGroup,
     SGroupProperty,
 )
-from ...signals import generateFlexidAndDownloadId
+from ...signals import agenerateFlexidAndDownloadId
 from ...utils.arguments import check_actions, pre_clean_update_content_args
 from ...utils.auth import (
     ain_cached_net_properties_or_user_special,
@@ -43,12 +43,12 @@ class RegenerateFlexidMutation:
     updated: list[relay.GlobalID]
 
 
-def mutate_regenerate_flexid(
+async def mutate_regenerate_flexid(
     info: Info,
     ids: list[strawberry.ID],  # ID or cluster global name
     authorization: Optional[AuthList] = None,
 ) -> RegenerateFlexidMutation:
-    if in_cached_net_properties_or_user_special(
+    if await ain_cached_net_properties_or_user_special(
         info.context["request"], "manage_update", authset=authorization
     ):
         results = {
@@ -66,7 +66,7 @@ def mutate_regenerate_flexid(
             },
         }
     else:
-        results = ids_to_results(
+        results = await ids_to_results(
             info.context["request"],
             ids,
             (Content, Cluster),
@@ -76,8 +76,8 @@ def mutate_regenerate_flexid(
         )
     updated = []
     for result in results.values():
-        for obj in result["objects_without_public"]:
-            generateFlexidAndDownloadId(type(obj), obj, True)
+        async for obj in result["objects_without_public"]:
+            await agenerateFlexidAndDownloadId(type(obj), obj, True)
             updated.append(obj.flexid_cached)
     return RegenerateFlexidMutation(updated=updated)
 

@@ -625,7 +625,12 @@ def match_host_origin(request):
     return f"{request.scheme}://{request.get_host()}" == origin_header
 
 
-_csfr_middleware = CsrfViewMiddleware(lambda x: None)
+class CsrfValidator(CsrfViewMiddleware):
+    def _reject(self, request, reason):
+        return reason
+
+
+_csfr_middleware = CsrfValidator(lambda x: None)
 
 
 def check_csrf_token(request):

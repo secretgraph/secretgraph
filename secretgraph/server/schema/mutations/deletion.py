@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 from typing import List, Optional
 
 import strawberry
+from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q, Subquery
 from django.utils import timezone
 from strawberry import relay
@@ -10,9 +11,9 @@ from strawberry.types import Info
 
 from ...models import Cluster, Content
 from ...utils.auth import (
+    ain_cached_net_properties_or_user_special,
     fetch_by_id_noconvert,
     ids_to_results,
-    in_cached_net_properties_or_user_special,
 )
 from ..arguments import AuthList
 
@@ -24,7 +25,7 @@ class DeleteContentOrClusterMutation:
     latestDeletion: Optional[datetime] = None
 
 
-def mutate_delete_content_or_cluster(
+async def mutate_delete_content_or_cluster(
     info: Info,
     ids: List[strawberry.ID],  # ID or cluster global name
     when: Optional[datetime] = None,
@@ -32,7 +33,7 @@ def mutate_delete_content_or_cluster(
 ) -> DeleteContentOrClusterMutation:
     now = timezone.now()
 
-    manage_deletion = in_cached_net_properties_or_user_special(
+    manage_deletion = await ain_cached_net_properties_or_user_special(
         info.context["request"], "manage_deletion", authset=authorization
     )
     if manage_deletion:
@@ -41,7 +42,7 @@ def mutate_delete_content_or_cluster(
             Cluster.objects.all(), ids, check_short_name=True
         )
     else:
-        results = ids_to_results(
+        results = await ids_to_results(
             info.context["request"],
             ids,
             (Content, Cluster),
@@ -54,27 +55,30 @@ def mutate_delete_content_or_cluster(
     if when:
         when_safe = when if manage_deletion else max(now + timedelta(minutes=20), when)
         contents.update(markForDestruction=when_safe)
-        Content.objects.filter(cluster_id__in=Subquery(clusters.values("id"))).update(
-            markForDestruction=when_safe
-        )
+        await Content.objects.filter(
+            cluster_id__in=Subquery(clusters.values("id"))
+        ).aupdate(markForDestruction=when_safe)
         clusters.update(markForDestruction=when)
     else:
         now_plus_x = now + timedelta(minutes=20)
-        contents.filter(
+        await contents.filter(
             Q(markForDestruction__isnull=True) | Q(markForDestruction__gt=now_plus_x)
-        ).update(markForDestruction=now_plus_x)
-        Content.objects.filter(
+        ).aupdate(markForDestruction=now_plus_x)
+        await Content.objects.filter(
             Q(markForDestruction__isnull=True) | Q(markForDestruction__gt=now_plus_x),
             cluster_id__in=Subquery(clusters.values("id")),
-        ).update(markForDestruction=now_plus_x)
+        ).aupdate(markForDestruction=now_plus_x)
         clusters.filter(
             Q(markForDestruction__isnull=True) | Q(markForDestruction__gt=now)
         ).update(markForDestruction=now)
-    calc_last = Content.objects.filter(
-        Q(id__in=Subquery(contents.values("id")))
-        | Q(cluster_id__in=Subquery(clusters.values("id"))),
-        markForDestruction__isnull=False,
-    ).latest("markForDestruction")
+    try:
+        calc_last = await Content.objects.filter(
+            Q(id__in=Subquery(contents.values("id")))
+            | Q(cluster_id__in=Subquery(clusters.values("id"))),
+            markForDestruction__isnull=False,
+        ).alatest("markForDestruction")
+    except ObjectDoesNotExist:
+        calc_last = None
 
     return DeleteContentOrClusterMutation(
         latestDeletion=calc_last.markForDestruction if calc_last else None
@@ -86,19 +90,19 @@ class ResetDeletionContentOrClusterMutation:
     restored: List[relay.GlobalID]
 
 
-def mutate_reset_deletion_content_or_cluster(
+async def mutate_reset_deletion_content_or_cluster(
     info: Info,
     ids: List[strawberry.ID],  # ID or cluster global name
     authorization: Optional[AuthList] = None,
 ) -> ResetDeletionContentOrClusterMutation:
-    manage_deletion = in_cached_net_properties_or_user_special(
+    manage_deletion = await ain_cached_net_properties_or_user_special(
         info.context["request"], "manage_deletion", authset=authorization
     )
     if manage_deletion:
         contents = fetch_by_id_noconvert(Content.objects.all(), ids)
         clusters = fetch_by_id_noconvert(Cluster.objects.all(), ids)
     else:
-        results = ids_to_results(
+        results = await ids_to_results(
             info.context["request"],
             ids,
             (Content, Cluster),

@@ -2,6 +2,7 @@ import logging
 import uuid
 from datetime import timedelta as td
 
+from asgiref.sync import sync_to_async
 from django.db import models, transaction
 from django.db.utils import IntegrityError
 from django.utils import timezone
@@ -240,6 +241,9 @@ def generateFlexidAndDownloadId(sender, instance, force=False, **kwargs):
                     break
                 except IntegrityError:
                     pass
+
+
+agenerateFlexidAndDownloadId = sync_to_async(generateFlexidAndDownloadId)
 
 
 def fillEmptyCb(**kwargs):

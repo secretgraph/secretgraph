@@ -1,7 +1,9 @@
 import logging
 from datetime import datetime as dt
+from datetime import timezone as tz
 from typing import Optional
 
+from django.conf import settings
 from django.db.models import Q, QuerySet, Subquery
 
 from ...core.constants import public_states
@@ -84,9 +86,7 @@ def fetch_clusters(
             )
         else:
             assert includeTypes or excludeTypes
-            query = query.filter(
-                Q(id__in=Subquery(content_query.values("cluster_id")))
-            )
+            query = query.filter(Q(id__in=Subquery(content_query.values("cluster_id"))))
     return query
 
 
@@ -163,9 +163,7 @@ def fetch_contents(
                     cluster__globalNameRegisteredAt__isnull=False,
                 )
                 if safeListedContents:
-                    state_filters |= Q(
-                        state__in=states, id__in=safeListedContents
-                    )
+                    state_filters |= Q(state__in=states, id__in=safeListedContents)
 
         incl_type_filters = Q()
         excl_type_filters = Q()
@@ -212,6 +210,12 @@ def fetch_contents(
         maxUpdated = dt.max
     elif maxUpdated and not minUpdated:
         minUpdated = dt.min
+    if settings.USE_TZ:
+        if minUpdated and not minUpdated.tzinfo:
+            minUpdated = minUpdated.replace(tzinfo=tz.utc)
+
+        if maxUpdated and not maxUpdated.tzinfo:
+            maxUpdated = maxUpdated.replace(tzinfo=tz.utc)
 
     if minUpdated or maxUpdated:
         query = query.filter(updated__range=(minUpdated, maxUpdated))

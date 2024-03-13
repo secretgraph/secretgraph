@@ -51,16 +51,17 @@ class SBaseTypesMixin:
             return
         name = self.__class__.__name__.replace("Node", "", 1)
         results = get_cached_result(info.context["request"], ensureInitialized=True)
+        main_result = await results.aat(name)
         # only show some actions if not set
         has_manage_or_admin = False
         if isinstance(self, Content):
             # if content: check cluster and content keys
             mappers = [
-                results[name].get("action_info_contents", {}).get(self.id, {}),
-                results[name].get("action_info_clusters", {}).get(self.cluster_id, {}),
+                main_result.get("action_info_contents", {}).get(self.id, {}),
+                main_result.get("action_info_clusters", {}).get(self.cluster_id, {}),
             ]
         else:
-            mappers = [results[name].get("action_info_clusters", {}).get(self.id, {})]
+            mappers = [main_result.get("action_info_clusters", {}).get(self.id, {})]
         # auth included unprotected ids
         seen_ids = set()
         # prevent copy
@@ -75,7 +76,7 @@ class SBaseTypesMixin:
                     # ...doesn't appear here
                     if key_val[0][0] != "view":
                         for action_id in key_val[1]:
-                            _tags = results[name]["action_results"][action_id].get(
+                            _tags = main_result["action_results"][action_id].get(
                                 "allowedTags"
                             )
                             if _tags is not None:
@@ -89,13 +90,13 @@ class SBaseTypesMixin:
                         allowedTags=allowedTags,
                     )
         if has_manage_or_admin:
-            await results.preinit("Action")
+            action_result = await results.aat("Action")
             # use results["Action"] for ensuring exclusion of hidden actions
             # this is ensured by having manage in action set
             if isinstance(self, Content):
                 # is currently the same as without_public for Actions
                 async for action in (
-                    results["Action"]["objects_with_public"]
+                    action_result["objects_with_public"]
                     .filter(
                         Q(contentAction__isnull=True)
                         | Q(contentAction__content_id=self.id),
@@ -111,7 +112,7 @@ class SBaseTypesMixin:
             else:
                 # is currently the same as without_public for Actions
                 async for action in (
-                    results["Action"]["objects_with_public"]
+                    action_result["objects_with_public"]
                     .filter(contentAction__isnull=True, cluster_id=self.id)
                     .exclude(id__in=seen_ids)
                 ):
@@ -194,6 +195,13 @@ class SBaseTypesMixin:
         if await ain_cached_net_properties_or_user_special(
             info.context["request"], "allow_hidden"
         ):
-            return await self.aproperties()
+            return [
+                name async for name in self.properties.values_list("name", flat=True)
+            ]
         else:
-            return await self.anonhidden_properties()
+            return [
+                name
+                async for name in self.nonhidden_properties.values_list(
+                    "name", flat=True
+                )
+            ]

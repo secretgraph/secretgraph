@@ -19,9 +19,8 @@ if TYPE_CHECKING:
 NodeUpdateSubscription = AsyncGenerator[List[relay.Node], None]
 
 
-@sync_to_async(thread_sensitive=True)
-def valid_node_ids(request, ids, authorization=None):
-    results = ids_to_results(
+async def valid_node_ids(request, ids, authorization=None):
+    results = await ids_to_results(
         request,
         ids,
         klasses=(Cluster, Content),
@@ -29,14 +28,17 @@ def valid_node_ids(request, ids, authorization=None):
         cacheName="secretgraphResult",
         authset=authorization,
     )
-    return {
-        *results["Cluster"]["objects_with_public"].values_list(
-            "flexid_cached", flat=True
-        )
-        * results["Content"]["objects_with_public"].values_list(
+    ret = {
+        flexid
+        async for flexid in results["Cluster"]["objects_with_public"].values_list(
             "flexid_cached", flat=True
         )
     }
+    async for flexid in results["Content"]["objects_with_public"].values_list(
+        "flexid_cached", flat=True
+    ):
+        ret.add(flexid)
+    return ret
 
 
 @sync_to_async(thread_sensitive=True)
