@@ -115,7 +115,7 @@ class ContentNode(SBaseTypesMixin, strawberry.relay.Node):
         # we are in the 2nd level, block
         if self.limited or self.reduced:
             return None
-        results = get_cached_result(info.context["request"], ensureInitialized=True)
+        results = get_cached_result(info.context["request"], ensureInitialized=False)
         if self.state not in public_states:
             query = results["Cluster"]["objects_without_public"]
         else:
@@ -303,7 +303,7 @@ class ContentNode(SBaseTypesMixin, strawberry.relay.Node):
             filters.deleted != UseCriteria.FALSE
             and not allowDeleted
             and not in_cached_net_properties_or_user_special(
-                info.context["request"], "manage_deletion"
+                info.context["request"], "manage_delete"
             )
         ):
             del_result = get_cached_result(

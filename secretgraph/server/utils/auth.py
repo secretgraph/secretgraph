@@ -600,7 +600,7 @@ def get_cached_result(
     ensureInitialized=False,
     stub: Optional[str] = None,
 ) -> LazyViewResult:
-    if not getattr(request, cacheName, None):
+    if not isinstance(getattr(request, cacheName, None), LazyViewResult):
         if ensureInitialized:
             raise AttributeError("cached query results does not exist")
         setattr(

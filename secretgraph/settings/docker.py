@@ -25,28 +25,20 @@ SECRET_KEY = os.environ.setdefault("SECRET_KEY", secrets.token_hex(32))
 MEDIA_ROOT = os.path.join(DOCKER_VOLUME_DIR, "media/")
 ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "localhost").split(",")
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-RATELIMIT_TRUSTED_PROXIES = os.environ.get("TRUSTED_PROXIES", "unix").split(
-    ","
-)
+RATELIMIT_TRUSTED_PROXIES = os.environ.get("TRUSTED_PROXIES", "unix").split(",")
 if RATELIMIT_TRUSTED_PROXIES[0] == "all":
     RATELIMIT_TRUSTED_PROXIES = "all"
 
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # requires auth app
-SECRETGRAPH_REQUIRE_USER = (
-    os.environ.get("REQUIRE_USER", "true").lower() == "true"
-)
-SECRETGRAPH_ALLOW_REGISTER = (
-    os.environ.get("ALLOW_REGISTER", "false").lower() == "true"
-)
+SECRETGRAPH_REQUIRE_USER = os.environ.get("REQUIRE_USER", "true").lower() == "true"
+SECRETGRAPH_ALLOW_REGISTER = os.environ.get("ALLOW_REGISTER", "false").lower() == "true"
 
 SECRETGRAPH_ADMINAREA = (
     os.environ.get("SECRETGRAPH_ADMINAREA", "false").lower() == "true"
 )
-SECRETGRAPH_HEADLESS = (
-    os.environ.get("SECRETGRAPH_HEADLESS", "false").lower() == "true"
-)
+SECRETGRAPH_HEADLESS = os.environ.get("SECRETGRAPH_HEADLESS", "false").lower() == "true"
 NO_USERS = os.environ.get("SECRETGRAPH_NO_USERS", "false").lower() == "true"
 if not NO_USERS:
     INSTALLED_APPS += [  # noqa F405
@@ -117,7 +109,7 @@ SECRETGRAPH_DEFAULT_NET_GROUPS["docker_admin"] = {  # noqa F405
         "allow_hidden_net_props",
         "manage_net_groups",
         "manage_cluster_groups",
-        "manage_deletion",
+        "manage_delete",
         "manage_update",
         "manage_user",
     ],

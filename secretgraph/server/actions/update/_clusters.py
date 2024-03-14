@@ -189,7 +189,7 @@ async def _update_or_create_cluster(
     if objdata.primary and not create_net and cluster.net.primaryCluster_id:
         # has superuser permission, has manage_update permission or is logged in as user
         if await ain_cached_net_properties_or_user_special(
-            request, "manage_update", check_net=cluster.net, ensureInitialized=True
+            request, "manage_update", check_net=cluster.net, authset=authset
         ):
             try:
                 await manage.aget(id=cluster.net.primaryCluster_id)
@@ -234,7 +234,7 @@ async def _update_or_create_cluster(
             groups=objdata.clusterGroups,
             operation=constants.MetadataOperations.REPLACE,
             admin=await ain_cached_net_properties_or_user_special(
-                request, "manage_cluster_groups", ensureInitialized=True
+                request, "manage_cluster_groups", authset=authset
             ),
             initial=create_cluster,
         )
@@ -246,7 +246,7 @@ async def _update_or_create_cluster(
             groups=objdata.netGroups,
             operation=constants.MetadataOperations.REPLACE,
             admin=await ain_cached_net_properties_or_user_special(
-                request, "manage_net_groups", ensureInitialized=True
+                request, "manage_net_groups", authset=authset
             ),
             initial=create_net,
         )

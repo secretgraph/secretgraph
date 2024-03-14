@@ -1,5 +1,4 @@
 import logging
-from itertools import chain
 from typing import Optional
 
 import strawberry
@@ -30,7 +29,6 @@ from ...utils.auth import (
     ain_cached_net_properties_or_user_special,
     fetch_by_id_noconvert,
     ids_to_results,
-    in_cached_net_properties_or_user_special,
 )
 from ..arguments import ActionInput, AuthList, ReferenceInput
 from ..shared import MetadataOperations
@@ -97,7 +95,7 @@ async def mutate_update_mark(
     authorization: Optional[AuthList] = None,
 ) -> MarkMutation:
     if active is not None:
-        if in_cached_net_properties_or_user_special(
+        if await ain_cached_net_properties_or_user_special(
             info.context["request"],
             "manage_active",
             "manage_user",
@@ -107,12 +105,14 @@ async def mutate_update_mark(
     contents = Content.objects.none()
     clusters = Cluster.objects.none()
     if hidden is not None:
-        if in_cached_net_properties_or_user_special(
+        if await ain_cached_net_properties_or_user_special(
             info.context["request"], "allow_hidden", authset=authorization
         ):
             contents = Content.objects.all()
         else:
-            dProperty = SGroupProperty.objects.get_or_create(name="allow_hidden")[0]
+            dProperty = await SGroupProperty.objects.aget_or_create(
+                name="allow_hidden"
+            )[0]
             cgroups = dProperty.clusterGroups.all()
             contents = Content.objects.filter(cluster__groups__in=cgroups)
         contents = fetch_by_id_noconvert(contents, ids)
@@ -123,34 +123,39 @@ async def mutate_update_mark(
             Cluster.objects.all(), ids, check_short_name=True
         )
         if featured is not None:
-            if in_cached_net_properties_or_user_special(
+            if await ain_cached_net_properties_or_user_special(
                 info.context["request"], "allow_featured", authset=authorization
             ):
                 clusters = clusters_all
             else:
-                dProperty = SGroupProperty.objects.get_or_create(name="allow_featured")[
-                    0
-                ]
+                dProperty = await SGroupProperty.objects.aget_or_create(
+                    name="allow_featured"
+                )[0]
                 cgroups = dProperty.clusterGroups.all()
                 clusters = clusters_all.filter(groups__in=cgroups)
 
-            clusters.filter(globalNameRegisteredAt__isnull=False).update(
+            await clusters.filter(globalNameRegisteredAt__isnull=False).aupdate(
                 featured=featured
             )
         # must be last, clusters is now filtered
         if active is not None:
-            Net.objects.filter(
+            await Net.objects.filter(
                 Exists(clusters_all.filter(net_id=OuterRef("id")))
-            ).update(active=active)
+            ).aupdate(active=active)
             # as all clusters are updated, replace filtered with all
             clusters = clusters_all
-
-    return MarkMutation(
-        updated=chain(
-            clusters.values_list("flexid_cached", flat=True),
-            contents.values_list("flexid_cached", flat=True),
+    retval = [
+        flexid_cached
+        async for flexid_cached in clusters.distinct().values_list(
+            "flexid_cached", flat=True
         )
-    )
+    ]
+    async for flexid_cached in contents.distinct().values_list(
+        "flexid_cached", flat=True
+    ):
+        retval.append(flexid_cached)
+
+    return MarkMutation(updated=retval)
 
 
 @strawberry.type
@@ -199,7 +204,7 @@ async def mutate_update_metadata(
             cacheName=None,
         )
         cleaned = pre_clean_update_content_args(
-            tags, state, references, actions, result["Contents"]
+            tags, state, references, actions, result["Content"]
         )
 
         tags = cleaned["tags"]
@@ -210,9 +215,9 @@ async def mutate_update_metadata(
             .filter(locked__isnull=True)
             .annotate(has_immutable=Value(False))
         )
-        clusters = result["Clusters"]["objects_without_public"]
+        clusters = result["Cluster"]["objects_without_public"]
         if clusters and actions is not None:
-            check_actions(actions, result["Clusters"])
+            check_actions(actions, result["Cluster"])
     clusterGroups_qset = None
     if clusterGroups is not None and clusters:
         clusterGroups_qset = calculate_groups(

@@ -1,5 +1,8 @@
 # TODO
 
+-   defuse js? Content-Type should be set and sniffing disabled
+    -   for js, html return text/plain? Will likely break proxy
+    -   is currently used content-disposition enough?
 -   provide new fixtures
 -   permissions: use primaryCluster too for admin actions, add special action type primary for manage token
     -   introduce: admin/primary action type, so even manage can create primary there is still a seperation

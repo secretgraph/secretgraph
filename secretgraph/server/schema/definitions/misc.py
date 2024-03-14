@@ -17,7 +17,7 @@ async def get_permissions(info: Info) -> list[str]:
         filter(
             lambda x: _valid_permissions.match(x),
             await aget_cached_net_properties(
-                info.context["request"], ensureInitialized=True
+                info.context["request"], ensureInitialized=False
             ),
         )
     )

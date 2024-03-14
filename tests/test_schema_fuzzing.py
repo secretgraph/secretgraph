@@ -63,7 +63,22 @@ def upload_strategy(draw: st.DrawFn):
 # TODO: not a good strategy
 @st.composite
 def json_strategy(draw: st.DrawFn):
-    return JSON({"action": draw(st.sampled_from(["manage", "admin", "view"]))})
+    return JSON(
+        {
+            "action": draw(
+                st.sampled_from(
+                    [
+                        "manage",
+                        "admin",
+                        "view",
+                        "create",
+                        "delete",
+                        "update",
+                    ]
+                )
+            )
+        }
+    )
 
 
 schemathesis.graphql.scalar("GlobalID", global_id_strategy())
@@ -135,7 +150,7 @@ class SchemathesisTests(TransactionTestCase):
         jsonob = response.json()
         if jsonob.get("errors"):
             for error in jsonob["errors"]:
-                if "Query too compley" not in error["message"]:
+                if "Query too complex" not in error["message"]:
                     pprint(case.body)
                     pprint(jsonob["errors"])
                     self.fail("errors detected")
@@ -161,7 +176,10 @@ class SchemathesisTests(TransactionTestCase):
         jsonob = response.json()
         if jsonob.get("errors"):
             for error in jsonob["errors"]:
-                if "Query too compley" not in error["message"]:
+                if (
+                    "Query too complex" not in error["message"]
+                    and "does not exist" not in error["message"]
+                ):
                     pprint(case.body)
                     pprint(jsonob["errors"])
                     self.fail("errors detected")

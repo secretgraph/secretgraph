@@ -349,7 +349,7 @@ class ClusterAdmin(BeautifyNetMixin, FlexidMixin, admin.ModelAdmin):
                         ].values("id")
                     )
                 )
-            if "manage_deletion" not in net_properties:
+            if "manage_delete" not in net_properties:
                 qs = qs.filter(markForDestruction=None)
         return qs
 
@@ -367,7 +367,7 @@ class ClusterAdmin(BeautifyNetMixin, FlexidMixin, admin.ModelAdmin):
                 .exists()
             ):
                 rfields.append("featured")
-            if "manage_deletion" not in net_properties:
+            if "manage_delete" not in net_properties:
                 rfields.append("markForDestruction")
 
         return rfields
@@ -389,7 +389,7 @@ class ClusterAdmin(BeautifyNetMixin, FlexidMixin, admin.ModelAdmin):
     def has_delete_permission(self, request, obj=None) -> bool:
         return in_cached_net_properties_or_user_special(
             request,
-            "manage_deletion",
+            "manage_delete",
             use_is_superuser=True,
             user_validate_origin=False,
         )
@@ -460,7 +460,7 @@ class ContentAdmin(BeautifyNetMixin, FlexidMixin, admin.ModelAdmin):
             if "allow_hidden" not in net_properties(request):
                 qs = qs.filter(hidden=False)
 
-            if "manage_deletion" not in net_properties(request):
+            if "manage_delete" not in net_properties(request):
                 qs = qs.filter(markForDestruction=None)
         return qs
 
@@ -472,7 +472,7 @@ class ContentAdmin(BeautifyNetMixin, FlexidMixin, admin.ModelAdmin):
             net_properties = get_cached_net_properties(request)
             if "allow_hidden" in net_properties(request):
                 rfields.append("hidden")
-            if "manage_deletion" in net_properties(request):
+            if "manage_delete" in net_properties(request):
                 rfields.append("markForDestruction")
 
         return rfields
@@ -506,7 +506,7 @@ class ContentAdmin(BeautifyNetMixin, FlexidMixin, admin.ModelAdmin):
     def has_delete_permission(self, request, obj=None) -> bool:
         return in_cached_net_properties_or_user_special(
             request,
-            "manage_deletion",
+            "manage_delete",
             use_is_superuser=True,
             user_validate_origin=False,
         )

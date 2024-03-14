@@ -134,8 +134,8 @@ async def mutate_transfer(
                 "Content",
                 "update",
                 authset=authorization,
-            )["objects_without_public"]
-        ).aget()
+            )
+        )["objects_without_public"].aget()
     # was signed? => restrict to keys
     signer_keys = view_result["objects_with_public"].filter(
         type="PublicKey",
@@ -184,9 +184,9 @@ async def mutate_pull(
     headers: Optional[JSON] = None,
     authorization: Optional[AuthList] = None,
 ) -> TransferMutation:
-    view_result: AllowedObjectsResult = get_cached_result(
+    view_result: AllowedObjectsResult = await get_cached_result(
         info.context, authset=authorization
-    )["Content"]
+    ).aat("Content")
     if id.type_name == "Content":
         # allow admin pulls
         if await ain_cached_net_properties_or_user_special(

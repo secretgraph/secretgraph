@@ -28,37 +28,43 @@ def calculate_groups(
             retval = model.objects.filter(q)
     elif operation is MetadataOperations.REPLACE:
         if admin:
-            retval = calculate_groups(
-                model=model,
-                groups=groups,
-                operation=MetadataOperations.APPEND,
-                initial=initial,
-                admin=True,
-            ), model.objects.exclude(name__in=groups)
+            retval = (
+                calculate_groups(
+                    model=model,
+                    groups=groups,
+                    operation=MetadataOperations.APPEND,
+                    initial=initial,
+                    admin=True,
+                ),
+                model.objects.exclude(name__in=groups),
+            )
         else:
-            q = models.Q(
-                userSelectable=UserSelectable.DESELECTABLE
-            ) | models.Q(userSelectable=UserSelectable.UNRESTRICTED)
+            q = models.Q(userSelectable=UserSelectable.DESELECTABLE) | models.Q(
+                userSelectable=UserSelectable.UNRESTRICTED
+            )
             if initial:
                 q |= models.Q(
                     userSelectable=UserSelectable.INITIAL_MODIFYABLE,
                 )
             q &= ~models.Q(name__in=groups)
-            retval = calculate_groups(
-                model=model,
-                groups=groups,
-                operation=MetadataOperations.APPEND,
-                initial=initial,
-                admin=False,
-            ), model.objects.filter(q)
+            retval = (
+                calculate_groups(
+                    model=model,
+                    groups=groups,
+                    operation=MetadataOperations.APPEND,
+                    initial=initial,
+                    admin=False,
+                ),
+                model.objects.filter(q),
+            )
     else:
         assert operation is MetadataOperations.REMOVE
         if admin:
             retval = model.objects.filter(name__in=groups)
         else:
-            q = models.Q(
-                userSelectable=UserSelectable.DESELECTABLE
-            ) | models.Q(userSelectable=UserSelectable.UNRESTRICTED)
+            q = models.Q(userSelectable=UserSelectable.DESELECTABLE) | models.Q(
+                userSelectable=UserSelectable.UNRESTRICTED
+            )
             if initial:
                 q |= models.Q(
                     userSelectable=UserSelectable.INITIAL_MODIFYABLE,
@@ -70,25 +76,23 @@ def calculate_groups(
 
 def apply_groups(
     inp: models.QuerySet[Union[Net, Cluster]] | Union[Net, Cluster],
-    groups: Optional[
-        models.QuerySet | tuple[models.QuerySet, models.QuerySet]
-    ] = None,
+    groups: Optional[models.QuerySet | tuple[models.QuerySet, models.QuerySet]] = None,
     operation=MetadataOperations.APPEND,
 ):
     if not isinstance(inp, models.QuerySet):
         inp = [inp]
-    if operation is MetadataOperations.APPEND:
+    if operation == MetadataOperations.APPEND:
         if groups is not None:
             for obj in inp:
                 obj.groups.add(groups)
             return True
-    elif operation is MetadataOperations.REMOVE:
+    elif operation == MetadataOperations.REMOVE:
         if groups is not None:
             for obj in inp:
                 obj.groups.remove(groups)
             return True
     else:
-        assert operation is MetadataOperations.REPLACE
+        assert operation == MetadataOperations.REPLACE, operation
         if groups is not None:
             assert isinstance(groups, tuple), f"invalid groups input: {groups}"
             if groups[0] and groups[1]:

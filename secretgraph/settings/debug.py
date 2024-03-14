@@ -106,7 +106,7 @@ SECRETGRAPH_DEFAULT_NET_GROUPS["debug_admin"] = {  # noqa F405
         "allow_hidden_net_props",
         "manage_net_groups",
         "manage_cluster_groups",
-        "manage_deletion",
+        "manage_delete",
         "manage_update",
         "manage_user",
     ],

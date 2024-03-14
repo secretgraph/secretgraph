@@ -202,7 +202,7 @@ class ClusterNode(SBaseTypesMixin, relay.Node):
         if (
             deleted != UseCriteria.FALSE
             and not in_cached_net_properties_or_user_special(
-                info.context["request"], "manage_deletion"
+                info.context["request"], "manage_delete"
             )
         ):
             del_result = get_cached_result(

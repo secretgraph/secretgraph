@@ -33,10 +33,10 @@ async def mutate_delete_content_or_cluster(
 ) -> DeleteContentOrClusterMutation:
     now = timezone.now()
 
-    manage_deletion = await ain_cached_net_properties_or_user_special(
-        info.context["request"], "manage_deletion", authset=authorization
+    manage_delete = await ain_cached_net_properties_or_user_special(
+        info.context["request"], "manage_delete", authset=authorization
     )
-    if manage_deletion:
+    if manage_delete:
         contents = fetch_by_id_noconvert(Content.objects.all(), ids)
         clusters = fetch_by_id_noconvert(
             Cluster.objects.all(), ids, check_short_name=True
@@ -53,7 +53,7 @@ async def mutate_delete_content_or_cluster(
         contents = results["Content"]["objects_without_public"]
         clusters = results["Cluster"]["objects_without_public"]
     if when:
-        when_safe = when if manage_deletion else max(now + timedelta(minutes=20), when)
+        when_safe = when if manage_delete else max(now + timedelta(minutes=20), when)
         contents.update(markForDestruction=when_safe)
         await Content.objects.filter(
             cluster_id__in=Subquery(clusters.values("id"))
@@ -95,10 +95,10 @@ async def mutate_reset_deletion_content_or_cluster(
     ids: List[strawberry.ID],  # ID or cluster global name
     authorization: Optional[AuthList] = None,
 ) -> ResetDeletionContentOrClusterMutation:
-    manage_deletion = await ain_cached_net_properties_or_user_special(
-        info.context["request"], "manage_deletion", authset=authorization
+    manage_delete = await ain_cached_net_properties_or_user_special(
+        info.context["request"], "manage_delete", authset=authorization
     )
-    if manage_deletion:
+    if manage_delete:
         contents = fetch_by_id_noconvert(Content.objects.all(), ids)
         clusters = fetch_by_id_noconvert(Cluster.objects.all(), ids)
     else:

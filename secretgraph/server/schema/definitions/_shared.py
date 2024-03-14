@@ -50,7 +50,8 @@ class SBaseTypesMixin:
         if self.limited or self.reduced:
             return
         name = self.__class__.__name__.replace("Node", "", 1)
-        results = get_cached_result(info.context["request"], ensureInitialized=True)
+        # e.g. via node direct
+        results = get_cached_result(info.context["request"], ensureInitialized=False)
         main_result = await results.aat(name)
         # only show some actions if not set
         has_manage_or_admin = False
@@ -126,7 +127,8 @@ class SBaseTypesMixin:
     async def auth(self: Union[Content, Cluster], info: Info) -> Optional[SGAuthResult]:
         if self.limited or self.reduced:
             return None
-        viewresult = get_cached_result(info.context["request"], ensureInitialized=True)
+        # e.g. via node direct
+        viewresult = get_cached_result(info.context["request"], ensureInitialized=False)
         if isinstance(self, Content):
             result = await retrieve_allowed_objects(
                 info.context["request"],
