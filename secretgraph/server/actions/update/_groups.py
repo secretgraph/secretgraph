@@ -13,7 +13,10 @@ def calculate_groups(
     initial=False,
     admin=False,
 ):
-    if operation is MetadataOperations.APPEND:
+    # use values instead of enum for compatibility between graphql enums and constant enums
+    if hasattr(operation, "value"):
+        operation = operation.value
+    if operation == MetadataOperations.APPEND:
         if admin:
             retval = model.objects.filter(name__in=groups)
         else:
@@ -26,7 +29,7 @@ def calculate_groups(
                 )
             q &= models.Q(name__in=groups)
             retval = model.objects.filter(q)
-    elif operation is MetadataOperations.REPLACE:
+    elif operation == MetadataOperations.REPLACE:
         if admin:
             retval = (
                 calculate_groups(
@@ -58,7 +61,7 @@ def calculate_groups(
                 model.objects.filter(q),
             )
     else:
-        assert operation is MetadataOperations.REMOVE
+        assert operation == MetadataOperations.REMOVE, operation
         if admin:
             retval = model.objects.filter(name__in=groups)
         else:
@@ -79,6 +82,9 @@ def apply_groups(
     groups: Optional[models.QuerySet | tuple[models.QuerySet, models.QuerySet]] = None,
     operation=MetadataOperations.APPEND,
 ):
+    # use values instead of enum for compatibility between graphql enums and constant enums
+    if hasattr(operation, "value"):
+        operation = operation.value
     if not isinstance(inp, models.QuerySet):
         inp = [inp]
     if operation == MetadataOperations.APPEND:

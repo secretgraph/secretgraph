@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 
 @strawberry.type()
 class ClusterMutation:
-    cluster: ClusterNode
+    cluster: Optional[ClusterNode]
     writeok: bool
 
 

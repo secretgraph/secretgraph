@@ -110,14 +110,14 @@ async def mutate_update_mark(
         ):
             contents = Content.objects.all()
         else:
-            dProperty = await SGroupProperty.objects.aget_or_create(
-                name="allow_hidden"
+            dProperty = (
+                await SGroupProperty.objects.aget_or_create(name="allow_hidden")
             )[0]
             cgroups = dProperty.clusterGroups.all()
             contents = Content.objects.filter(cluster__groups__in=cgroups)
         contents = fetch_by_id_noconvert(contents, ids)
 
-        contents.update(hidden=hidden)
+        await contents.aupdate(hidden=hidden)
     if featured is not None or active is not None:
         clusters_all = fetch_by_id_noconvert(
             Cluster.objects.all(), ids, check_short_name=True
@@ -128,8 +128,8 @@ async def mutate_update_mark(
             ):
                 clusters = clusters_all
             else:
-                dProperty = await SGroupProperty.objects.aget_or_create(
-                    name="allow_featured"
+                dProperty = (
+                    await SGroupProperty.objects.aget_or_create(name="allow_featured")
                 )[0]
                 cgroups = dProperty.clusterGroups.all()
                 clusters = clusters_all.filter(groups__in=cgroups)

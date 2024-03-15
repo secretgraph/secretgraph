@@ -1,3 +1,4 @@
+import json
 import re
 import typing
 from datetime import timedelta as td
@@ -152,7 +153,7 @@ class SchemathesisTests(TransactionTestCase):
             for error in jsonob["errors"]:
                 if "Query too complex" not in error["message"]:
                     pprint(case.body)
-                    pprint(jsonob["errors"])
+                    pprint(error)
                     self.fail("errors detected")
 
     @given(case=schema["Mutation"].as_strategy())
@@ -181,5 +182,5 @@ class SchemathesisTests(TransactionTestCase):
                     and "does not exist" not in error["message"]
                 ):
                     pprint(case.body)
-                    pprint(jsonob["errors"])
+                    pprint(error)
                     self.fail("errors detected")

@@ -37,9 +37,7 @@ class UserSelectable(Enum):
 class DeleteRecursive(Enum):
     TRUE = strawberry.enum_value(
         constants.DeleteRecursive.TRUE.value,
-        description=(
-            "Delete content when referenced content is deleted (default)"
-        ),
+        description=("Delete content when referenced content is deleted (default)"),
     )
     FALSE = strawberry.enum_value(
         constants.DeleteRecursive.FALSE.value,

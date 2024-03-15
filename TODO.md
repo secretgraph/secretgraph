@@ -4,14 +4,9 @@
     -   for js, html return text/plain? Will likely break proxy
     -   is currently used content-disposition enough?
 -   provide new fixtures
--   permissions: use primaryCluster too for admin actions, add special action type primary for manage token
-    -   introduce: admin/primary action type, so even manage can create primary there is still a seperation
--   python tools have to be adapted
--   python tests have to be adapted
 -   expand hashing to to general derive tool, argon2id
 -   use key fn of mapEncryption/mapSignature
 -   add compatibility check for keys, or doesn't fail when a key fails
--   remove mapKeyusages
 -   complete the crypto refactory of ts code, python
 -   goToNode document node change function
 -   document how to add elements, cannot use goToNode here
@@ -35,6 +30,8 @@
 -   language selector?
 
 # TODO later
+
+-   remove mapKeyusages
 
 -   quantum safety (currently there is no stable implementation)
 -   add bypass\_ property prefix to potential dangerous property prefixes

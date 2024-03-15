@@ -72,6 +72,15 @@ def fetch_clusters(
             maxUpdated = dt.max
         elif maxUpdated and not minUpdated:
             minUpdated = dt.min
+        if settings.USE_TZ:
+            if minUpdated and not minUpdated.tzinfo:
+                minUpdated = minUpdated.replace(tzinfo=tz.utc)
+
+            if maxUpdated and not maxUpdated.tzinfo:
+                maxUpdated = maxUpdated.replace(tzinfo=tz.utc)
+
+        if minUpdated or maxUpdated:
+            query = query.filter(updated__range=(minUpdated, maxUpdated))
 
         if minUpdated or maxUpdated:
             query = query.filter(
