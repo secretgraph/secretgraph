@@ -3,6 +3,7 @@ from typing import Optional
 import strawberry
 from django.conf import settings
 from graphene_protector.django.strawberry import Schema
+from strawberry.extensions import MaxTokensLimiter
 from strawberry.schema.config import StrawberryConfig
 
 from .server.schema import Mutation as ServerMutation
@@ -34,7 +35,7 @@ schema = Schema(
     query=Query,
     mutation=Mutation,
     subscription=ServerSubscription,
-    extensions=[RatelimitMutations, RatelimitErrors],
+    extensions=[MaxTokensLimiter(1000), RatelimitMutations, RatelimitErrors],
     # register ContentNode first
     types=[NetNode, ContentNode, ContentDownloadNode],
     config=StrawberryConfig(

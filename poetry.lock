@@ -80,13 +80,13 @@ tests = ["pytest"]
 
 [[package]]
 name = "asgiref"
-version = "3.7.2"
+version = "3.8.0"
 description = "ASGI specs, helper code, and adapters"
 optional = false
-python-versions = ">=3.7"
+python-versions = ">=3.8"
 files = [
-    {file = "asgiref-3.7.2-py3-none-any.whl", hash = "sha256:89b2ef2247e3b562a16eef663bc0e2e703ec6468e2fa8a5cd61cd449786d4f6e"},
-    {file = "asgiref-3.7.2.tar.gz", hash = "sha256:9e0ce3aa93a819ba5b45120216b23878cf6e8525eb3848653452b4192b92afed"},
+    {file = "asgiref-3.8.0-py3-none-any.whl", hash = "sha256:30fc07797ad71a0abb8fe34aa03c8043308a8389abc7942d797ea9911540bc28"},
+    {file = "asgiref-3.8.0.tar.gz", hash = "sha256:ec75d9d0f04e2dbfedef1f20ee73a6594af80c333df47cdd31f37e6701f7c53a"},
 ]
 
 [package.dependencies]
@@ -588,13 +588,13 @@ test = ["pytest (>=6)"]
 
 [[package]]
 name = "faker"
-version = "24.2.0"
+version = "24.3.0"
 description = "Faker is a Python package that generates fake data for you."
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "Faker-24.2.0-py3-none-any.whl", hash = "sha256:dce4754921f9fa7e2003c26834093361b8f45072e0f46f172d6ca1234774ecd4"},
-    {file = "Faker-24.2.0.tar.gz", hash = "sha256:87d5e7730426e7b36817921679c4eaf3d810cedb8c81194f47adc3df2122ca18"},
+    {file = "Faker-24.3.0-py3-none-any.whl", hash = "sha256:9978025e765ba79f8bf6154c9630a9c2b7f9c9b0f175d4ad5e04b19a82a8d8d6"},
+    {file = "Faker-24.3.0.tar.gz", hash = "sha256:5fb5aa9749d09971e04a41281ae3ceda9414f683d4810a694f8a8eebb8f9edec"},
 ]
 
 [package.dependencies]
@@ -783,13 +783,13 @@ idna = ">=2.5"
 
 [[package]]
 name = "hypothesis"
-version = "6.99.8"
+version = "6.99.11"
 description = "A library for property-based testing"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "hypothesis-6.99.8-py3-none-any.whl", hash = "sha256:8b5175a906c0a11967c3a04eeb17c42b4b395cacd02a246ce926613189a14279"},
-    {file = "hypothesis-6.99.8.tar.gz", hash = "sha256:1274abcc12137645a1bcb8453063060cf38f949a90b31d08bea45e1818e05b8b"},
+    {file = "hypothesis-6.99.11-py3-none-any.whl", hash = "sha256:9c010b219ec611c995bac7e11a3edc96cea3c2c0b04a9d08ec586a7981715353"},
+    {file = "hypothesis-6.99.11.tar.gz", hash = "sha256:3df99ecf501e056c7e2c6ac7a9e3726f4fe8d2139dcce068aceffdab58265f1e"},
 ]
 
 [package.dependencies]
@@ -1976,13 +1976,13 @@ starlette = ">=0.20.1"
 
 [[package]]
 name = "strawberry-graphql"
-version = "0.220.0"
+version = "0.221.1"
 description = "A library for creating GraphQL APIs"
 optional = false
-python-versions = ">=3.8,<4.0"
+python-versions = "<4.0,>=3.8"
 files = [
-    {file = "strawberry_graphql-0.220.0-py3-none-any.whl", hash = "sha256:303b698bd3652f852af000085cc2ad7790a9726cdfd7e2f3f5398cbe6d3ef261"},
-    {file = "strawberry_graphql-0.220.0.tar.gz", hash = "sha256:916a019e0133c7817aae384161e9ab0e5267013bc2f491b3338b3ae10e8f08bb"},
+    {file = "strawberry_graphql-0.221.1-py3-none-any.whl", hash = "sha256:b9f72ed4265fb3b708e9ef1781a95a93899112221a036e76fee8497a654ee8a5"},
+    {file = "strawberry_graphql-0.221.1.tar.gz", hash = "sha256:ed36c7e80da844bb4df0097e1d49e55fb3d50fb0b0b80bd7d08730e0d5c720f0"},
 ]
 
 [package.dependencies]
@@ -2013,13 +2013,13 @@ starlite = ["starlite (>=1.48.0)"]
 
 [[package]]
 name = "strawberry-graphql-django"
-version = "0.34.0"
+version = "0.35.1"
 description = "Strawberry GraphQL Django extension"
 optional = false
 python-versions = ">=3.8,<4.0"
 files = [
-    {file = "strawberry_graphql_django-0.34.0-py3-none-any.whl", hash = "sha256:da1877ec36db7c11afe9edeabc5384dfb710e39561ad36770028ba676fe82905"},
-    {file = "strawberry_graphql_django-0.34.0.tar.gz", hash = "sha256:33984281aa70f81f4a4d815863b78697c6bf7b11fc7c691964f7540ed826b6f5"},
+    {file = "strawberry_graphql_django-0.35.1-py3-none-any.whl", hash = "sha256:09da5d62c33eacb0e25cd7f5ab179904fd44fb792cb80815a6c99344ffc39bb9"},
+    {file = "strawberry_graphql_django-0.35.1.tar.gz", hash = "sha256:f4c28b8a9b89a74b1a78f88898f3140d758ac2b6ef93d7e2e97e5f4480eea7ef"},
 ]
 
 [package.dependencies]

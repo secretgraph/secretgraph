@@ -27,7 +27,9 @@ import { hashToken } from '@secretgraph/misc/utils/hashing'
 import {
     DEFAULT_ASYMMETRIC_ENCRYPTION_ALGORITHM,
     findWorkingAlgorithms,
+    generateEncryptionKey,
     hashKeyString,
+    toPublicKey,
 } from '@secretgraph/misc/utils/crypto'
 import {
     createCluster,
@@ -223,7 +225,7 @@ const ClusterIntern = ({
                         ignoreCluster: false,
                     })
                     let digestCert: undefined | string = undefined,
-                        privPromise: undefined | Promise<string> = undefined
+                        privateKey = undefined
                     let tokens = mainCtx.tokens
                     /** activate with proper warning, should only be done with config baseUrl updates
                      * if (values.primary) {
@@ -251,19 +253,15 @@ const ClusterIntern = ({
                             include: [clusterFeedQuery, getClusterQuery],
                         })
                     } else {
-                        const { publicKey, privateKey } =
-                            (await crypto.subtle.generateKey(
-                                {
-                                    name: 'RSA-OAEP',
-                                    modulusLength: 4096,
-                                    publicExponent: new Uint8Array([1, 0, 1]),
-                                    hash: 'SHA-512',
-                                },
-                                true,
-                                ['wrapKey', 'unwrapKey', 'encrypt', 'decrypt']
-                            )) as Required<CryptoKeyPair>
-                        privPromise = serializeToBase64(privateKey)
-                        digestCert = await hashKeyString(publicKey, {
+                        privateKey = await generateEncryptionKey({
+                            params: { bits: 4096 },
+                            algorithm: DEFAULT_ASYMMETRIC_ENCRYPTION_ALGORITHM,
+                        })
+                        const publicKey = await toPublicKey(privateKey.key, {
+                            algorithm: DEFAULT_ASYMMETRIC_ENCRYPTION_ALGORITHM,
+                        })
+
+                        digestCert = await hashKeyString(publicKey.key, {
                             keyAlgorithm: 'rsa-sha512',
                             deriveAlgorithm: hashAlgorithm,
                         })
@@ -275,8 +273,8 @@ const ClusterIntern = ({
                             hashAlgorithm,
                             keys: [
                                 {
-                                    publicKey,
-                                    privateKey,
+                                    publicKey: publicKey.key,
+                                    privateKey: privateKey.key,
                                     publicState: 'trusted',
                                 },
                             ],
@@ -312,14 +310,14 @@ const ClusterIntern = ({
                         },
                         contents: {},
                     }
-                    if (digestCert && privPromise) {
+                    if (digestCert && privateKey) {
                         ;(
                             configUpdate.hosts as Interfaces.ConfigInterface['hosts']
                         )[url].clusters[newNode.id as string].hashes[
                             digestCert
                         ] = []
                         configUpdate.certificates[digestCert] = {
-                            data: await privPromise,
+                            data: await serializeToBase64(privateKey.key),
                             algorithm: DEFAULT_ASYMMETRIC_ENCRYPTION_ALGORITHM,
                             note: `certificate of ${newNode.id}`,
                         }

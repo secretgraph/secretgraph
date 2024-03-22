@@ -131,6 +131,7 @@ export async function updateKey({
     updateId,
     client,
     publicState,
+    isPrivateKey,
     net,
     ...options
 }: {
@@ -140,7 +141,8 @@ export async function updateKey({
     config: Interfaces.ConfigInterface
     net?: string
     // should be replaced
-    key?: MaybePromise<CryptoKey> // key or key data
+    key?: MaybePromise<ArrayBuffer> // key or key data
+    isPrivateKey?: boolean
     pubkeys?: Parameters<typeof encryptSharedKey>[1]
     privkeys?: Parameters<typeof createSignatureReferences>[1]
     publicTags?: Iterable<string | PromiseLike<string>>
@@ -174,11 +176,20 @@ export async function updateKey({
         hasEncrypted = true
     }
     let sharedKey: ArrayBuffer | undefined
-    if (updatedKey && updatedKey.type == 'private') {
-        sharedKey = crypto.getRandomValues(new Uint8Array(32))
-        // remove old encrypted shared key(s)
-        if (privateTags && privateTags.length) {
-            privateTags = privateTags.filter((val) => !val.startsWith('key='))
+
+    if (updatedKey) {
+        if (isPrivateKey === undefined) {
+            throw Error(
+                'key needs info if it is a private key or the public key'
+            )
+        } else if (isPrivateKey) {
+            sharedKey = crypto.getRandomValues(new Uint8Array(32))
+            // remove old encrypted shared key(s)
+            if (privateTags && privateTags.length) {
+                privateTags = privateTags.filter(
+                    (val) => !val.startsWith('key=')
+                )
+            }
         }
     } else if (privateTags && hasEncrypted) {
         if (!options.oldKey) {
@@ -196,7 +207,7 @@ export async function updateKey({
     }
     let completedKey = undefined
     let cryptoParameters = undefined
-    if (updatedKey && updatedKey.type == 'private') {
+    if (updatedKey && isPrivateKey) {
         if (!options.hashAlgorithm) {
             throw Error('hashAlgorithm required for key updates')
         }
@@ -233,7 +244,7 @@ export async function updateKey({
         references = publicKeyReferences.concat(
             options.references ? [...options.references] : []
         )
-    } else if (updatedKey && updatedKey.type == 'public') {
+    } else if (updatedKey && !isPrivateKey) {
         if (!options.hashAlgorithm) {
             throw Error('hashAlgorithm required for key resigning')
         }

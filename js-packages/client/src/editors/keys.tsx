@@ -40,6 +40,8 @@ import {
     hashKey,
     toPublicKey,
     findWorkingAlgorithms,
+    generateEncryptionKey,
+    DEFAULT_ASYMMETRIC_ENCRYPTION_ALGORITHM,
 } from '@secretgraph/misc/utils/crypto'
 import { unserializeToCryptoKey } from '@secretgraph/misc/utils/base_crypto_legacy'
 import { fallback_fetch } from '@secretgraph/misc/utils/misc'
@@ -731,32 +733,27 @@ function UpdateKeysForm({
                                 color="primary"
                                 disabled={disabled}
                                 onClick={async () => {
-                                    const { publicKey, privateKey } =
-                                        (await crypto.subtle.generateKey(
-                                            {
-                                                name: 'RSA-OAEP',
-                                                modulusLength: 4096,
-                                                publicExponent: new Uint8Array(
-                                                    [1, 0, 1]
-                                                ),
-                                                hash: 'SHA-512',
-                                            },
-                                            true,
-                                            [
-                                                'wrapKey',
-                                                'unwrapKey',
-                                                'encrypt',
-                                                'decrypt',
-                                            ]
-                                        )) as Required<CryptoKeyPair>
+                                    const privateKey =
+                                        await generateEncryptionKey({
+                                            params: { bits: 4096 },
+                                            algorithm:
+                                                DEFAULT_ASYMMETRIC_ENCRYPTION_ALGORITHM,
+                                        })
+                                    const publicKey = await toPublicKey(
+                                        privateKey.key,
+                                        {
+                                            algorithm:
+                                                DEFAULT_ASYMMETRIC_ENCRYPTION_ALGORITHM,
+                                        }
+                                    )
                                     await setValues(
                                         {
                                             ...values,
                                             publicKey: `-----BEGIN PUBLIC KEY-----\n${await serializeToBase64(
-                                                publicKey
+                                                publicKey.key
                                             )}\n-----END PUBLIC KEY-----`,
                                             privateKey: `-----BEGIN PRIVATE KEY-----\n${await serializeToBase64(
-                                                privateKey
+                                                privateKey.key
                                             )}\n-----END PRIVATE KEY-----`,
                                         },
                                         false
@@ -1080,11 +1077,8 @@ const KeysUpdate = ({
                                 updateId: privateKey.nodeData.updateId,
                                 client,
                                 config,
-                                key: await unserializeToCryptoKey(
-                                    privKey,
-                                    {},
-                                    'privateKey'
-                                ),
+                                key: privKey,
+                                isPrivateKey: true,
                                 // encrypted shared key will be added
                                 privateTags: [
                                     `description=${values.description}`,

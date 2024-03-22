@@ -271,7 +271,7 @@ export async function verifyContent({
     ...props
 }: {
     readonly node: any
-    existing?: { [hash: string]: Promise<CryptoKey> }
+    existing?: { [hash: string]: Promise<ArrayBuffer> }
     readonly config: Interfaces.ConfigInterface
     readonly onlyPubkeys?: boolean
     readonly itemDomain: string

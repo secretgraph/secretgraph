@@ -16,11 +16,13 @@ import {
     DEFAULT_SIGNATURE_ALGORITHM,
     DEFAULT_SYMMETRIC_ENCRYPTION_ALGORITHM,
     encrypt,
+    generateEncryptionKey,
     encryptString,
+    hashKey,
+    toPublicKey,
 } from '../crypto'
 import { hashObject, hashTagsContentHash, hashToken } from '../hashing'
 import { createContent } from './content'
-
 export async function createCluster(options: {
     client: ApolloClient<any>
     actions: Iterable<Interfaces.ActionInterface>
@@ -35,14 +37,14 @@ export async function createCluster(options: {
     keys: (
         | {
               sharedKey?: Uint8Array
-              publicKey: CryptoKey
-              privateKey: CryptoKey
+              publicKey: ArrayBuffer
+              privateKey: ArrayBuffer
               privateTags?: string[]
               publicTags?: string[]
               publicState: 'protected' | 'public' | 'required' | 'trusted'
           }
         | {
-              publicKey: CryptoKey
+              publicKey: ArrayBuffer
               publicTags?: string[]
               privateKey?: undefined
               publicState: 'protected' | 'public' | 'required' | 'trusted'
@@ -83,8 +85,8 @@ export async function createCluster(options: {
         } else {
             const k2 = k as {
                 sharedKey?: Uint8Array
-                publicKey: CryptoKey
-                privateKey: CryptoKey
+                publicKey: ArrayBuffer
+                privateKey: ArrayBuffer
                 privateTags?: string[]
                 publicTags?: string[]
                 publicState: 'protected' | 'public' | 'required' | 'trusted'
@@ -233,20 +235,26 @@ export async function initializeCluster({
 }) {
     const manage_key = crypto.getRandomValues(new Uint8Array(50))
     const view_key = crypto.getRandomValues(new Uint8Array(50))
-    // TODO: use asymmetricEncryptionAlgorithm, signatureAlgorithm for creating crypto key
-    const { publicKey, privateKey } = (await crypto.subtle.generateKey(
-        {
-            name: 'RSA-OAEP',
-            modulusLength: 4096,
-            publicExponent: new Uint8Array([1, 0, 1]),
-            hash: 'SHA-512',
-        },
-        true,
-        ['wrapKey', 'unwrapKey', 'encrypt', 'decrypt']
-    )) as Required<CryptoKeyPair>
+    const privateKey = await generateEncryptionKey({
+        params: { bits: 4096 },
+        algorithm:
+            asymmetricEncryptionAlgorithm ||
+            DEFAULT_ASYMMETRIC_ENCRYPTION_ALGORITHM,
+    })
+    const publicKey = await toPublicKey(privateKey.key, {
+        algorithm:
+            asymmetricEncryptionAlgorithm ||
+            DEFAULT_ASYMMETRIC_ENCRYPTION_ALGORITHM,
+        sign: false,
+    })
     const manage_keyb64 = Buffer.from(manage_key).toString('base64')
     const view_keyb64 = Buffer.from(view_key).toString('base64')
-    const digestPublicKey = await hashObject(publicKey, hashAlgorithm)
+    const digestPublicKey = await hashKey(publicKey.key, {
+        deriveAlgorithm: hashAlgorithm,
+        keyAlgorithm:
+            asymmetricEncryptionAlgorithm ||
+            DEFAULT_ASYMMETRIC_ENCRYPTION_ALGORITHM,
+    })
     const digestManageKey = await hashToken(manage_key, hashAlgorithm)
     const digestViewKey = await hashToken(view_key, hashAlgorithm)
     const clusterResponse = await createCluster({
@@ -260,7 +268,7 @@ export async function initializeCluster({
                     //for safety reasons include also PublicKey
                     includeTypes: ['PublicKey', 'PrivateKey', 'Config'],
                     includeTags: [
-                        `key_hash=${digestPublicKey}`,
+                        `key_hash=${digestPublicKey.serialized}`,
                         `slot=${slot}`,
                     ],
                 }),
@@ -277,8 +285,8 @@ export async function initializeCluster({
         netGroups,
         keys: [
             {
-                publicKey,
-                privateKey,
+                publicKey: publicKey.key,
+                privateKey: privateKey.key,
                 publicTags: ['name=initial key'],
                 privateTags: ['name=initial key'],
                 publicState: 'trusted',
@@ -294,12 +302,12 @@ export async function initializeCluster({
         hashes: {
             [digestManageKey]: ['manage', 'admin'],
             [digestViewKey]: ['view'],
-            [digestPublicKey]: [],
+            [digestPublicKey.serialized]: [],
         },
     }
-    config['certificates'][digestPublicKey] = {
+    config['certificates'][digestPublicKey.serialized] = {
         // private key is serialized
-        data: await serializeToBase64(privateKey),
+        data: await serializeToBase64(privateKey.key),
         note: noteCertificate,
         // TODO: fixme, detect algorithm from key
         algorithm: 'rsa-sha512',
@@ -307,7 +315,7 @@ export async function initializeCluster({
     if (!config.signWith[config.slots[0]]) {
         config.signWith[config.slots[0]] = []
     }
-    config.signWith[config.slots[0]].push(digestPublicKey)
+    config.signWith[config.slots[0]].push(digestPublicKey.serialized)
     config.tokens[digestManageKey] = {
         data: manage_keyb64,
         note: noteToken,
@@ -322,7 +330,7 @@ export async function initializeCluster({
         clusterResult.cluster.contents.edges[0].node.link,
         config['baseUrl']
     )
-    config.trustedKeys[digestPublicKey] = {
+    config.trustedKeys[digestPublicKey.serialized] = {
         links: [`${keyUrl}`],
         level: 1,
         note: 'created by user',
@@ -351,8 +359,8 @@ export async function initializeCluster({
         client,
         cluster: clusterResult.cluster['id'],
         value: utf8encoder.encode(JSON.stringify(config)),
-        pubkeys: [publicKey],
-        privkeys: [privateKey],
+        pubkeys: [publicKey.key],
+        privkeys: [privateKey.key],
         type: 'Config',
         state: 'protected',
         tags: ['name=config.json', `slot=${slot}`],

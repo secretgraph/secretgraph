@@ -1,6 +1,5 @@
 import json
 import re
-import typing
 from datetime import timedelta as td
 from pprint import pprint
 from random import randrange
@@ -64,7 +63,7 @@ def upload_strategy(draw: st.DrawFn):
 # TODO: not a good strategy
 @st.composite
 def json_strategy(draw: st.DrawFn):
-    return JSON(
+    return nodes.Object(
         {
             "action": draw(
                 st.sampled_from(
