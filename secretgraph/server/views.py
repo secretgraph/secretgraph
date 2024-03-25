@@ -141,7 +141,7 @@ def get_file_response_with_range_support(request, fileob, size, name):
         )
         response["Content-Length"] = str(size)
         header = 'attachment; filename="{}"'.format(
-            name.replace("\\", "\\\\").replace('"', r"\"")
+            (name or "unknown.unknown").replace("\\", "\\\\").replace('"', r"\"")
         )
         response["Content-Disposition"] = header
     response["Accept-Ranges"] = "bytes"
