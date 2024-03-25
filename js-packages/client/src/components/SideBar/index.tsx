@@ -4,7 +4,7 @@ import Divider from '@mui/material/Divider'
 import Drawer from '@mui/material/Drawer'
 import { useTheme } from '@mui/material/styles'
 import { TreeItem } from '@mui/x-tree-view/TreeItem'
-import { TreeView } from '@mui/x-tree-view/TreeView'
+import { SimpleTreeView } from '@mui/x-tree-view/SimpleTreeView'
 import * as Constants from '@secretgraph/misc/constants'
 import { Writeable } from '@secretgraph/misc/typing'
 import { authInfoFromConfig } from '@secretgraph/misc/utils/config'
@@ -56,7 +56,7 @@ const SideBarItems = () => {
     return (
         <>
             <TreeItem
-                nodeId="clusters"
+                itemId="clusters"
                 label={
                     <SidebarTreeItemLabel heading deleted={searchCtx.deleted}>
                         Clusters
@@ -66,7 +66,7 @@ const SideBarItems = () => {
                 {authinfoCluster && (
                     <SideBarClusters
                         heading
-                        nodeId={`${activeUrl}-clusters-nonpublic`}
+                        itemId={`${activeUrl}-clusters-nonpublic`}
                         label="Non-Public"
                         authinfo={authinfoCluster}
                         deleted={searchCtx.deleted}
@@ -75,14 +75,14 @@ const SideBarItems = () => {
                 )}
                 <SideBarClusters
                     heading
-                    nodeId={`${activeUrl}-clusters-public`}
+                    itemId={`${activeUrl}-clusters-public`}
                     label="Public"
                     deleted={searchCtx.deleted}
                     goTo={goToNode}
                 />
             </TreeItem>
             <TreeItem
-                nodeId="contents"
+                itemId="contents"
                 label={
                     <SidebarTreeItemLabel heading deleted={searchCtx.deleted}>
                         Contents
@@ -91,7 +91,7 @@ const SideBarItems = () => {
             >
                 <SideBarContents
                     key="SideBarContentsPublic"
-                    nodeId={`${activeUrl}-contents-public`}
+                    itemId={`${activeUrl}-contents-public`}
                     activeContent={mainCtx.item}
                     public={Constants.UseCriteriaPublic.TRUE}
                     deleted={searchCtx.deleted}
@@ -103,7 +103,7 @@ const SideBarItems = () => {
                     <>
                         <SideBarContents
                             key="SideBarContentsDraft"
-                            nodeId={`${activeUrl}-contents-drafts`}
+                            itemId={`${activeUrl}-contents-drafts`}
                             authinfo={authinfo}
                             deleted={searchCtx.deleted}
                             activeContent={mainCtx.item}
@@ -114,7 +114,7 @@ const SideBarItems = () => {
                         />
                         <SideBarContents
                             key="SideBarContentsPrivate"
-                            nodeId={`${activeUrl}-contents-private`}
+                            itemId={`${activeUrl}-contents-private`}
                             authinfo={authinfo}
                             deleted={searchCtx.deleted}
                             activeContent={mainCtx.item}
@@ -169,24 +169,26 @@ export default React.memo(function SideBar() {
                     <SideBarHeader notifyItems={notifyItems} />
                     <Divider />
                     <CapturingSuspense>
-                        <TreeView
+                        <SimpleTreeView
                             multiSelect
-                            selected={selected}
-                            expanded={expanded}
-                            onNodeToggle={(ev, items) => {
+                            selectedItems={selected}
+                            expandedItems={expanded}
+                            onExpandedItemsChange={(ev, items) => {
                                 setExpanded(items)
                             }}
-                            onNodeSelect={(ev, items) => {
+                            onSelectedItemsChange={(ev, items) => {
                                 setSelected(
                                     items.filter((val) => val.includes('::'))
                                 )
                             }}
-                            defaultCollapseIcon={<ExpandMoreIcon />}
-                            defaultExpandIcon={<ChevronRightIcon />}
+                            slots={{
+                                collapseIcon: ExpandMoreIcon,
+                                expandIcon: ChevronRightIcon,
+                            }}
                             key={`${searchCtx.deleted}-${itemsToggle}`}
                         >
                             <SideBarItems />
-                        </TreeView>
+                        </SimpleTreeView>
                     </CapturingSuspense>
                 </Drawer>
             </Contexts.SidebarItemsExpanded.Provider>

@@ -61,8 +61,8 @@ export default React.memo(function Clusters({
             nextFetchPolicy: 'cache-and-network',
         })
     React.useEffect(() => {
-        expanded.includes(props.nodeId) && loadQuery()
-    }, [expanded.includes(props.nodeId)])
+        expanded.includes(props.itemId) && loadQuery()
+    }, [expanded.includes(props.itemId)])
 
     const _loadMore = () => {
         fetchMore &&
@@ -88,7 +88,7 @@ export default React.memo(function Clusters({
                         type: string
                     }[]
                 ).some((val) => val.type == 'delete' || val.type == 'manage')
-            const nodeId = deleteable
+            const itemId = deleteable
                 ? `clusters::${node.id}`
                 : `clusters.${node.id}`
             let name = node.name
@@ -133,8 +133,8 @@ export default React.memo(function Clusters({
                             </SidebarTreeItemLabel>
                         </div>
                     }
-                    key={`${props.nodeId}-${nodeId}`}
-                    nodeId={`${props.nodeId}-${nodeId}`}
+                    key={`${props.itemId}-${itemId}`}
+                    itemId={`${props.itemId}-${itemId}`}
                 >
                     <SideBarContents
                         goTo={goTo}
@@ -144,7 +144,7 @@ export default React.memo(function Clusters({
                         public={Constants.UseCriteriaPublic.TRUE}
                         heading
                         label="Public"
-                        nodeId={`${props.nodeId}-${nodeId}-public`}
+                        itemId={`${props.itemId}-${itemId}-public`}
                     />
                     <SideBarContents
                         goTo={goTo}
@@ -153,7 +153,7 @@ export default React.memo(function Clusters({
                         deleted={node.deleted}
                         heading
                         label="Private"
-                        nodeId={`${props.nodeId}-${nodeId}-private`}
+                        itemId={`${props.itemId}-${itemId}-private`}
                         public={Constants.UseCriteriaPublic.FALSE}
                     />
                 </TreeItem>
@@ -178,8 +178,8 @@ export default React.memo(function Clusters({
         clustersFinished.push(
             <TreeItem
                 label="Load more clusters..."
-                key={`${props.nodeId}-cluster-loadmore`}
-                nodeId={`${props.nodeId}-cluster-loadmore`}
+                key={`${props.itemId}-cluster-loadmore`}
+                itemId={`${props.itemId}-cluster-loadmore`}
                 onClick={(ev) => {
                     ev.preventDefault()
                     ev.stopPropagation()

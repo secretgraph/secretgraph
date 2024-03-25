@@ -89,8 +89,8 @@ export default React.memo(function SidebarContents({
             nextFetchPolicy: 'cache-and-network',
         })
     React.useEffect(() => {
-        expanded.includes(props.nodeId) && loadQuery()
-    }, [expanded.includes(props.nodeId)])
+        expanded.includes(props.itemId) && loadQuery()
+    }, [expanded.includes(props.itemId)])
     const _loadMore = () => {
         fetchMore &&
             fetchMore({
@@ -151,7 +151,7 @@ export default React.memo(function SidebarContents({
                         type: string
                     }[]
                 ).some((val) => val.type == 'delete' || val.type == 'manage')
-            const nodeId = deleteable
+            const itemId = deleteable
                 ? `contents::${node.id}`
                 : `contents.${node.id}`
             return (
@@ -183,8 +183,8 @@ export default React.memo(function SidebarContents({
                             </SidebarTreeItemLabel>
                         </div>
                     }
-                    nodeId={`${props.nodeId}-${nodeId}`}
-                    key={nodeId}
+                    itemId={`${props.itemId}-${itemId}`}
+                    key={itemId}
                 />
             )
         }
@@ -202,8 +202,8 @@ export default React.memo(function SidebarContents({
         contentsFinished.push(
             <TreeItem
                 label="Load more contents..."
-                nodeId={`${props.nodeId}-contents-loadmore`}
-                key={`${props.nodeId}-contents-loadmore`}
+                itemId={`${props.itemId}-contents-loadmore`}
+                key={`${props.itemId}-contents-loadmore`}
                 onClick={(ev) => {
                     ev.preventDefault()
                     ev.stopPropagation()

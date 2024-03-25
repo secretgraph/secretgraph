@@ -84,7 +84,7 @@ export default React.memo(function ActiveCluster({
                 deleted={data?.node?.deleted}
                 public={Constants.UseCriteriaPublic.TRUE}
                 label="Public"
-                nodeId={`${props.nodeId}-public`}
+                itemId={`${props.itemId}-public`}
             />
             <SideBarContents
                 goTo={goTo}
@@ -93,7 +93,7 @@ export default React.memo(function ActiveCluster({
                 heading
                 deleted={data?.node?.deleted}
                 label="Private"
-                nodeId={`${props.nodeId}-private`}
+                itemId={`${props.itemId}-private`}
                 public={Constants.UseCriteriaPublic.FALSE}
                 onClick={(ev) => ev.preventDefault()}
             />
