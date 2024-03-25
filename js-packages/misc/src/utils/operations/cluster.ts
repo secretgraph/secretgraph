@@ -376,8 +376,8 @@ export async function initializeCluster({
         config,
         clusterResult: clusterResult,
         configResult: configResult.secretgraph.updateOrCreateContent,
-        pubkey: publicKey,
-        signkey: privateKey,
+        pubkey: publicKey.key,
+        signkey: privateKey.key,
         manageToken: manage_keyb64,
     }
 }

@@ -1,5 +1,4 @@
-export type NonKeyInput = string | Blob | ArrayBuffer | DataView
-export type RawInput = NonKeyInput | CryptoKey
+export type RawInput = string | Blob | ArrayBuffer | DataView
 
 export interface KeyOutInterface {
     data: ArrayBuffer
@@ -161,6 +160,6 @@ export interface ElementEntryInterface {
 }
 
 export interface CryptoHashPair {
-    key: CryptoKey
+    key: ArrayBuffer
     hash: string
 }

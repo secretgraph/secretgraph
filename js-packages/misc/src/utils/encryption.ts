@@ -200,7 +200,7 @@ export async function encryptPreKey({
     hash,
 }: {
     prekey: ArrayBuffer
-    pw: Interfaces.NonKeyInput
+    pw: Interfaces.RawInput
     deriveAlgorithm: string
     params?: any
     hash?: string

@@ -32,7 +32,9 @@ export function b64toutf8(inp: string) {
 }
 
 export async function unserializeToArrayBuffer(
-    inp: MaybePromise<Interfaces.RawInput | Interfaces.KeyOutInterface>
+    inp: MaybePromise<
+        Interfaces.RawInput | CryptoKey | Interfaces.KeyOutInterface
+    >
 ): Promise<ArrayBuffer> {
     const _inp = await inp
     let _result: ArrayBuffer

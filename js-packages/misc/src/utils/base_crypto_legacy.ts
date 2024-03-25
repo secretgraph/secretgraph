@@ -1,6 +1,6 @@
 import { unserializeToArrayBuffer, splitFirstOnly } from './encoding'
 import { RawInput } from '../interfaces'
-export type KeyInput = RawInput | CryptoKeyPair
+export type KeyInput = RawInput | CryptoKeyPair | CryptoKey
 
 export class KeyTypeError extends Error {}
 export class UnknownAlgorithm extends Error {}

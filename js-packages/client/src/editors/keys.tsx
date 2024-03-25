@@ -43,7 +43,6 @@ import {
     generateEncryptionKey,
     DEFAULT_ASYMMETRIC_ENCRYPTION_ALGORITHM,
 } from '@secretgraph/misc/utils/crypto'
-import { unserializeToCryptoKey } from '@secretgraph/misc/utils/base_crypto_legacy'
 import { fallback_fetch } from '@secretgraph/misc/utils/misc'
 import { updateConfigRemoteReducer } from '@secretgraph/misc/utils/operations/config'
 import { decryptContentObject } from '@secretgraph/misc/utils/operations/content'
