@@ -25,7 +25,6 @@
         "@mui/material": "*",
         "@mui/icons-material": "*",
         "@mui/lab": "*",
-        "@mui/x-tree-view": "*",
         "@mui/system": "*"
     },
     "devDependencies": {

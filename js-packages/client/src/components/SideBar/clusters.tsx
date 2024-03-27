@@ -1,7 +1,7 @@
 import { useLazyQuery } from '@apollo/client'
 import GroupWorkIcon from '@mui/icons-material/GroupWork'
 import ReplayIcon from '@mui/icons-material/Replay'
-import { TreeItem, TreeItemProps } from '@mui/x-tree-view/TreeItem'
+import List, { ListProps } from '@mui/material/List'
 import { clusterFeedQuery } from '@secretgraph/graphql-queries/cluster'
 import * as Constants from '@secretgraph/misc/constants'
 import * as Interfaces from '@secretgraph/misc/interfaces'
@@ -10,7 +10,8 @@ import * as React from 'react'
 
 import * as Contexts from '../../contexts'
 import SideBarContents from './contents'
-import SidebarTreeItemLabel from './SidebarTreeItemLabel'
+import SidebarItemLabel from './SidebarItemLabel'
+import ListItem, { ListItemProps } from '@mui/material/ListItem'
 
 type SideBarItemsProps =
     | {
@@ -40,11 +41,15 @@ export default React.memo(function Clusters({
     heading,
     deleted,
     icon,
-    ...props
-}: SideBarItemsProps & TreeItemProps) {
+    label,
+    listProps = {},
+}: SideBarItemsProps & {
+    listProps?: ListProps
+    label: any
+}) {
     const { searchCtx } = React.useContext(Contexts.Search)
+    const [expanded, setExpanded] = React.useState(false)
     const { mainCtx } = React.useContext(Contexts.Main)
-    const { expanded } = React.useContext(Contexts.SidebarItemsExpanded)
     let [loadQuery, { data, fetchMore, error, loading, refetch, called }] =
         useLazyQuery(clusterFeedQuery, {
             variables: {
@@ -61,8 +66,8 @@ export default React.memo(function Clusters({
             nextFetchPolicy: 'cache-and-network',
         })
     React.useEffect(() => {
-        expanded.includes(props.itemId) && loadQuery()
-    }, [expanded.includes(props.itemId)])
+        expanded && loadQuery()
+    }, [expanded])
 
     const _loadMore = () => {
         fetchMore &&
@@ -88,9 +93,6 @@ export default React.memo(function Clusters({
                         type: string
                     }[]
                 ).some((val) => val.type == 'delete' || val.type == 'manage')
-            const itemId = deleteable
-                ? `clusters::${node.id}`
-                : `clusters.${node.id}`
             let name = node.name
             if (!name) {
                 name = node.id
@@ -111,31 +113,39 @@ export default React.memo(function Clusters({
                 marked = node.cluster.id == mainCtx.currentCluster
             }
             ret.push(
-                <TreeItem
-                    label={
-                        <div
-                            onClick={(ev) => {
-                                ev.preventDefault()
-                            }}
-                            onDoubleClick={(ev) => {
-                                ev.preventDefault()
-                                ev.stopPropagation()
-                                node && goTo({ ...node, title: name })
-                            }}
-                        >
-                            <SidebarTreeItemLabel
-                                title={node.description || undefined}
-                                deleted={node.deleted}
-                                marked={marked}
-                                leftIcon={<GroupWorkIcon fontSize="small" />}
-                            >
-                                {name}
-                            </SidebarTreeItemLabel>
-                        </div>
-                    }
-                    key={`${props.itemId}-${itemId}`}
-                    itemId={`${props.itemId}-${itemId}`}
+                <ListItem
+                    onDoubleClick={(ev) => {
+                        ev.preventDefault()
+                        ev.stopPropagation()
+                        node && goTo({ ...node, title: name })
+                    }}
+                    key={node.id}
                 >
+                    <SidebarItemLabel
+                        title={title}
+                        deleted={deleted}
+                        heading={heading}
+                        leftIcon={icon}
+                        rightIcon={
+                            loading || !called ? null : (
+                                <span
+                                    onClick={(ev) => {
+                                        ev.preventDefault()
+                                        ev.stopPropagation()
+                                        refetch && refetch()
+                                    }}
+                                >
+                                    <ReplayIcon
+                                        fontSize="small"
+                                        style={{ marginLeft: '4px' }}
+                                    />
+                                </span>
+                            )
+                        }
+                    >
+                        {label}
+                    </SidebarItemLabel>
+
                     <SideBarContents
                         goTo={goTo}
                         cluster={node.id}
@@ -144,7 +154,6 @@ export default React.memo(function Clusters({
                         public={Constants.UseCriteriaPublic.TRUE}
                         heading
                         label="Public"
-                        itemId={`${props.itemId}-${itemId}-public`}
                     />
                     <SideBarContents
                         goTo={goTo}
@@ -153,10 +162,9 @@ export default React.memo(function Clusters({
                         deleted={node.deleted}
                         heading
                         label="Private"
-                        itemId={`${props.itemId}-${itemId}-private`}
                         public={Constants.UseCriteriaPublic.FALSE}
                     />
-                </TreeItem>
+                </ListItem>
             )
         }
         return ret
@@ -176,50 +184,46 @@ export default React.memo(function Clusters({
         data.clusters.clusters.pageInfo.hasNextPage
     ) {
         clustersFinished.push(
-            <TreeItem
-                label="Load more clusters..."
-                key={`${props.itemId}-cluster-loadmore`}
-                itemId={`${props.itemId}-cluster-loadmore`}
+            <ListItem
+                key="cluster-loadmore"
                 onClick={(ev) => {
                     ev.preventDefault()
                     ev.stopPropagation()
                     _loadMore()
                 }}
-            />
+            >
+                Load more clusters...
+            </ListItem>
         )
     }
 
     return (
-        <TreeItem
-            {...props}
-            label={
-                <SidebarTreeItemLabel
-                    title={title}
-                    deleted={deleted}
-                    heading={heading}
-                    leftIcon={icon}
-                    rightIcon={
-                        loading || !called ? null : (
-                            <span
-                                onClick={(ev) => {
-                                    ev.preventDefault()
-                                    ev.stopPropagation()
-                                    refetch && refetch()
-                                }}
-                            >
-                                <ReplayIcon
-                                    fontSize="small"
-                                    style={{ marginLeft: '4px' }}
-                                />
-                            </span>
-                        )
-                    }
-                >
-                    {props.label}
-                </SidebarTreeItemLabel>
-            }
-        >
+        <List {...listProps}>
+            <SidebarItemLabel
+                title={title}
+                deleted={deleted}
+                heading={heading}
+                leftIcon={icon}
+                rightIcon={
+                    loading || !called ? null : (
+                        <span
+                            onClick={(ev) => {
+                                ev.preventDefault()
+                                ev.stopPropagation()
+                                refetch && refetch()
+                            }}
+                        >
+                            <ReplayIcon
+                                fontSize="small"
+                                style={{ marginLeft: '4px' }}
+                            />
+                        </span>
+                    )
+                }
+            >
+                {label}
+            </SidebarItemLabel>
             {...clustersFinished}
-        </TreeItem>
+        </List>
     )
 })

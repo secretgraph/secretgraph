@@ -3,8 +3,8 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import Divider from '@mui/material/Divider'
 import Drawer from '@mui/material/Drawer'
 import { useTheme } from '@mui/material/styles'
-import { TreeItem } from '@mui/x-tree-view/TreeItem'
-import { SimpleTreeView } from '@mui/x-tree-view/SimpleTreeView'
+import ListItem from '@mui/material/ListItem'
+import List from '@mui/material/List'
 import * as Constants from '@secretgraph/misc/constants'
 import { Writeable } from '@secretgraph/misc/typing'
 import { authInfoFromConfig } from '@secretgraph/misc/utils/config'
@@ -19,7 +19,7 @@ const SideBarNotifications = React.lazy(() => import('./notifications')) */
 import SideBarClusters from './clusters'
 import SideBarContents from './contents'
 import SideBarHeader from './header'
-import SidebarTreeItemLabel from './SidebarTreeItemLabel'
+import SidebarItemLabel from './SidebarItemLabel'
 
 const SideBarItems = () => {
     const { config } = React.useContext(Contexts.Config)
@@ -54,83 +54,34 @@ const SideBarItems = () => {
     )
 
     return (
-        <>
-            <TreeItem
-                itemId="clusters"
-                label={
-                    <SidebarTreeItemLabel heading deleted={searchCtx.deleted}>
-                        Clusters
-                    </SidebarTreeItemLabel>
-                }
-            >
-                {authinfoCluster && (
+        <List>
+            <ListItem>
+                <SidebarItemLabel heading deleted={searchCtx.deleted}>
+                    Clusters
+                </SidebarItemLabel>
+                <List>
+                    {authinfoCluster && (
+                        <SideBarClusters
+                            heading
+                            label="Non-Public"
+                            authinfo={authinfoCluster}
+                            deleted={searchCtx.deleted}
+                            goTo={goToNode}
+                        />
+                    )}
                     <SideBarClusters
                         heading
-                        itemId={`${activeUrl}-clusters-nonpublic`}
-                        label="Non-Public"
-                        authinfo={authinfoCluster}
+                        label="Public"
                         deleted={searchCtx.deleted}
                         goTo={goToNode}
                     />
-                )}
-                <SideBarClusters
-                    heading
-                    itemId={`${activeUrl}-clusters-public`}
-                    label="Public"
-                    deleted={searchCtx.deleted}
-                    goTo={goToNode}
-                />
-            </TreeItem>
-            <TreeItem
-                itemId="contents"
-                label={
-                    <SidebarTreeItemLabel heading deleted={searchCtx.deleted}>
-                        Contents
-                    </SidebarTreeItemLabel>
-                }
-            >
-                <SideBarContents
-                    key="SideBarContentsPublic"
-                    itemId={`${activeUrl}-contents-public`}
-                    activeContent={mainCtx.item}
-                    public={Constants.UseCriteriaPublic.TRUE}
-                    deleted={searchCtx.deleted}
-                    label="Public"
-                    heading
-                    goTo={goToNode}
-                />
-                {authinfo && (
-                    <>
-                        <SideBarContents
-                            key="SideBarContentsDraft"
-                            itemId={`${activeUrl}-contents-drafts`}
-                            authinfo={authinfo}
-                            deleted={searchCtx.deleted}
-                            activeContent={mainCtx.item}
-                            states={['draft']}
-                            label="Drafts"
-                            heading
-                            goTo={goToNode}
-                        />
-                        <SideBarContents
-                            key="SideBarContentsPrivate"
-                            itemId={`${activeUrl}-contents-private`}
-                            authinfo={authinfo}
-                            deleted={searchCtx.deleted}
-                            activeContent={mainCtx.item}
-                            states={['protected']}
-                            label="Private"
-                            heading
-                            goTo={goToNode}
-                        />
-                    </>
-                )}
-            </TreeItem>
-        </>
+                </List>
+            </ListItem>
+        </List>
     )
 }
 
-export default React.memo(function SideBar() {
+export default function SideBar() {
     const theme = useTheme()
     const { config } = React.useContext(Contexts.Config)
     const { open } = React.useContext(Contexts.OpenSidebar)
@@ -140,7 +91,7 @@ export default React.memo(function SideBar() {
         false
     )
     const [selected, setSelected] = React.useState<string[]>([])
-    const [expanded, setExpanded] = React.useState<string[]>([])
+    console.log('selected', selected)
     /**let activeElements: any = null
     if (config) {
         activeElements = (
@@ -151,47 +102,24 @@ export default React.memo(function SideBar() {
         <Contexts.SidebarItemsSelected.Provider
             value={{ selected, setSelected }}
         >
-            <Contexts.SidebarItemsExpanded.Provider
-                value={{ expanded, setExpanded }}
+            <Drawer
+                variant="persistent"
+                anchor={theme.direction === 'ltr' ? 'left' : 'right'}
+                open={!!(open && config)}
+                sx={{
+                    display: !(open && config) ? 'none' : undefined,
+                    '& .MuiDrawer-paper': {
+                        width: drawerWidth,
+                        overflowY: 'auto' as const,
+                    },
+                }}
             >
-                <Drawer
-                    variant="persistent"
-                    anchor={theme.direction === 'ltr' ? 'left' : 'right'}
-                    open={!!(open && config)}
-                    sx={{
-                        display: !(open && config) ? 'none' : undefined,
-                        '& .MuiDrawer-paper': {
-                            width: drawerWidth,
-                            overflowY: 'auto' as const,
-                        },
-                    }}
-                >
-                    <SideBarHeader notifyItems={notifyItems} />
-                    <Divider />
-                    <CapturingSuspense>
-                        <SimpleTreeView
-                            multiSelect
-                            selectedItems={selected}
-                            expandedItems={expanded}
-                            onExpandedItemsChange={(ev, items) => {
-                                setExpanded(items)
-                            }}
-                            onSelectedItemsChange={(ev, items) => {
-                                setSelected(
-                                    items.filter((val) => val.includes('::'))
-                                )
-                            }}
-                            slots={{
-                                collapseIcon: ExpandMoreIcon,
-                                expandIcon: ChevronRightIcon,
-                            }}
-                            key={`${searchCtx.deleted}-${itemsToggle}`}
-                        >
-                            <SideBarItems />
-                        </SimpleTreeView>
-                    </CapturingSuspense>
-                </Drawer>
-            </Contexts.SidebarItemsExpanded.Provider>
+                <SideBarHeader notifyItems={notifyItems} />
+                <Divider />
+                <CapturingSuspense>
+                    <SideBarItems />
+                </CapturingSuspense>
+            </Drawer>
         </Contexts.SidebarItemsSelected.Provider>
     )
-})
+}

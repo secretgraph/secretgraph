@@ -108,13 +108,6 @@ export const SidebarItemsSelected = createContext<{
     selected: [],
     setSelected: stubFn,
 })
-export const SidebarItemsExpanded = createContext<{
-    expanded: string[]
-    setExpanded: (arg: string[]) => void
-}>({
-    expanded: [],
-    setExpanded: stubFn,
-})
 
 export const Clients = createContext(
     {} as {

@@ -4,7 +4,8 @@ import DraftsIcon from '@mui/icons-material/Drafts'
 import MailIcon from '@mui/icons-material/Mail'
 import MovieIcon from '@mui/icons-material/Movie'
 import ReplayIcon from '@mui/icons-material/Replay'
-import { TreeItem, TreeItemProps } from '@mui/x-tree-view/TreeItem'
+import ListItem, { ListItemProps } from '@mui/material/ListItem'
+import List, { ListProps } from '@mui/material/List'
 import { contentFeedQuery } from '@secretgraph/graphql-queries/content'
 import * as Constants from '@secretgraph/misc/constants'
 import * as Interfaces from '@secretgraph/misc/interfaces'
@@ -13,7 +14,7 @@ import * as React from 'react'
 
 import * as Contexts from '../../contexts'
 import { elements } from '../../editors'
-import SidebarTreeItemLabel from './SidebarTreeItemLabel'
+import SidebarItemLabel from './SidebarItemLabel'
 
 type SideBarItemsProps = {
     authinfo?: Interfaces.AuthInfoInterface
@@ -49,11 +50,16 @@ export default React.memo(function SidebarContents({
     icon,
     heading,
     refetchNotify,
-    ...props
-}: SideBarItemsProps & TreeItemProps) {
+    listProps,
+    label,
+}: SideBarItemsProps & {
+    listProps?: ListProps
+    label: any
+}) {
     const { mainCtx } = React.useContext(Contexts.Main)
     const { searchCtx } = React.useContext(Contexts.Search)
-    const { expanded } = React.useContext(Contexts.SidebarItemsExpanded)
+
+    const [expanded, setExpanded] = React.useState(false)
     const incl = React.useMemo(() => {
         const ret = searchCtx.include.concat(injectInclude)
         if (authinfo && publicParam == Constants.UseCriteriaPublic.FALSE) {
@@ -89,8 +95,8 @@ export default React.memo(function SidebarContents({
             nextFetchPolicy: 'cache-and-network',
         })
     React.useEffect(() => {
-        expanded.includes(props.itemId) && loadQuery()
-    }, [expanded.includes(props.itemId)])
+        expanded && loadQuery()
+    }, [expanded])
     const _loadMore = () => {
         fetchMore &&
             fetchMore({
@@ -151,41 +157,33 @@ export default React.memo(function SidebarContents({
                         type: string
                     }[]
                 ).some((val) => val.type == 'delete' || val.type == 'manage')
-            const itemId = deleteable
-                ? `contents::${node.id}`
-                : `contents.${node.id}`
             return (
-                <TreeItem
-                    label={
-                        <div
-                            onClick={(ev) => {
-                                ev.preventDefault()
-                            }}
-                            onDoubleClick={(ev) => {
-                                ev.preventDefault()
-                                ev.stopPropagation()
-                                goTo({
-                                    ...node,
-                                    title: name,
-                                })
-                            }}
-                        >
-                            <SidebarTreeItemLabel
-                                deleted={node.deleted}
-                                marked={mainCtx.item == node.id}
-                                leftIcon={<Icon fontSize="small" />}
-                            >
-                                {`${
-                                    elements.get(node.type)
-                                        ? elements.get(node.type)?.label
-                                        : node.type
-                                }: ${name}`}
-                            </SidebarTreeItemLabel>
-                        </div>
-                    }
-                    itemId={`${props.itemId}-${itemId}`}
-                    key={itemId}
-                />
+                <ListItem
+                    onClick={(ev) => {
+                        ev.preventDefault()
+                    }}
+                    onDoubleClick={(ev) => {
+                        ev.preventDefault()
+                        ev.stopPropagation()
+                        goTo({
+                            ...node,
+                            title: name,
+                        })
+                    }}
+                    key={node.id}
+                >
+                    <SidebarItemLabel
+                        deleted={node.deleted}
+                        marked={mainCtx.item == node.id}
+                        leftIcon={<Icon fontSize="small" />}
+                    >
+                        {`${
+                            elements.get(node.type)
+                                ? elements.get(node.type)?.label
+                                : node.type
+                        }: ${name}`}
+                    </SidebarItemLabel>
+                </ListItem>
             )
         }
         return data.contents.contents.edges.map((edge: any) =>
@@ -200,52 +198,49 @@ export default React.memo(function SidebarContents({
         data.contents.contents.pageInfo.hasNextPage
     ) {
         contentsFinished.push(
-            <TreeItem
-                label="Load more contents..."
-                itemId={`${props.itemId}-contents-loadmore`}
-                key={`${props.itemId}-contents-loadmore`}
+            <ListItem
+                key="contents-loadmore"
                 onClick={(ev) => {
                     ev.preventDefault()
                     ev.stopPropagation()
                     _loadMore()
                 }}
-            />
+            >
+                Load more contents...
+            </ListItem>
         )
     }
     return (
-        <TreeItem
-            {...props}
-            label={
-                <SidebarTreeItemLabel
-                    leftIcon={icon}
-                    rightIcon={
-                        loading || !called ? null : (
-                            <div
-                                onClick={(ev) => {
-                                    ev.preventDefault()
-                                    ev.stopPropagation()
-                                    refetch && refetch()
-                                    // in case parent should be notified
-                                    refetchNotify && refetchNotify()
-                                }}
-                            >
-                                <ReplayIcon
-                                    fontSize="small"
-                                    style={{ marginLeft: '4px' }}
-                                />
-                            </div>
-                        )
-                    }
-                    title={title}
-                    heading={heading}
-                    deleted={deleted}
-                    marked={marked}
-                >
-                    {props.label}
-                </SidebarTreeItemLabel>
-            }
-        >
+        <List {...listProps}>
+            <SidebarItemLabel
+                leftIcon={icon}
+                rightIcon={
+                    loading || !called ? null : (
+                        <div
+                            onClick={(ev) => {
+                                ev.preventDefault()
+                                ev.stopPropagation()
+                                refetch && refetch()
+                                // in case parent should be notified
+                                refetchNotify && refetchNotify()
+                            }}
+                        >
+                            <ReplayIcon
+                                fontSize="small"
+                                style={{ marginLeft: '4px' }}
+                            />
+                        </div>
+                    )
+                }
+                title={title}
+                heading={heading}
+                deleted={deleted}
+                marked={marked}
+            >
+                {label}
+            </SidebarItemLabel>
+
             {...contentsFinished}
-        </TreeItem>
+        </List>
     )
 })
