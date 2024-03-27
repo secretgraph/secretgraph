@@ -141,7 +141,7 @@ def get_file_response_with_range_support(request, fileob, size, name):
         )
         response["Content-Length"] = str(size)
         header = 'attachment; filename="{}"'.format(
-            (name or "unknown.unknown").replace("\\", "\\\\").replace('"', r"\"")
+            name.replace("\\", "\\\\").replace('"', r"\"")
         )
         response["Content-Disposition"] = header
     response["Accept-Ranges"] = "bytes"
@@ -250,6 +250,9 @@ class ContentView(View):
         if result["scope"] != "peek":
             freeze_contents([content.id], request)
         names = content.tags_proxy.name
+        name = names and names[0]
+        if not name:
+            name = "unknown.store"
         if hasattr(content, "read_decrypt"):
             # no range support because of AESGCM tag,
             # Would require an crypto method to calculate the effective size
@@ -264,13 +267,13 @@ class ContentView(View):
                         names[0].replace("\\", "\\\\").replace('"', r"\"")
                     )
                 except UnicodeEncodeError:
-                    header = "attachment; filename*=utf-8''{}".format(quote(names[0]))
+                    header = "attachment; filename*=utf-8''{}".format(quote(name))
                 response["Content-Disposition"] = header
             # encrypted contents may not be indexed or followed
             response["X-Robots-Tag"] = "noindex,nofollow"
         else:
             response = get_file_response_with_range_support(
-                request, content.file.open("rb"), content.file.size, names[0]
+                request, content.file.open("rb"), content.file.size, name
             )
             if content.cluster.featured:
                 response["X-Robots-Tag"] = "index,follow"
@@ -340,6 +343,8 @@ class ContentView(View):
             name = content.tags.filter(tag__startswith="name=").first()
             if name:
                 name = name.tag.split("=", 1)[-1]
+            if not name:
+                name = "unknown.store"
             response = get_file_response_with_range_support(
                 request, content.file.open("rb"), content.file.size, name
             )
