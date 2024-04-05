@@ -1,6 +1,8 @@
 import { useLazyQuery } from '@apollo/client'
 import DescriptionIcon from '@mui/icons-material/Description'
 import DraftsIcon from '@mui/icons-material/Drafts'
+import ExpandLessIcon from '@mui/icons-material/ExpandLess'
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import MailIcon from '@mui/icons-material/Mail'
 import MovieIcon from '@mui/icons-material/Movie'
 import ReplayIcon from '@mui/icons-material/Replay'
@@ -15,11 +17,11 @@ import * as React from 'react'
 import * as Contexts from '../../contexts'
 import { elements } from '../../editors'
 import SidebarItemLabel from './SidebarItemLabel'
+import ListItemText from '@mui/material/ListItemText'
+import ListItemButton from '@mui/material/ListItemButton'
 
 type SideBarItemsProps = {
     authinfo?: Interfaces.AuthInfoInterface
-    goTo: (node: any) => void
-    refetchNotify?: () => void
     activeContent?: string | null
     cluster?: string | null
     public?: keyof typeof Constants.UseCriteriaPublic
@@ -29,15 +31,11 @@ type SideBarItemsProps = {
     states?: string[]
     title?: string
     deleted?: boolean
-    heading?: boolean
-    marked?: boolean
-    icon?: React.ReactNode
+    label: string
 }
 
 export default React.memo(function SidebarContents({
     authinfo,
-    goTo,
-    activeContent,
     cluster,
     public: publicParam = Constants.UseCriteriaPublic.IGNORE,
     injectInclude = [],
@@ -46,17 +44,9 @@ export default React.memo(function SidebarContents({
     injectKeys = [],
     title,
     deleted,
-    marked,
-    icon,
-    heading,
-    refetchNotify,
-    listProps,
     label,
-}: SideBarItemsProps & {
-    listProps?: ListProps
-    label: any
-}) {
-    const { mainCtx } = React.useContext(Contexts.Main)
+}: SideBarItemsProps) {
+    const { mainCtx, goToNode } = React.useContext(Contexts.Main)
     const { searchCtx } = React.useContext(Contexts.Search)
 
     const [expanded, setExpanded] = React.useState(false)
@@ -158,32 +148,28 @@ export default React.memo(function SidebarContents({
                     }[]
                 ).some((val) => val.type == 'delete' || val.type == 'manage')
             return (
-                <ListItem
-                    onClick={(ev) => {
-                        ev.preventDefault()
-                    }}
-                    onDoubleClick={(ev) => {
-                        ev.preventDefault()
-                        ev.stopPropagation()
-                        goTo({
-                            ...node,
-                            title: name,
-                        })
-                    }}
+                <SidebarItemLabel
                     key={node.id}
-                >
-                    <SidebarItemLabel
-                        deleted={node.deleted}
-                        marked={mainCtx.item == node.id}
-                        leftIcon={<Icon fontSize="small" />}
-                    >
-                        {`${
-                            elements.get(node.type)
-                                ? elements.get(node.type)?.label
-                                : node.type
-                        }: ${name}`}
-                    </SidebarItemLabel>
-                </ListItem>
+                    deleted={node.deleted}
+                    leftOfLabel={<Icon />}
+                    listItemButtonProps={{
+                        dense: true,
+                        selected: mainCtx.item == node.id,
+                        onClick: (ev) => {
+                            ev.preventDefault()
+                            ev.stopPropagation()
+                            goToNode({
+                                ...node,
+                                title: name,
+                            })
+                        },
+                    }}
+                    label={`${
+                        elements.get(node.type)
+                            ? elements.get(node.type)?.label
+                            : node.type
+                    }: ${name}`}
+                />
             )
         }
         return data.contents.contents.edges.map((edge: any) =>
@@ -198,7 +184,7 @@ export default React.memo(function SidebarContents({
         data.contents.contents.pageInfo.hasNextPage
     ) {
         contentsFinished.push(
-            <ListItem
+            <ListItemButton
                 key="contents-loadmore"
                 onClick={(ev) => {
                     ev.preventDefault()
@@ -206,41 +192,61 @@ export default React.memo(function SidebarContents({
                     _loadMore()
                 }}
             >
-                Load more contents...
-            </ListItem>
+                <ListItemText>Load more contents...</ListItemText>
+            </ListItemButton>
         )
     }
     return (
-        <List {...listProps}>
+        <>
             <SidebarItemLabel
-                leftIcon={icon}
-                rightIcon={
-                    loading || !called ? null : (
-                        <div
-                            onClick={(ev) => {
-                                ev.preventDefault()
-                                ev.stopPropagation()
-                                refetch && refetch()
-                                // in case parent should be notified
-                                refetchNotify && refetchNotify()
-                            }}
-                        >
-                            <ReplayIcon
-                                fontSize="small"
-                                style={{ marginLeft: '4px' }}
-                            />
-                        </div>
-                    )
-                }
                 title={title}
-                heading={heading}
                 deleted={deleted}
-                marked={marked}
-            >
-                {label}
-            </SidebarItemLabel>
+                listItemButtonProps={{
+                    dense: true,
+                    selected: mainCtx.item == cluster,
+                    onClick: (ev) => {
+                        setExpanded(!expanded)
+                    },
+                }}
+                label={label}
+                rightOfLabel={
+                    <>
+                        {loading || !called || !expanded ? null : (
+                            <span
+                                onClick={(ev) => {
+                                    ev.preventDefault()
+                                    ev.stopPropagation()
+                                    refetch && refetch()
+                                }}
+                            >
+                                <ReplayIcon
+                                    fontSize="small"
+                                    style={{ marginLeft: '4px' }}
+                                />
+                            </span>
+                        )}
+                        <span>
+                            {expanded ? (
+                                <ExpandMoreIcon
+                                    fontSize="small"
+                                    style={{ marginLeft: '4px' }}
+                                />
+                            ) : (
+                                <ExpandLessIcon
+                                    fontSize="small"
+                                    style={{ marginLeft: '4px' }}
+                                />
+                            )}
+                        </span>
+                    </>
+                }
+            />
 
-            {...contentsFinished}
-        </List>
+            {expanded ? (
+                <List component="div" disablePadding dense sx={{ pl: 1 }}>
+                    {...contentsFinished}
+                </List>
+            ) : null}
+        </>
     )
 })

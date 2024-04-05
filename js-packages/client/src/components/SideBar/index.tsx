@@ -20,12 +20,12 @@ import SideBarClusters from './clusters'
 import SideBarContents from './contents'
 import SideBarHeader from './header'
 import SidebarItemLabel from './SidebarItemLabel'
+import { ListSubheader } from '@mui/material'
 
 const SideBarItems = () => {
     const { config } = React.useContext(Contexts.Config)
     const { activeUrl } = React.useContext(Contexts.ActiveUrl)
     const { searchCtx } = React.useContext(Contexts.Search)
-    const { mainCtx, goToNode } = React.useContext(Contexts.Main)
     const authinfoCluster = React.useMemo(
         () =>
             config
@@ -54,29 +54,20 @@ const SideBarItems = () => {
     )
 
     return (
-        <List>
-            <ListItem>
-                <SidebarItemLabel heading deleted={searchCtx.deleted}>
-                    Clusters
-                </SidebarItemLabel>
-                <List>
-                    {authinfoCluster && (
-                        <SideBarClusters
-                            heading
-                            label="Non-Public"
-                            authinfo={authinfoCluster}
-                            deleted={searchCtx.deleted}
-                            goTo={goToNode}
-                        />
-                    )}
-                    <SideBarClusters
-                        heading
-                        label="Public"
-                        deleted={searchCtx.deleted}
-                        goTo={goToNode}
-                    />
-                </List>
-            </ListItem>
+        <List
+            component="div"
+            disablePadding
+            dense
+            subheader={<ListSubheader component="div">Clusters</ListSubheader>}
+        >
+            {authinfoCluster && (
+                <SideBarClusters
+                    label="Non-Public"
+                    authinfo={authinfoCluster}
+                    deleted={searchCtx.deleted}
+                />
+            )}
+            <SideBarClusters label="Public" deleted={searchCtx.deleted} />
         </List>
     )
 }

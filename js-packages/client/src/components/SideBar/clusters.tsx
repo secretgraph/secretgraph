@@ -1,5 +1,9 @@
 import { useLazyQuery } from '@apollo/client'
 import GroupWorkIcon from '@mui/icons-material/GroupWork'
+import ChevronRightIcon from '@mui/icons-material/ChevronRight'
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
+import ExpandLessIcon from '@mui/icons-material/ExpandLess'
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import ReplayIcon from '@mui/icons-material/Replay'
 import List, { ListProps } from '@mui/material/List'
 import { clusterFeedQuery } from '@secretgraph/graphql-queries/cluster'
@@ -12,41 +16,26 @@ import * as Contexts from '../../contexts'
 import SideBarContents from './contents'
 import SidebarItemLabel from './SidebarItemLabel'
 import ListItem, { ListItemProps } from '@mui/material/ListItem'
+import ClusterItem from './ClusterItem'
+import { ListItemButton, ListItemText } from '@mui/material'
 
-type SideBarItemsProps =
-    | {
-          authinfo: Interfaces.AuthInfoInterface
-          goTo: (node: any) => void
-          excludeIds: string[]
-          title?: string
-          deleted?: boolean
-          heading?: boolean
-          icon?: React.ReactNode
-      }
-    | {
-          authinfo?: Interfaces.AuthInfoInterface
-          goTo: (node: any) => void
-          excludeIds?: string[]
-          title?: string
-          deleted?: boolean
-          heading?: boolean
-          icon?: React.ReactNode
-      }
+type SideBarItemsProps = {
+    authinfo?: Interfaces.AuthInfoInterface
+    excludeIds?: string[]
+    title?: string
+    deleted?: boolean
+    label: string
+    nodeid?: string
+}
 
 export default React.memo(function Clusters({
     authinfo,
-    goTo,
     excludeIds,
     title,
-    heading,
     deleted,
-    icon,
     label,
-    listProps = {},
-}: SideBarItemsProps & {
-    listProps?: ListProps
-    label: any
-}) {
+    nodeid,
+}: SideBarItemsProps) {
     const { searchCtx } = React.useContext(Contexts.Search)
     const [expanded, setExpanded] = React.useState(false)
     const { mainCtx } = React.useContext(Contexts.Main)
@@ -83,88 +72,13 @@ export default React.memo(function Clusters({
         }
         const ret: JSX.Element[] = []
         for (const { node } of data.clusters.clusters.edges) {
-            // TODO: check availability of extra cluster permissions. Merge authInfos
-            // for now assume yes if manage type was not specified
-            const deleteable =
-                !authinfo ||
-                !authinfo.types.has('manage') ||
-                (
-                    node.availableActions as {
-                        type: string
-                    }[]
-                ).some((val) => val.type == 'delete' || val.type == 'manage')
-            let name = node.name
-            if (!name) {
-                name = node.id
-                if (name) {
-                    try {
-                        const rawTxt = utf8decoder.decode(b64tobuffer(name))
-                        let [_, tmp] = rawTxt.match(/:(.*)/) as string[]
-                        name = tmp
-                    } catch (exc) {
-                        name = `...${node.id.slice(-48)}`
-                    }
-                }
-            }
-            let marked = false
-            if (node.__typename == 'Cluster') {
-                marked = node.id == mainCtx.item
-            } else if (node.cluster && node.cluster.id) {
-                marked = node.cluster.id == mainCtx.currentCluster
-            }
             ret.push(
-                <ListItem
-                    onDoubleClick={(ev) => {
-                        ev.preventDefault()
-                        ev.stopPropagation()
-                        node && goTo({ ...node, title: name })
-                    }}
+                <ClusterItem
                     key={node.id}
-                >
-                    <SidebarItemLabel
-                        title={title}
-                        deleted={deleted}
-                        heading={heading}
-                        leftIcon={icon}
-                        rightIcon={
-                            loading || !called ? null : (
-                                <span
-                                    onClick={(ev) => {
-                                        ev.preventDefault()
-                                        ev.stopPropagation()
-                                        refetch && refetch()
-                                    }}
-                                >
-                                    <ReplayIcon
-                                        fontSize="small"
-                                        style={{ marginLeft: '4px' }}
-                                    />
-                                </span>
-                            )
-                        }
-                    >
-                        {label}
-                    </SidebarItemLabel>
-
-                    <SideBarContents
-                        goTo={goTo}
-                        cluster={node.id}
-                        authinfo={authinfo}
-                        deleted={node.deleted}
-                        public={Constants.UseCriteriaPublic.TRUE}
-                        heading
-                        label="Public"
-                    />
-                    <SideBarContents
-                        goTo={goTo}
-                        cluster={node.id}
-                        authinfo={authinfo}
-                        deleted={node.deleted}
-                        heading
-                        label="Private"
-                        public={Constants.UseCriteriaPublic.FALSE}
-                    />
-                </ListItem>
+                    node={node}
+                    deleted={deleted}
+                    authinfo={authinfo}
+                />
             )
         }
         return ret
@@ -184,46 +98,71 @@ export default React.memo(function Clusters({
         data.clusters.clusters.pageInfo.hasNextPage
     ) {
         clustersFinished.push(
-            <ListItem
+            <ListItemButton
                 key="cluster-loadmore"
+                dense
                 onClick={(ev) => {
                     ev.preventDefault()
                     ev.stopPropagation()
                     _loadMore()
                 }}
             >
-                Load more clusters...
-            </ListItem>
+                <ListItemText>Load more clusters...</ListItemText>
+            </ListItemButton>
         )
     }
 
     return (
-        <List {...listProps}>
+        <>
             <SidebarItemLabel
                 title={title}
                 deleted={deleted}
-                heading={heading}
-                leftIcon={icon}
-                rightIcon={
-                    loading || !called ? null : (
-                        <span
-                            onClick={(ev) => {
-                                ev.preventDefault()
-                                ev.stopPropagation()
-                                refetch && refetch()
-                            }}
-                        >
-                            <ReplayIcon
-                                fontSize="small"
-                                style={{ marginLeft: '4px' }}
-                            />
+                listItemButtonProps={{
+                    dense: true,
+                    selected: mainCtx.item == nodeid,
+                    onClick: (ev) => {
+                        setExpanded(!expanded)
+                    },
+                }}
+                label={label}
+                rightOfLabel={
+                    <>
+                        {loading || !called || !expanded ? null : (
+                            <span
+                                onClick={(ev) => {
+                                    ev.preventDefault()
+                                    ev.stopPropagation()
+                                    refetch && refetch()
+                                }}
+                            >
+                                <ReplayIcon
+                                    fontSize="small"
+                                    style={{ marginLeft: '4px' }}
+                                />
+                            </span>
+                        )}
+                        <span>
+                            {expanded ? (
+                                <ExpandMoreIcon
+                                    fontSize="small"
+                                    style={{ marginLeft: '4px' }}
+                                />
+                            ) : (
+                                <ExpandLessIcon
+                                    fontSize="small"
+                                    style={{ marginLeft: '4px' }}
+                                />
+                            )}
                         </span>
-                    )
+                    </>
                 }
-            >
-                {label}
-            </SidebarItemLabel>
-            {...clustersFinished}
-        </List>
+            />
+
+            {expanded ? (
+                <List component="div" disablePadding dense sx={{ pl: 2 }}>
+                    {clustersFinished}
+                </List>
+            ) : null}
+        </>
     )
 })

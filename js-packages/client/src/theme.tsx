@@ -1,5 +1,4 @@
 import type {} from '@mui/lab/themeAugmentation'
-import type {} from '@mui/x-tree-view/themeAugmentation'
 
 import { Theme, createTheme, responsiveFontSizes } from '@mui/material/styles'
 
@@ -27,14 +26,6 @@ export const drawerWidth = '22rem'
 export const theme = responsiveFontSizes(
     createTheme({
         components: {
-            MuiTreeItem: {
-                styleOverrides: {
-                    iconContainer: {
-                        width: 'auto',
-                        maxWidth: '15px',
-                    },
-                },
-            },
             MuiTextField: {
                 defaultProps: {
                     variant: 'outlined',
