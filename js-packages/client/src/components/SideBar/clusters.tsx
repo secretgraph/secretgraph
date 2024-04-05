@@ -2,6 +2,7 @@ import { useLazyQuery } from '@apollo/client'
 import GroupWorkIcon from '@mui/icons-material/GroupWork'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
+import Button from '@mui/material/Button'
 import ExpandLessIcon from '@mui/icons-material/ExpandLess'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import ReplayIcon from '@mui/icons-material/Replay'
@@ -117,16 +118,13 @@ export default React.memo(function Clusters({
             <SidebarItemLabel
                 title={title}
                 deleted={deleted}
-                listItemButtonProps={{
+                listItemProps={{
                     dense: true,
                     selected: mainCtx.item == nodeid,
-                    onClick: (ev) => {
-                        setExpanded(!expanded)
-                    },
                 }}
                 label={label}
                 rightOfLabel={
-                    <>
+                    <span>
                         {loading || !called || !expanded ? null : (
                             <span
                                 onClick={(ev) => {
@@ -141,7 +139,11 @@ export default React.memo(function Clusters({
                                 />
                             </span>
                         )}
-                        <span>
+                        <Button
+                            onClick={(ev) => {
+                                setExpanded(!expanded)
+                            }}
+                        >
                             {expanded ? (
                                 <ExpandMoreIcon
                                     fontSize="small"
@@ -153,13 +155,18 @@ export default React.memo(function Clusters({
                                     style={{ marginLeft: '4px' }}
                                 />
                             )}
-                        </span>
-                    </>
+                        </Button>
+                    </span>
                 }
             />
 
             {expanded ? (
-                <List component="div" disablePadding dense sx={{ pl: 2 }}>
+                <List
+                    component="div"
+                    disablePadding
+                    dense
+                    sx={{ pl: 1, pr: 1 }}
+                >
                     {clustersFinished}
                 </List>
             ) : null}

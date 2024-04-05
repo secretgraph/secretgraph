@@ -19,6 +19,7 @@ import { elements } from '../../editors'
 import SidebarItemLabel from './SidebarItemLabel'
 import ListItemText from '@mui/material/ListItemText'
 import ListItemButton from '@mui/material/ListItemButton'
+import { Button } from '@mui/material'
 
 type SideBarItemsProps = {
     authinfo?: Interfaces.AuthInfoInterface
@@ -201,16 +202,13 @@ export default React.memo(function SidebarContents({
             <SidebarItemLabel
                 title={title}
                 deleted={deleted}
-                listItemButtonProps={{
+                listItemProps={{
                     dense: true,
                     selected: mainCtx.item == cluster,
-                    onClick: (ev) => {
-                        setExpanded(!expanded)
-                    },
                 }}
                 label={label}
                 rightOfLabel={
-                    <>
+                    <span>
                         {loading || !called || !expanded ? null : (
                             <span
                                 onClick={(ev) => {
@@ -225,7 +223,11 @@ export default React.memo(function SidebarContents({
                                 />
                             </span>
                         )}
-                        <span>
+                        <Button
+                            onClick={(ev) => {
+                                setExpanded(!expanded)
+                            }}
+                        >
                             {expanded ? (
                                 <ExpandMoreIcon
                                     fontSize="small"
@@ -237,13 +239,18 @@ export default React.memo(function SidebarContents({
                                     style={{ marginLeft: '4px' }}
                                 />
                             )}
-                        </span>
-                    </>
+                        </Button>
+                    </span>
                 }
             />
 
             {expanded ? (
-                <List component="div" disablePadding dense sx={{ pl: 1 }}>
+                <List
+                    component="div"
+                    disablePadding
+                    dense
+                    sx={{ pl: 1, pr: 1 }}
+                >
                     {...contentsFinished}
                 </List>
             ) : null}

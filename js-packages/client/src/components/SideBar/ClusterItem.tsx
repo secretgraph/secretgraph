@@ -14,7 +14,7 @@ import * as React from 'react'
 import * as Contexts from '../../contexts'
 import SideBarContents from './contents'
 import SidebarItemLabel from './SidebarItemLabel'
-import ListItem, { ListItemProps } from '@mui/material/ListItem'
+import Button from '@mui/material/Button'
 
 export default React.memo(function ClusterItem({
     node,
@@ -69,7 +69,7 @@ export default React.memo(function ClusterItem({
                     },
                 }}
                 rightOfLabel={
-                    <span
+                    <Button
                         onClick={(ev: any) => {
                             ev.preventDefault()
                             ev.stopPropagation()
@@ -87,13 +87,18 @@ export default React.memo(function ClusterItem({
                                 style={{ marginLeft: '4px' }}
                             />
                         )}
-                    </span>
+                    </Button>
                 }
                 label={name}
             />
 
             {expanded ? (
-                <List component="div" disablePadding dense sx={{ pl: 1 }}>
+                <List
+                    component="div"
+                    disablePadding
+                    dense
+                    sx={{ pl: 1, pr: 2 }}
+                >
                     <SideBarContents
                         cluster={node.id}
                         authinfo={authinfo}

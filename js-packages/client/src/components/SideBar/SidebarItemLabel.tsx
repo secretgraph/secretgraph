@@ -3,6 +3,7 @@ import ListItemButton, {
     ListItemButtonProps,
 } from '@mui/material/ListItemButton'
 import ListItemText, { ListItemTextProps } from '@mui/material/ListItemText'
+import ListItem, { ListItemProps } from '@mui/material/ListItem'
 
 import * as React from 'react'
 
@@ -15,6 +16,7 @@ export type SidebarItemLabelProps = {
     leftOfLabel?: React.ReactNode
     rightOfLabel?: React.ReactNode
     listItemTextProps?: ListItemTextProps
+    listItemProps?: ListItemProps
     listItemButtonProps?: ListItemButtonProps
 }
 
@@ -26,6 +28,7 @@ export default React.memo(function SidebarItemLabel({
     label,
     listItemButtonProps,
     listItemTextProps,
+    listItemProps,
 }: SidebarItemLabelProps) {
     let item = (
         <>
@@ -47,6 +50,8 @@ export default React.memo(function SidebarItemLabel({
 
     if (listItemButtonProps) {
         item = <ListItemButton {...listItemButtonProps}>{item}</ListItemButton>
+    } else if (listItemProps) {
+        item = <ListItem {...listItemProps}>{item}</ListItem>
     }
 
     if (title) {
