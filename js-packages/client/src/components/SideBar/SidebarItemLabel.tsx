@@ -11,39 +11,45 @@ import { drawerWidth } from '../../theme'
 
 export type SidebarItemLabelProps = {
     title?: string
+    primary: string
     deleted?: boolean
-    label: string
     leftOfLabel?: React.ReactNode
     rightOfLabel?: React.ReactNode
-    listItemTextProps?: ListItemTextProps
-    listItemProps?: ListItemProps
+    listItemTextProps?: Exclude<
+        ListItemTextProps,
+        'primary' | 'disableTypography' | 'children'
+    >
     listItemButtonProps?: ListItemButtonProps
+    listItemProps?: ListItemProps
 }
 
 export default React.memo(function SidebarItemLabel({
     leftOfLabel,
     rightOfLabel,
-    deleted,
     title,
-    label,
+    primary,
     listItemButtonProps,
     listItemTextProps,
     listItemProps,
+    deleted,
 }: SidebarItemLabelProps) {
+    listItemTextProps = {
+        ...(listItemTextProps || {}),
+        primaryTypographyProps: {
+            ...(listItemTextProps?.primaryTypographyProps || {}),
+            sx: {
+                wordBreak: 'break-all' as const,
+                maxWidth: '200px',
+                color: deleted ? 'red' : undefined,
+                ...(listItemTextProps?.primaryTypographyProps?.sx || {}),
+            },
+        },
+    }
+
     let item = (
         <>
             {leftOfLabel}
-            <ListItemText {...listItemTextProps}>
-                <span
-                    style={{
-                        wordBreak: 'break-all' as const,
-                        maxWidth: '200px',
-                        color: deleted ? 'red' : undefined,
-                    }}
-                >
-                    {label}
-                </span>
-            </ListItemText>
+            <ListItemText {...listItemTextProps}>{primary}</ListItemText>
             {rightOfLabel}
         </>
     )

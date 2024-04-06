@@ -1,22 +1,17 @@
 import { useLazyQuery } from '@apollo/client'
-import GroupWorkIcon from '@mui/icons-material/GroupWork'
-import ChevronRightIcon from '@mui/icons-material/ChevronRight'
-import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
-import Button from '@mui/material/Button'
+import IconButton from '@mui/material/IconButton'
 import ExpandLessIcon from '@mui/icons-material/ExpandLess'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import ReplayIcon from '@mui/icons-material/Replay'
-import List, { ListProps } from '@mui/material/List'
+import List from '@mui/material/List'
+import ListItemSecondaryAction from '@mui/material/ListItemSecondaryAction'
 import { clusterFeedQuery } from '@secretgraph/graphql-queries/cluster'
 import * as Constants from '@secretgraph/misc/constants'
 import * as Interfaces from '@secretgraph/misc/interfaces'
-import { b64tobuffer, utf8decoder } from '@secretgraph/misc/utils/encoding'
 import * as React from 'react'
 
 import * as Contexts from '../../contexts'
-import SideBarContents from './contents'
 import SidebarItemLabel from './SidebarItemLabel'
-import ListItem, { ListItemProps } from '@mui/material/ListItem'
 import ClusterItem from './ClusterItem'
 import { ListItemButton, ListItemText } from '@mui/material'
 
@@ -74,12 +69,7 @@ export default React.memo(function Clusters({
         const ret: JSX.Element[] = []
         for (const { node } of data.clusters.clusters.edges) {
             ret.push(
-                <ClusterItem
-                    key={node.id}
-                    node={node}
-                    deleted={node.deleted}
-                    authinfo={authinfo}
-                />
+                <ClusterItem key={node.id} node={node} authinfo={authinfo} />
             )
         }
         return ret
@@ -118,15 +108,16 @@ export default React.memo(function Clusters({
             <SidebarItemLabel
                 title={title}
                 deleted={deleted}
-                listItemProps={{
+                listItemButtonProps={{
                     dense: true,
                     selected: mainCtx.item == nodeid,
+                    disableRipple: true,
                 }}
-                label={label}
+                primary={label}
                 rightOfLabel={
-                    <span>
+                    <ListItemSecondaryAction>
                         {loading || !called || !expanded ? null : (
-                            <span
+                            <IconButton
                                 onClick={(ev) => {
                                     ev.preventDefault()
                                     ev.stopPropagation()
@@ -137,10 +128,13 @@ export default React.memo(function Clusters({
                                     fontSize="small"
                                     style={{ marginLeft: '4px' }}
                                 />
-                            </span>
+                            </IconButton>
                         )}
-                        <Button
+                        <IconButton
+                            edge="end"
                             onClick={(ev) => {
+                                ev.preventDefault()
+                                ev.stopPropagation()
                                 setExpanded(!expanded)
                             }}
                         >
@@ -155,8 +149,8 @@ export default React.memo(function Clusters({
                                     style={{ marginLeft: '4px' }}
                                 />
                             )}
-                        </Button>
-                    </span>
+                        </IconButton>
+                    </ListItemSecondaryAction>
                 }
             />
 

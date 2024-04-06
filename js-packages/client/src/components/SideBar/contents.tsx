@@ -6,20 +6,21 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import MailIcon from '@mui/icons-material/Mail'
 import MovieIcon from '@mui/icons-material/Movie'
 import ReplayIcon from '@mui/icons-material/Replay'
-import ListItem, { ListItemProps } from '@mui/material/ListItem'
-import List, { ListProps } from '@mui/material/List'
+import ListItemSecondaryAction from '@mui/material/ListItemSecondaryAction'
+import List from '@mui/material/List'
 import { contentFeedQuery } from '@secretgraph/graphql-queries/content'
 import * as Constants from '@secretgraph/misc/constants'
 import * as Interfaces from '@secretgraph/misc/interfaces'
 import { b64tobuffer, utf8decoder } from '@secretgraph/misc/utils/encoding'
 import * as React from 'react'
-
-import * as Contexts from '../../contexts'
-import { elements } from '../../editors'
 import SidebarItemLabel from './SidebarItemLabel'
 import ListItemText from '@mui/material/ListItemText'
 import ListItemButton from '@mui/material/ListItemButton'
-import { Button } from '@mui/material'
+import IconButton from '@mui/material/IconButton'
+import Checkbox from '@mui/material/Checkbox'
+
+import * as Contexts from '../../contexts'
+import { elements } from '../../editors'
 
 type SideBarItemsProps = {
     authinfo?: Interfaces.AuthInfoInterface
@@ -49,6 +50,9 @@ export default React.memo(function SidebarContents({
 }: SideBarItemsProps) {
     const { mainCtx, goToNode } = React.useContext(Contexts.Main)
     const { searchCtx } = React.useContext(Contexts.Search)
+    const { selected, setSelected } = React.useContext(
+        Contexts.SidebarItemsSelected
+    )
 
     const [expanded, setExpanded] = React.useState(false)
     const incl = React.useMemo(() => {
@@ -155,8 +159,9 @@ export default React.memo(function SidebarContents({
                     leftOfLabel={<Icon />}
                     listItemButtonProps={{
                         dense: true,
+                        disableRipple: true,
                         selected: mainCtx.item == node.id,
-                        onClick: (ev) => {
+                        onDoubleClick: (ev) => {
                             ev.preventDefault()
                             ev.stopPropagation()
                             goToNode({
@@ -165,11 +170,33 @@ export default React.memo(function SidebarContents({
                             })
                         },
                     }}
-                    label={`${
+                    primary={`${
                         elements.get(node.type)
                             ? elements.get(node.type)?.label
                             : node.type
                     }: ${name}`}
+                    rightOfLabel={
+                        <ListItemSecondaryAction>
+                            <Checkbox
+                                onChange={(ev) => {
+                                    ev.preventDefault()
+                                    ev.stopPropagation()
+                                    const index = selected.indexOf(node.id)
+                                    let newSelected
+                                    if (index === -1) {
+                                        newSelected = [...selected, node.id]
+                                    } else {
+                                        newSelected = selected.toSpliced(
+                                            index,
+                                            1
+                                        )
+                                    }
+                                    setSelected(newSelected)
+                                }}
+                                checked={selected.indexOf(node.id) !== -1}
+                            />
+                        </ListItemSecondaryAction>
+                    }
                 />
             )
         }
@@ -206,11 +233,11 @@ export default React.memo(function SidebarContents({
                     dense: true,
                     selected: mainCtx.item == cluster,
                 }}
-                label={label}
+                primary={label}
                 rightOfLabel={
-                    <span>
+                    <ListItemSecondaryAction>
                         {loading || !called || !expanded ? null : (
-                            <span
+                            <IconButton
                                 onClick={(ev) => {
                                     ev.preventDefault()
                                     ev.stopPropagation()
@@ -221,10 +248,13 @@ export default React.memo(function SidebarContents({
                                     fontSize="small"
                                     style={{ marginLeft: '4px' }}
                                 />
-                            </span>
+                            </IconButton>
                         )}
-                        <Button
+                        <IconButton
+                            edge={'end'}
                             onClick={(ev) => {
+                                ev.preventDefault()
+                                ev.stopPropagation()
                                 setExpanded(!expanded)
                             }}
                         >
@@ -239,8 +269,8 @@ export default React.memo(function SidebarContents({
                                     style={{ marginLeft: '4px' }}
                                 />
                             )}
-                        </Button>
-                    </span>
+                        </IconButton>
+                    </ListItemSecondaryAction>
                 }
             />
 

@@ -141,7 +141,7 @@ export interface SearchContextInterface {
     cluster: null | string
     include: string[]
     exclude: string[]
-    deleted: boolean
+    deleted: boolean | undefined
     // environment: Environment | null;
 }
 

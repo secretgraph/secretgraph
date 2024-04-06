@@ -5,28 +5,30 @@ import ExpandLessIcon from '@mui/icons-material/ExpandLess'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import ReplayIcon from '@mui/icons-material/Replay'
 import List, { ListProps } from '@mui/material/List'
-import { clusterFeedQuery } from '@secretgraph/graphql-queries/cluster'
+import ListItemSecondaryAction from '@mui/material/ListItemSecondaryAction'
 import * as Constants from '@secretgraph/misc/constants'
 import * as Interfaces from '@secretgraph/misc/interfaces'
 import { b64tobuffer, utf8decoder } from '@secretgraph/misc/utils/encoding'
 import * as React from 'react'
+import IconButton from '@mui/material/IconButton'
 
 import * as Contexts from '../../contexts'
 import SideBarContents from './contents'
 import SidebarItemLabel from './SidebarItemLabel'
-import Button from '@mui/material/Button'
+import Checkbox from '@mui/material/Checkbox'
 
 export default React.memo(function ClusterItem({
     node,
     authinfo,
-    deleted,
 }: {
     node: any
     authinfo?: Interfaces.AuthInfoInterface
-    deleted?: boolean
 }) {
     const [expanded, setExpanded] = React.useState(false)
     const { mainCtx, goToNode } = React.useContext(Contexts.Main)
+    const { selected, setSelected } = React.useContext(
+        Contexts.SidebarItemsSelected
+    )
     // TODO: check availability of extra cluster permissions. Merge authInfos
     // for now assume yes if manage type was not specified
     const deleteable =
@@ -37,18 +39,19 @@ export default React.memo(function ClusterItem({
                 type: string
             }[]
         ).some((val) => val.type == 'delete' || val.type == 'manage')
+    let nodeRawId = node.id
+    if (nodeRawId) {
+        try {
+            const rawTxt = utf8decoder.decode(b64tobuffer(nodeRawId))
+            let [_, tmp] = rawTxt.match(/:(.*)/) as string[]
+            nodeRawId = tmp
+        } catch (exc) {
+            nodeRawId = `...${node.id.slice(-48)}`
+        }
+    }
     let name = node.name
     if (!name) {
-        name = node.id
-        if (name) {
-            try {
-                const rawTxt = utf8decoder.decode(b64tobuffer(name))
-                let [_, tmp] = rawTxt.match(/:(.*)/) as string[]
-                name = tmp
-            } catch (exc) {
-                name = `...${node.id.slice(-48)}`
-            }
-        }
+        name = nodeRawId
     }
     let marked = false
     if (node.__typename == 'Cluster') {
@@ -59,37 +62,60 @@ export default React.memo(function ClusterItem({
     return (
         <React.Fragment key={node.id}>
             <SidebarItemLabel
-                title={node.description}
-                deleted={deleted}
+                title={name != nodeRawId ? nodeRawId : undefined}
+                deleted={node.deleted}
                 listItemButtonProps={{
-                    onClick: (ev: any) => {
+                    onDoubleClick: (ev: any) => {
                         ev.preventDefault()
                         ev.stopPropagation()
                         node && goToNode({ ...node, title: name })
                     },
+                    disableRipple: true,
+                }}
+                listItemTextProps={{
+                    secondary: node.description,
+                    primaryTypographyProps: {},
                 }}
                 rightOfLabel={
-                    <Button
-                        onClick={(ev: any) => {
-                            ev.preventDefault()
-                            ev.stopPropagation()
-                            setExpanded(!expanded)
-                        }}
-                    >
-                        {expanded ? (
-                            <ExpandMoreIcon
-                                fontSize="small"
-                                style={{ marginLeft: '4px' }}
-                            />
-                        ) : (
-                            <ExpandLessIcon
-                                fontSize="small"
-                                style={{ marginLeft: '4px' }}
-                            />
-                        )}
-                    </Button>
+                    <ListItemSecondaryAction>
+                        <Checkbox
+                            onChange={(ev) => {
+                                ev.preventDefault()
+                                ev.stopPropagation()
+                                const index = selected.indexOf(node.id)
+                                let newSelected
+                                if (index === -1) {
+                                    newSelected = [...selected, node.id]
+                                } else {
+                                    newSelected = selected.toSpliced(index, 1)
+                                }
+                                setSelected(newSelected)
+                            }}
+                            checked={selected.indexOf(node.id) !== -1}
+                        />
+                        <IconButton
+                            edge="end"
+                            onClick={(ev: any) => {
+                                ev.preventDefault()
+                                ev.stopPropagation()
+                                setExpanded(!expanded)
+                            }}
+                        >
+                            {expanded ? (
+                                <ExpandMoreIcon
+                                    fontSize="small"
+                                    style={{ marginLeft: '4px' }}
+                                />
+                            ) : (
+                                <ExpandLessIcon
+                                    fontSize="small"
+                                    style={{ marginLeft: '4px' }}
+                                />
+                            )}
+                        </IconButton>
+                    </ListItemSecondaryAction>
                 }
-                label={name}
+                primary={name}
             />
 
             {expanded ? (
@@ -97,7 +123,7 @@ export default React.memo(function ClusterItem({
                     component="div"
                     disablePadding
                     dense
-                    sx={{ pl: 1, pr: 2 }}
+                    sx={{ pl: 1, pr: 1 }}
                 >
                     <SideBarContents
                         cluster={node.id}
