@@ -77,7 +77,7 @@ export default React.memo(function Clusters({
                 <ClusterItem
                     key={node.id}
                     node={node}
-                    deleted={deleted}
+                    deleted={node.deleted}
                     authinfo={authinfo}
                 />
             )
