@@ -21,6 +21,7 @@ import Checkbox from '@mui/material/Checkbox'
 
 import * as Contexts from '../../contexts'
 import { elements } from '../../editors'
+import ContentItem from './ContentItem'
 
 type SideBarItemsProps = {
     authinfo?: Interfaces.AuthInfoInterface
@@ -105,105 +106,10 @@ export default React.memo(function SidebarContents({
         if (!data) {
             return [null]
         }
-        const render_item = (node: any) => {
-            let name = node.tags.find((flag: string) =>
-                flag.startsWith('name=')
-            )
-            if (name) {
-                // split works different in js, so match
-                name = name.match(/=(.*)/)[1]
-            }
-            if (!name) {
-                name = node.id
-                if (name) {
-                    try {
-                        const rawTxt = utf8decoder.decode(b64tobuffer(name))
-                        let [_, tmp] = rawTxt.match(/:(.*)/) as string[]
-                        name = tmp
-                    } catch (exc) {
-                        name = `...${node.id.slice(-48)}`
-                    }
-                }
-            }
-            let Icon
-            switch (node.type) {
-                case 'Message':
-                    Icon = MailIcon
-                    break
-                case 'File':
-                    Icon = MovieIcon
-                    break
-                default:
-                    Icon = DescriptionIcon
-            }
-            if (node.state == 'draft') {
-                Icon = DraftsIcon
-            }
-
-            // TODO: check availability of extra content permissions. Merge authInfos
-            // for now assume yes if manage type was not specified
-
-            //console.debug('available actions', node.availableActions)
-            const deleteable =
-                !authinfo ||
-                !authinfo.types.has('manage') ||
-                (
-                    node.availableActions as {
-                        type: string
-                    }[]
-                ).some((val) => val.type == 'delete' || val.type == 'manage')
-            return (
-                <SidebarItemLabel
-                    key={node.id}
-                    deleted={node.deleted}
-                    leftOfLabel={<Icon />}
-                    listItemButtonProps={{
-                        dense: true,
-                        disableRipple: true,
-                        selected: mainCtx.item == node.id,
-                        onDoubleClick: (ev) => {
-                            ev.preventDefault()
-                            ev.stopPropagation()
-                            goToNode({
-                                ...node,
-                                title: name,
-                            })
-                        },
-                    }}
-                    primary={`${
-                        elements.get(node.type)
-                            ? elements.get(node.type)?.label
-                            : node.type
-                    }: ${name}`}
-                    rightOfLabel={
-                        <ListItemSecondaryAction>
-                            <Checkbox
-                                onChange={(ev) => {
-                                    ev.preventDefault()
-                                    ev.stopPropagation()
-                                    const index = selected.indexOf(node.id)
-                                    let newSelected
-                                    if (index === -1) {
-                                        newSelected = [...selected, node.id]
-                                    } else {
-                                        newSelected = selected.toSpliced(
-                                            index,
-                                            1
-                                        )
-                                    }
-                                    setSelected(newSelected)
-                                }}
-                                checked={selected.indexOf(node.id) !== -1}
-                            />
-                        </ListItemSecondaryAction>
-                    }
-                />
-            )
-        }
-        return data.contents.contents.edges.map((edge: any) =>
-            render_item(edge.node)
-        )
-    }, [data, mainCtx.type != 'Cluster' ? mainCtx.item : ''])
+        return data.contents.contents.edges.map((edge: any) => (
+            <ContentItem node={edge.node} authinfo={authinfo} />
+        ))
+    }, [data])
     const contentsFinished = [...contentsHalfFinished]
     if (
         !loading &&

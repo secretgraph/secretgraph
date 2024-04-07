@@ -73,7 +73,7 @@ export default React.memo(function Clusters({
             )
         }
         return ret
-    }, [data, mainCtx.type == 'Cluster' ? mainCtx.item : ''])
+    }, [data])
     /*
                 disabled={
                     loading ||
