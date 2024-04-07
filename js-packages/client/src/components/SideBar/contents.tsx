@@ -24,7 +24,7 @@ import { elements } from '../../editors'
 import ContentItem from './ContentItem'
 
 type SideBarItemsProps = {
-    authinfo?: Interfaces.AuthInfoInterface
+    authinfoContent?: Interfaces.AuthInfoInterface
     activeContent?: string | null
     cluster?: string | null
     public?: keyof typeof Constants.UseCriteriaPublic
@@ -38,7 +38,7 @@ type SideBarItemsProps = {
 }
 
 export default React.memo(function SidebarContents({
-    authinfo,
+    authinfoContent,
     cluster,
     public: publicParam = Constants.UseCriteriaPublic.IGNORE,
     injectInclude = [],
@@ -58,15 +58,18 @@ export default React.memo(function SidebarContents({
     const [expanded, setExpanded] = React.useState(false)
     const incl = React.useMemo(() => {
         const ret = searchCtx.include.concat(injectInclude)
-        if (authinfo && publicParam == Constants.UseCriteriaPublic.FALSE) {
+        if (
+            authinfoContent &&
+            publicParam == Constants.UseCriteriaPublic.FALSE
+        ) {
             ret.push(
-                ...authinfo.certificateHashes.map(
+                ...authinfoContent.certificateHashes.map(
                     (value) => `key_hash=${value}`
                 )
             )
         }
         return ret
-    }, [searchCtx.include, injectInclude, authinfo?.tokenHashes])
+    }, [searchCtx.include, injectInclude, authinfoContent?.tokenHashes])
     const excl = React.useMemo(
         () => searchCtx.exclude.concat(injectExclude),
         [searchCtx.exclude, injectExclude]
@@ -75,7 +78,7 @@ export default React.memo(function SidebarContents({
     const [loadQuery, { data, error, fetchMore, loading, refetch, called }] =
         useLazyQuery(contentFeedQuery, {
             variables: {
-                authorization: authinfo ? authinfo.tokens : null,
+                authorization: authinfoContent ? authinfoContent.tokens : null,
                 includeTags: ['name='],
                 include: incl,
                 exclude: excl,
@@ -107,7 +110,7 @@ export default React.memo(function SidebarContents({
             return [null]
         }
         return data.contents.contents.edges.map((edge: any) => (
-            <ContentItem node={edge.node} authinfo={authinfo} />
+            <ContentItem node={edge.node} authinfoContent={authinfoContent} />
         ))
     }, [data])
     const contentsFinished = [...contentsHalfFinished]

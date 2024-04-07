@@ -7,11 +7,13 @@ import ListItem from '@mui/material/ListItem'
 import List from '@mui/material/List'
 import * as Constants from '@secretgraph/misc/constants'
 import { Writeable } from '@secretgraph/misc/typing'
+
 import { authInfoFromConfig } from '@secretgraph/misc/utils/config'
 import { CapturingSuspense } from '@secretgraph/ui-components/misc'
 import * as React from 'react'
 
 import * as Contexts from '../../contexts'
+import * as Interfaces from '@secretgraph/misc/interfaces'
 import { drawerWidth } from '../../theme'
 /**const SideBarClusters = React.lazy(() => import('./clusters'))
 const SideBarContents = React.lazy(() => import('./contents'))
@@ -25,32 +27,29 @@ import { ListSubheader } from '@mui/material'
 const SideBarItems = () => {
     const { config } = React.useContext(Contexts.Config)
     const { activeUrl } = React.useContext(Contexts.ActiveUrl)
-    const { searchCtx } = React.useContext(Contexts.Search)
+    const { mainCtx } = React.useContext(Contexts.Main)
     const authinfoCluster = React.useMemo(
         () =>
             config
                 ? authInfoFromConfig({
                       config,
                       url: activeUrl,
-                      clusters: searchCtx.cluster
-                          ? new Set([searchCtx.cluster])
-                          : undefined,
                   })
                 : undefined,
-        [config, activeUrl, searchCtx.cluster]
+        [config, activeUrl]
     )
-    const authinfo = React.useMemo(
+    const authinfoContent = React.useMemo(
         () =>
             config
                 ? authInfoFromConfig({
                       config,
                       url: activeUrl,
-                      excludeClusters: searchCtx.cluster
-                          ? new Set([searchCtx.cluster])
+                      excludeClusters: mainCtx.currentCluster
+                          ? new Set([mainCtx.currentCluster])
                           : undefined,
                   })
                 : undefined,
-        [config, activeUrl, searchCtx.cluster]
+        [config, activeUrl, mainCtx.currentCluster]
     )
 
     return (
@@ -63,11 +62,14 @@ const SideBarItems = () => {
             {authinfoCluster && (
                 <SideBarClusters
                     label="Non-Public"
-                    authinfo={authinfoCluster}
-                    deleted={searchCtx.deleted}
+                    authinfoCluster={authinfoCluster}
+                    authinfoContent={authinfoContent}
                 />
             )}
-            <SideBarClusters label="Public" deleted={searchCtx.deleted} />
+            <SideBarClusters
+                label="Public"
+                authinfoContent={authinfoContent}
+            />
         </List>
     )
 }
@@ -82,6 +84,9 @@ export default function SideBar() {
         false
     )
     const [selected, setSelected] = React.useState<string[]>([])
+    const [selectionMode, setSelectionMode] = React.useState<
+        'none' | 'delete'
+    >('none')
     console.log('selected', selected)
     /**let activeElements: any = null
     if (config) {
@@ -91,7 +96,7 @@ export default function SideBar() {
     }*/
     return (
         <Contexts.SidebarItemsSelected.Provider
-            value={{ selected, setSelected }}
+            value={{ selected, setSelected, selectionMode, setSelectionMode }}
         >
             <Drawer
                 variant="persistent"

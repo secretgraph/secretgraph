@@ -16,7 +16,8 @@ import ClusterItem from './ClusterItem'
 import { ListItemButton, ListItemText } from '@mui/material'
 
 type SideBarItemsProps = {
-    authinfo?: Interfaces.AuthInfoInterface
+    authinfoCluster?: Interfaces.AuthInfoInterface
+    authinfoContent?: Interfaces.AuthInfoInterface
     excludeIds?: string[]
     title?: string
     deleted?: boolean
@@ -25,7 +26,8 @@ type SideBarItemsProps = {
 }
 
 export default React.memo(function Clusters({
-    authinfo,
+    authinfoCluster,
+    authinfoContent,
     excludeIds,
     title,
     deleted,
@@ -38,9 +40,9 @@ export default React.memo(function Clusters({
     let [loadQuery, { data, fetchMore, error, loading, refetch, called }] =
         useLazyQuery(clusterFeedQuery, {
             variables: {
-                authorization: authinfo?.tokens,
+                authorization: authinfoCluster?.tokens,
                 public:
-                    !authinfo?.tokens || !authinfo.tokens.length
+                    !authinfoCluster?.tokens || !authinfoCluster.tokens.length
                         ? Constants.UseCriteriaPublic.TRUE
                         : Constants.UseCriteriaPublic.FALSE,
                 deleted: searchCtx.deleted
@@ -69,7 +71,12 @@ export default React.memo(function Clusters({
         const ret: JSX.Element[] = []
         for (const { node } of data.clusters.clusters.edges) {
             ret.push(
-                <ClusterItem key={node.id} node={node} authinfo={authinfo} />
+                <ClusterItem
+                    key={node.id}
+                    node={node}
+                    authinfoCluster={authinfoCluster}
+                    authinfoContent={authinfoContent}
+                />
             )
         }
         return ret

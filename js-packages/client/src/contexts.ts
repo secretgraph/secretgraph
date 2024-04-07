@@ -104,9 +104,13 @@ export const OpenSidebar = createContext<{
 export const SidebarItemsSelected = createContext<{
     selected: string[]
     setSelected: (arg: string[]) => void
+    selectionMode: 'none' | 'delete'
+    setSelectionMode: (arg: 'none' | 'delete') => void
 }>({
     selected: [],
     setSelected: stubFn,
+    selectionMode: 'none',
+    setSelectionMode: stubFn,
 })
 
 export const Clients = createContext(

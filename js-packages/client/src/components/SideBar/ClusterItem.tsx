@@ -19,21 +19,23 @@ import Checkbox from '@mui/material/Checkbox'
 
 export default React.memo(function ClusterItem({
     node,
-    authinfo,
+    authinfoCluster,
+    authinfoContent,
 }: {
     node: any
-    authinfo?: Interfaces.AuthInfoInterface
+    authinfoCluster?: Interfaces.AuthInfoInterface
+    authinfoContent?: Interfaces.AuthInfoInterface
 }) {
     const [expanded, setExpanded] = React.useState(false)
     const { mainCtx, goToNode } = React.useContext(Contexts.Main)
-    const { selected, setSelected } = React.useContext(
+    const { selected, setSelected, selectionMode } = React.useContext(
         Contexts.SidebarItemsSelected
     )
     // TODO: check availability of extra cluster permissions. Merge authInfos
     // for now assume yes if manage type was not specified
-    const deleteable =
-        !authinfo ||
-        !authinfo.types.has('manage') ||
+    const selectable =
+        !authinfoCluster ||
+        !authinfoCluster.types.has('manage') ||
         (
             node.availableActions as {
                 type: string
@@ -79,6 +81,13 @@ export default React.memo(function ClusterItem({
                 rightOfLabel={
                     <ListItemSecondaryAction>
                         <Checkbox
+                            sx={{
+                                display:
+                                    selectionMode == 'none'
+                                        ? 'hidden'
+                                        : undefined,
+                            }}
+                            disabled={!selectable}
                             onChange={(ev) => {
                                 ev.preventDefault()
                                 ev.stopPropagation()
@@ -127,14 +136,14 @@ export default React.memo(function ClusterItem({
                 >
                     <SideBarContents
                         cluster={node.id}
-                        authinfo={authinfo}
+                        authinfoContent={authinfoContent}
                         deleted={node.deleted}
                         public={Constants.UseCriteriaPublic.TRUE}
                         label="Public"
                     />
                     <SideBarContents
                         cluster={node.id}
-                        authinfo={authinfo}
+                        authinfoContent={authinfoContent}
                         deleted={node.deleted}
                         label="Private"
                         public={Constants.UseCriteriaPublic.FALSE}

@@ -10,7 +10,7 @@ import MailIcon from '@mui/icons-material/Mail'
 import MovieIcon from '@mui/icons-material/Movie'
 import List, { ListProps } from '@mui/material/List'
 import ListItemSecondaryAction from '@mui/material/ListItemSecondaryAction'
-import * as Constants from '@secretgraph/misc/constants'
+import * as SetOps from '@secretgraph/misc/utils/set'
 import * as Interfaces from '@secretgraph/misc/interfaces'
 import { b64tobuffer, utf8decoder } from '@secretgraph/misc/utils/encoding'
 import * as React from 'react'
@@ -24,13 +24,13 @@ import { elements } from '../../editors'
 
 export default React.memo(function ContentItem({
     node,
-    authinfo,
+    authinfoContent,
 }: {
     node: any
-    authinfo?: Interfaces.AuthInfoInterface
+    authinfoContent?: Interfaces.AuthInfoInterface
 }) {
     const { mainCtx, goToNode } = React.useContext(Contexts.Main)
-    const { selected, setSelected } = React.useContext(
+    const { selected, setSelected, selectionMode } = React.useContext(
         Contexts.SidebarItemsSelected
     )
     let name = node.tags.find((flag: string) => flag.startsWith('name='))
@@ -69,9 +69,9 @@ export default React.memo(function ContentItem({
     // for now assume yes if manage type was not specified
 
     //console.debug('available actions', node.availableActions)
-    const deleteable =
-        !authinfo ||
-        !authinfo.types.has('delete') ||
+    const selectable =
+        !authinfoContent ||
+        !SetOps.hasIntersection(authinfoContent.types, ['delete', 'manage']) ||
         (
             node.availableActions as {
                 type: string
@@ -103,6 +103,11 @@ export default React.memo(function ContentItem({
             rightOfLabel={
                 <ListItemSecondaryAction>
                     <Checkbox
+                        disabled={!selectable}
+                        sx={{
+                            display:
+                                selectionMode == 'none' ? 'hidden' : undefined,
+                        }}
                         onChange={(ev) => {
                             ev.preventDefault()
                             ev.stopPropagation()
