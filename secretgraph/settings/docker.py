@@ -87,7 +87,7 @@ for addr in os.environ.get("ADMIN_MAILS", "").split(","):
         user, addr = addr.rsplit("<", 1)
         addr = addr.rstrip("> ")
     else:
-        user = addr.lsplit("@", 1)
+        user = addr.split("@", 1)
     ADMINS.append((user, addr))
 
 
