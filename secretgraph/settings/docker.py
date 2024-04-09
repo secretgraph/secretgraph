@@ -81,6 +81,15 @@ SECRETGRAPH_CACHE_DECRYPTED = (
     os.environ.get("CACHE_DECRYPTED", "false").lower() == "true"
 )
 
+ADMINS = []
+for addr in os.environ.get("ADMIN_MAILS", "").split(","):
+    if "<" in addr:
+        user, addr = addr.rsplit("<", 1)
+        addr = addr.rstrip("> ")
+    else:
+        user = addr.lsplit("@", 1)
+    ADMINS.append((user, addr))
+
 
 def _get_ratelimit(key: str):
     rl = os.environ.get(f"RATELIMIT_{key}", None)
