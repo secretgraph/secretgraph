@@ -48,7 +48,10 @@ export default function GroupSelectList({
     admin = false,
     disabled,
     groups,
-}: GroupSelectListProps) {
+    remove_prefix = '',
+}: GroupSelectListProps & {
+    remove_prefix?: string
+}) {
     const [field, meta, helpers] = useField(name)
     const renderval = React.useMemo(() => {
         const renderval = []
@@ -119,6 +122,10 @@ export default function GroupSelectList({
                     }
                 }
             }
+            let showName = group.name
+            if (remove_prefix && showName.startsWith(remove_prefix)) {
+                showName = showName.substring(remove_prefix.length)
+            }
 
             renderval.push(
                 <TableRow key={group.name}>
@@ -133,7 +140,7 @@ export default function GroupSelectList({
                             multiple
                         />
                     </TableCell>
-                    <TableCell align="left">{group.name}</TableCell>
+                    <TableCell align="left">{showName}</TableCell>
                     <TableCell align="left">{group.description}</TableCell>
                 </TableRow>
             )

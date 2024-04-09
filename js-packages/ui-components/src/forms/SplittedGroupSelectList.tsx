@@ -50,7 +50,11 @@ export default function SplittedGroupSelectList({
             {renderval.topics.length ? (
                 <details open>
                     <summary>{gettext('topics')}</summary>
-                    <GroupSelectList {...kwargs} groups={renderval.topics} />
+                    <GroupSelectList
+                        {...kwargs}
+                        remove_prefix="topic_"
+                        groups={renderval.topics}
+                    />
                 </details>
             ) : null}
             {renderval.misc.length ? (
