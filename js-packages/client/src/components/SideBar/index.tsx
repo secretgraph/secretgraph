@@ -64,11 +64,13 @@ const SideBarItems = () => {
                     label="Non-Public"
                     authinfoCluster={authinfoCluster}
                     authinfoContent={authinfoContent}
+                    public={Constants.UseCriteriaPublic.FALSE}
                 />
             )}
             <SideBarClusters
                 label="Public"
                 authinfoContent={authinfoContent}
+                public={Constants.UseCriteriaPublic.TRUE}
             />
         </List>
     )

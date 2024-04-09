@@ -17,7 +17,6 @@ import * as React from 'react'
 import IconButton from '@mui/material/IconButton'
 
 import * as Contexts from '../../contexts'
-import SideBarContents from './contents'
 import SidebarItemLabel from './SidebarItemLabel'
 import Checkbox from '@mui/material/Checkbox'
 import { elements } from '../../editors'
@@ -106,7 +105,7 @@ export default React.memo(function ContentItem({
                         disabled={!selectable}
                         sx={{
                             display:
-                                selectionMode == 'none' ? 'hidden' : undefined,
+                                selectionMode == 'none' ? 'none' : undefined,
                         }}
                         onChange={(ev) => {
                             ev.preventDefault()

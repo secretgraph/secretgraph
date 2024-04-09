@@ -26,7 +26,7 @@ import ContentItem from './ContentItem'
 type SideBarItemsProps = {
     authinfoContent?: Interfaces.AuthInfoInterface
     activeContent?: string | null
-    cluster?: string | null
+    clusters?: string[]
     public?: keyof typeof Constants.UseCriteriaPublic
     injectInclude?: string[]
     injectExclude?: string[]
@@ -39,8 +39,8 @@ type SideBarItemsProps = {
 
 export default React.memo(function SidebarContents({
     authinfoContent,
-    cluster,
-    public: publicParam = Constants.UseCriteriaPublic.IGNORE,
+    clusters,
+    public: publicState = Constants.UseCriteriaPublic.IGNORE,
     injectInclude = [],
     injectExclude = [],
     states = undefined,
@@ -60,7 +60,7 @@ export default React.memo(function SidebarContents({
         const ret = searchCtx.include.concat(injectInclude)
         if (
             authinfoContent &&
-            publicParam == Constants.UseCriteriaPublic.FALSE
+            publicState == Constants.UseCriteriaPublic.FALSE
         ) {
             ret.push(
                 ...authinfoContent.certificateHashes.map(
@@ -83,13 +83,11 @@ export default React.memo(function SidebarContents({
                 include: incl,
                 exclude: excl,
                 states,
-                clusters: cluster ? [cluster] : undefined,
-                public: publicParam,
+                clusters,
+                public: publicState,
                 deleted: searchCtx.deleted
                     ? Constants.UseCriteria.TRUE
                     : Constants.UseCriteria.FALSE,
-                count: 30,
-                cursor: null,
             },
             nextFetchPolicy: 'cache-and-network',
         })
@@ -100,7 +98,8 @@ export default React.memo(function SidebarContents({
         fetchMore &&
             fetchMore({
                 variables: {
-                    cursor: data.contents.contents.pageInfo.endCursor,
+                    cursor:
+                        data.contents.contents.pageInfo.endCursor || undefined,
                 },
             })
     }
@@ -109,9 +108,17 @@ export default React.memo(function SidebarContents({
         if (!data) {
             return [null]
         }
-        return data.contents.contents.edges.map((edge: any) => (
-            <ContentItem node={edge.node} authinfoContent={authinfoContent} />
-        ))
+        const ret: JSX.Element[] = []
+        for (const { node } of data.contents.contents.edges) {
+            ret.push(
+                <ContentItem
+                    key={node.id}
+                    node={node}
+                    authinfoContent={authinfoContent}
+                />
+            )
+        }
+        return ret
     }, [data])
     const contentsFinished = [...contentsHalfFinished]
     if (
@@ -140,7 +147,6 @@ export default React.memo(function SidebarContents({
                 deleted={deleted}
                 listItemProps={{
                     dense: true,
-                    selected: mainCtx.item == cluster,
                 }}
                 primary={label}
                 rightOfLabel={

@@ -21,6 +21,7 @@ type SideBarItemsProps = {
     excludeIds?: string[]
     title?: string
     deleted?: boolean
+    public: keyof typeof Constants.UseCriteriaPublic
     label: string
     nodeid?: string
 }
@@ -32,19 +33,18 @@ export default React.memo(function Clusters({
     title,
     deleted,
     label,
+    public: publicState,
     nodeid,
 }: SideBarItemsProps) {
     const { searchCtx } = React.useContext(Contexts.Search)
     const [expanded, setExpanded] = React.useState(false)
     const { mainCtx } = React.useContext(Contexts.Main)
+
     let [loadQuery, { data, fetchMore, error, loading, refetch, called }] =
         useLazyQuery(clusterFeedQuery, {
             variables: {
                 authorization: authinfoCluster?.tokens,
-                public:
-                    !authinfoCluster?.tokens || !authinfoCluster.tokens.length
-                        ? Constants.UseCriteriaPublic.TRUE
-                        : Constants.UseCriteriaPublic.FALSE,
+                public: publicState,
                 deleted: searchCtx.deleted
                     ? Constants.UseCriteria.TRUE
                     : Constants.UseCriteria.FALSE,
@@ -60,7 +60,8 @@ export default React.memo(function Clusters({
         fetchMore &&
             fetchMore({
                 variables: {
-                    cursor: data.clusters.clusters.pageInfo.endCursor,
+                    cursor:
+                        data.clusters.clusters.pageInfo.endCursor || undefined,
                 },
             })
     }

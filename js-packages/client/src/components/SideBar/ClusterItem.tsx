@@ -84,7 +84,7 @@ export default React.memo(function ClusterItem({
                             sx={{
                                 display:
                                     selectionMode == 'none'
-                                        ? 'hidden'
+                                        ? 'none'
                                         : undefined,
                             }}
                             disabled={!selectable}
@@ -135,18 +135,18 @@ export default React.memo(function ClusterItem({
                     sx={{ pl: 1, pr: 1 }}
                 >
                     <SideBarContents
-                        cluster={node.id}
-                        authinfoContent={authinfoContent}
-                        deleted={node.deleted}
-                        public={Constants.UseCriteriaPublic.TRUE}
-                        label="Public"
-                    />
-                    <SideBarContents
-                        cluster={node.id}
+                        clusters={[node.id]}
                         authinfoContent={authinfoContent}
                         deleted={node.deleted}
                         label="Private"
                         public={Constants.UseCriteriaPublic.FALSE}
+                    />
+                    <SideBarContents
+                        clusters={[node.id]}
+                        authinfoContent={authinfoContent}
+                        deleted={node.deleted}
+                        public={Constants.UseCriteriaPublic.TRUE}
+                        label="Public"
                     />
                 </List>
             ) : null}

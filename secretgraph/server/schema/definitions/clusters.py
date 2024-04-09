@@ -234,11 +234,10 @@ class ClusterNode(SBaseTypesMixin, relay.Node):
                         )
                     )
                 )
-
-            if (
-                filters.public != UseCriteriaPublic.IGNORE
-                and filters.public != UseCriteriaPublic.TOKEN
-            ):
+            if filters.public not in {
+                UseCriteriaPublic.IGNORE,
+                UseCriteriaPublic.TOKEN,
+            }:
                 queryset = queryset.filter(
                     globalNameRegisteredAt__isnull=filters.public
                     != UseCriteriaPublic.TRUE,
@@ -257,18 +256,17 @@ class ClusterNode(SBaseTypesMixin, relay.Node):
             queryset = queryset.filter(
                 markForDestruction__isnull=deleted == UseCriteria.FALSE
             )
-        #  required for enforcing permissions
-        if in_cached_net_properties_or_user_special(
+        if filters.public == UseCriteriaPublic.TOKEN:
+            # token clause must be independent of in_cached_net_properties_or_user_special
+            queryset = queryset.filter(
+                id__in=Subquery(result["objects_without_public"].values("id"))
+            )
+        elif not in_cached_net_properties_or_user_special(
             info.context["request"], "manage_update", "allow_view"
         ):
+            #  required for enforcing permissions
             queryset = queryset.filter(
-                id__in=Subquery(
-                    result[
-                        "objects_without_public"
-                        if filters.public == UseCriteriaPublic.TOKEN
-                        else "objects_with_public"
-                    ].values("id")
-                )
+                id__in=Subquery(result["objects_with_public"].values("id"))
             )
 
         return fetch_clusters(

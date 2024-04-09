@@ -418,7 +418,8 @@ async def retrieve_allowed_objects(
             }
         ) | models.Q(id__in=models.Subquery(all_query.values("id")))
         # in view, we can see @system contents
-        if scope == "view":
+        if scope in {"view", "peek"}:
+            # @ is true for @system and globalNameRegisteredAt__isnull=False
             _q_public = _q | models.Q(name__startswith="@")
         else:
             _q_public = _q | models.Q(globalNameRegisteredAt__isnull=False)
@@ -432,7 +433,8 @@ async def retrieve_allowed_objects(
         )
 
         _q_public = models.Q(state__in=constants.public_states)
-        if scope != "view":
+        # exclude in other scopes @system
+        if scope not in {"view", "peek"}:
             _q_public &= ~models.Q(cluster__name="@system")
 
         id_subquery = models.Subquery(query.filter(_q_public | _q).values("id"))

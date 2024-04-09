@@ -320,18 +320,19 @@ class ContentNode(SBaseTypesMixin, strawberry.relay.Node):
                 markForDestruction__isnull=filters.deleted == UseCriteria.FALSE
             )
 
-        #  required for enforcing permissions
-        if not in_cached_net_properties_or_user_special(
-            info.context["request"], "manage_update", "allow_view"
-        ):
+        if filters.public == UseCriteriaPublic.TOKEN:
+            # token clause must be independent of in_cached_net_properties_or_user_special
             queryset = queryset.filter(
                 id__in=Subquery(
-                    results["Content"][
-                        "objects_without_public"
-                        if filters.public == UseCriteriaPublic.TOKEN
-                        else "objects_with_public"
-                    ].values("id")
+                    results["Content"]["objects_without_public"].values("id")
                 )
+            )
+        elif not in_cached_net_properties_or_user_special(
+            info.context["request"], "manage_update", "allow_view"
+        ):
+            #  required for enforcing permissions
+            queryset = queryset.filter(
+                id__in=Subquery(results["Content"]["objects_with_public"].values("id"))
             )
 
         return fetch_contents(
