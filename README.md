@@ -180,6 +180,7 @@ Note: some keys can be set to "iprestrict" for enabling iprestrict
 -   `DB_PASSWORD`: db stuff
 -   `DB_HOST`: db stuff
 -   `DB_PORT`: db stuff
+-   `ADMIN_MAILS`: mail addresses of admins which are notified on errors. Comma seperated. Can be `foo@example.com` or `john doe <foo@example.com>`
 
 ### nginx (docker-compose)
 
