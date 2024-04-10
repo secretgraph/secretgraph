@@ -83,11 +83,11 @@ SECRETGRAPH_CACHE_DECRYPTED = (
 
 ADMINS = []
 for addr in os.environ.get("ADMIN_MAILS", "").split(","):
-    if "<" in addr:
+    if "<" in addr and ">" in addr:
         user, addr = addr.rsplit("<", 1)
         addr = addr.rstrip("> ")
     else:
-        user = addr.split("@", 1)
+        user = addr.split("@", 1)[0]
     ADMINS.append((user, addr))
 
 
