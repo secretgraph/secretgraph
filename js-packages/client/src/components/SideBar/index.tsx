@@ -38,19 +38,6 @@ const SideBarItems = () => {
                 : undefined,
         [config, activeUrl]
     )
-    const authinfoContent = React.useMemo(
-        () =>
-            config
-                ? authInfoFromConfig({
-                      config,
-                      url: activeUrl,
-                      excludeClusters: mainCtx.currentCluster
-                          ? new Set([mainCtx.currentCluster])
-                          : undefined,
-                  })
-                : undefined,
-        [config, activeUrl, mainCtx.currentCluster]
-    )
 
     return (
         <List
@@ -63,13 +50,11 @@ const SideBarItems = () => {
                 <SideBarClusters
                     label="Non-Public"
                     authinfoCluster={authinfoCluster}
-                    authinfoContent={authinfoContent}
                     public={Constants.UseCriteriaPublic.FALSE}
                 />
             )}
             <SideBarClusters
                 label="Public"
-                authinfoContent={authinfoContent}
                 public={Constants.UseCriteriaPublic.TRUE}
             />
         </List>

@@ -17,7 +17,6 @@ import { ListItemButton, ListItemText } from '@mui/material'
 
 type SideBarItemsProps = {
     authinfoCluster?: Interfaces.AuthInfoInterface
-    authinfoContent?: Interfaces.AuthInfoInterface
     excludeIds?: string[]
     title?: string
     deleted?: boolean
@@ -28,7 +27,6 @@ type SideBarItemsProps = {
 
 export default React.memo(function Clusters({
     authinfoCluster,
-    authinfoContent,
     excludeIds,
     title,
     deleted,
@@ -76,7 +74,6 @@ export default React.memo(function Clusters({
                     key={node.id}
                     node={node}
                     authinfoCluster={authinfoCluster}
-                    authinfoContent={authinfoContent}
                 />
             )
         }

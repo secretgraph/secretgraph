@@ -17,6 +17,10 @@ def _prefix_topic(inp: str):
     return f"topic_{inp}"
 
 
+_empty = frozenset()
+_placeholderempty = ("placeholderempty",)
+
+
 def fetch_clusters(
     query,
     ids=None,  # relaxed id check
@@ -39,7 +43,7 @@ def fetch_clusters(
             check_short_name=True,
         )
     query = Cluster.objects.consistent(query)
-    if includeTopics:
+    if includeTopics is not None:
         if excludeTopics:
             includeTopics = set(includeTopics)
             includeTopics.difference_update(excludeTopics)
@@ -52,11 +56,11 @@ def fetch_clusters(
         )
 
         query = query.filter(groups__id__in=Subquery(cgquery.values("id")))
-    if includeTypes or excludeTypes or minUpdated or maxUpdated:
+    if includeTypes is not None or excludeTypes or minUpdated or maxUpdated:
         content_query = Content.objects.all()
         # because no specific tags can be queried and there is no introspection into the content
         # it is safe to allow querying types without restriction
-        if includeTypes:
+        if includeTypes is not None:
             if excludeTypes:
                 includeTypes = set(includeTypes)
                 includeTypes.difference_update(excludeTypes)
@@ -68,21 +72,23 @@ def fetch_clusters(
                 type__in=excludeTypes, markForDestruction__isnull=True
             )
 
-        if minUpdated and not maxUpdated:
+        if minUpdated is not None and maxUpdated is None:
             maxUpdated = dt.max
-        elif maxUpdated and not minUpdated:
+        elif maxUpdated is not None and minUpdated is None:
             minUpdated = dt.min
         if settings.USE_TZ:
-            if minUpdated and not minUpdated.tzinfo:
+            if minUpdated is not None and not minUpdated.tzinfo:
                 minUpdated = minUpdated.replace(tzinfo=tz.utc)
 
-            if maxUpdated and not maxUpdated.tzinfo:
+            if maxUpdated is not None and not maxUpdated.tzinfo:
                 maxUpdated = maxUpdated.replace(tzinfo=tz.utc)
 
-        if minUpdated or maxUpdated:
+        # either explicit or automatically set or both undefined
+        if minUpdated is not None:
             query = query.filter(updated__range=(minUpdated, maxUpdated))
 
-        if minUpdated or maxUpdated:
+        # either explicit or automatically set or both undefined
+        if minUpdated is not None:
             query = query.filter(
                 Q(updated__range=(minUpdated, maxUpdated))
                 | Q(
@@ -124,30 +130,33 @@ def fetch_contents(
         )
     query = Content.objects.consistent(query)
     if (
-        includeTags
+        includeTags is not None
+        # if exclude is empty it has no effect
         or excludeTags
-        or contentHashes
-        or states
-        or includeTypes
+        or contentHashes is not None
+        or states is not None
+        or includeTypes is not None
+        # if excludeTypes is empty it has no effect
         or excludeTypes
     ):
         incl_filters = Q()
         excl_filters = Q()
         # only if tags are specified the filtering starts,
         # empty array does no harm
-        for i in includeTags or []:
-            if i.startswith("id="):
-                incl_filters |= Q(flexid_cached=i[3:])
-            elif i.startswith("=id="):
-                incl_filters |= Q(flexid_cached=i[4:])
-            elif i.startswith("="):
-                incl_filters |= Q(tags__tag=i[1:])
-            else:
-                incl_filters |= Q(tags__tag__startswith=i)
+        if includeTags is not None:
+            for i in includeTags or _placeholderempty:
+                if i.startswith("id="):
+                    incl_filters |= Q(flexid_cached=i[3:])
+                elif i.startswith("=id="):
+                    incl_filters |= Q(flexid_cached=i[4:])
+                elif i.startswith("="):
+                    incl_filters |= Q(tags__tag=i[1:])
+                else:
+                    incl_filters |= Q(tags__tag__startswith=i)
 
         # only if tags are specified the filtering starts,
         # empty array does no harm
-        for i in excludeTags or []:
+        for i in excludeTags or _empty:
             if i.startswith("id="):
                 excl_filters |= Q(flexid_cached=i[3:])
             elif i.startswith("=id="):
@@ -157,10 +166,10 @@ def fetch_contents(
             else:
                 excl_filters |= Q(tags__tag__startswith=i)
         hash_filters = Q()
-        if contentHashes:
+        if contentHashes is not None:
             hash_filters = Q(contentHash__in=contentHashes)
         state_filters = ~Q(state__in={"sensitive", "draft"})
-        if states:
+        if states is not None:
             if clustersAreRestrictedOrAdmin or ids is not None:
                 state_filters = Q(state__in=states)
             else:
@@ -176,7 +185,7 @@ def fetch_contents(
 
         incl_type_filters = Q()
         excl_type_filters = Q()
-        if includeTypes:
+        if includeTypes is not None:
             if excludeTypes:
                 includeTypes = set(includeTypes)
                 includeTypes.difference_update(excludeTypes)
@@ -184,6 +193,7 @@ def fetch_contents(
         elif excludeTypes:
             excl_type_filters = Q(type__in=excludeTypes)
         else:
+            # exclude by default External
             excl_type_filters = Q(type="External")
 
         query = query.filter(
@@ -209,23 +219,26 @@ def fetch_contents(
                     )
                 )
             )
+        # exclude by default External
+        query = query.exclude(type="External")
     if not clustersAreRestrictedOrAdmin and not ids:
         q = Q(type="PublicKey", state__in=public_states)
         if safeListedContents:
             q &= ~Q(id_in=safeListedContents)
         query = query.exclude(q)
 
-    if minUpdated and not maxUpdated:
+    if minUpdated is not None and maxUpdated is None:
         maxUpdated = dt.max
-    elif maxUpdated and not minUpdated:
+    elif maxUpdated is not None and minUpdated is None:
         minUpdated = dt.min
     if settings.USE_TZ:
-        if minUpdated and not minUpdated.tzinfo:
+        if minUpdated is not None and not minUpdated.tzinfo:
             minUpdated = minUpdated.replace(tzinfo=tz.utc)
 
-        if maxUpdated and not maxUpdated.tzinfo:
+        if maxUpdated is not None and not maxUpdated.tzinfo:
             maxUpdated = maxUpdated.replace(tzinfo=tz.utc)
 
-    if minUpdated or maxUpdated:
+        # either explicit or automatically set or both undefined
+    if minUpdated is not None:
         query = query.filter(updated__range=(minUpdated, maxUpdated))
     return query

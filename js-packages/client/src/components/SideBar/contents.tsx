@@ -43,17 +43,13 @@ export default React.memo(function SidebarContents({
     public: publicState = Constants.UseCriteriaPublic.IGNORE,
     injectInclude = [],
     injectExclude = [],
-    states = undefined,
+    states,
     injectKeys = [],
     title,
     deleted,
     label,
 }: SideBarItemsProps) {
-    const { mainCtx, goToNode } = React.useContext(Contexts.Main)
     const { searchCtx } = React.useContext(Contexts.Search)
-    const { selected, setSelected } = React.useContext(
-        Contexts.SidebarItemsSelected
-    )
 
     const [expanded, setExpanded] = React.useState(false)
     const incl = React.useMemo(() => {
@@ -68,7 +64,10 @@ export default React.memo(function SidebarContents({
                 )
             )
         }
-        return ret
+        if (ret.length) {
+            return ret
+        }
+        return undefined
     }, [searchCtx.include, injectInclude, authinfoContent?.tokenHashes])
     const excl = React.useMemo(
         () => searchCtx.exclude.concat(injectExclude),

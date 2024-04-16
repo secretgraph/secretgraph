@@ -39,7 +39,6 @@ serverConfigQueryWithPermissions = """
         $authorization: [String!]
     ) {
         secretgraph(authorization: $authorization) {
-            permissions
             config {
                 id
                 hashAlgorithms
@@ -67,6 +66,7 @@ serverConfigQueryWithPermissions = """
                 loginUrl
             }
             activeUser
+            permissions
         }
     }
 """

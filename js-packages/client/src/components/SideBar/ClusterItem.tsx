@@ -16,20 +16,32 @@ import * as Contexts from '../../contexts'
 import SideBarContents from './contents'
 import SidebarItemLabel from './SidebarItemLabel'
 import Checkbox from '@mui/material/Checkbox'
+import { authInfoFromConfig } from '@secretgraph/misc/utils/config'
 
 export default React.memo(function ClusterItem({
     node,
     authinfoCluster,
-    authinfoContent,
 }: {
     node: any
     authinfoCluster?: Interfaces.AuthInfoInterface
-    authinfoContent?: Interfaces.AuthInfoInterface
 }) {
     const [expanded, setExpanded] = React.useState(false)
     const { mainCtx, goToNode } = React.useContext(Contexts.Main)
+    const { config } = React.useContext(Contexts.Config)
+    const { activeUrl } = React.useContext(Contexts.ActiveUrl)
     const { selected, setSelected, selectionMode } = React.useContext(
         Contexts.SidebarItemsSelected
+    )
+    const authinfoContent = React.useMemo(
+        () =>
+            config
+                ? authInfoFromConfig({
+                      config,
+                      url: activeUrl,
+                      clusters: new Set([node.id]),
+                  })
+                : undefined,
+        [config, activeUrl, node.id]
     )
     // TODO: check availability of extra cluster permissions. Merge authInfos
     // for now assume yes if manage type was not specified
