@@ -29,19 +29,19 @@ export default React.memo(function FormikTimePicker<
     return (
         <TextField
             {...field}
-            value={ensureTimeString(value) || 'fake'}
+            value={ensureTimeString(value)}
             type="time"
+            InputLabelProps={{
+                ...params.InputLabelProps,
+                shrink: true,
+            }}
             inputProps={{
                 ...params.inputProps,
                 min: ensureTimeString(min) || undefined,
                 max: ensureTimeString(max) || undefined,
             }}
             onChange={(ev) => {
-                if (ev.target.value == 'fake') {
-                    onChange('')
-                } else {
-                    onChange(ev)
-                }
+                onChange(ev)
             }}
             {...params}
         />

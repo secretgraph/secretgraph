@@ -31,6 +31,10 @@ export default function FormikDatePicker<
             {...field}
             value={ensureDateTimeString(value)}
             type="datetime-local"
+            InputLabelProps={{
+                ...params.InputLabelProps,
+                shrink: true,
+            }}
             inputProps={{
                 ...params.inputProps,
                 min: ensureDateTimeString(min) || undefined,
