@@ -61,7 +61,7 @@ const SideBarItems = () => {
     )
 }
 
-export default function SideBar() {
+export default React.memo(function SideBar() {
     const theme = useTheme()
     const { config } = React.useContext(Contexts.Config)
     const { open } = React.useContext(Contexts.OpenSidebar)
@@ -74,7 +74,6 @@ export default function SideBar() {
     const [selectionMode, setSelectionMode] = React.useState<
         'none' | 'delete'
     >('none')
-    console.log('selected', selected)
     /**let activeElements: any = null
     if (config) {
         activeElements = (
@@ -105,4 +104,4 @@ export default function SideBar() {
             </Drawer>
         </Contexts.SidebarItemsSelected.Provider>
     )
-}
+})

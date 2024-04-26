@@ -214,9 +214,10 @@ export function extractPubKeysReferences({
                 props.hashAlgorithm
         )
     }
+    const references = props.node?.references?.edges
     for (const {
         node: { target: keyNode },
-    } of props.node.references.edges) {
+    } of references) {
         if (
             validateKey &&
             (keyNode.type != 'PublicKey' || !trusted_states.has(keyNode.state))

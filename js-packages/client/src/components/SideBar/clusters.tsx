@@ -113,10 +113,8 @@ export default React.memo(function Clusters({
             <SidebarItemLabel
                 title={title}
                 deleted={deleted}
-                listItemButtonProps={{
+                listItemProps={{
                     dense: true,
-                    selected: mainCtx.item == nodeid,
-                    disableRipple: true,
                 }}
                 primary={label}
                 rightOfLabel={
