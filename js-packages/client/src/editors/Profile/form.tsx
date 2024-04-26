@@ -51,6 +51,11 @@ import ClusterSelectViaUrl from '../../components/formsWithContext/ClusterSelect
 import * as Contexts from '../../contexts'
 import { mappersToArray } from '../../hooks'
 import { utf8encoder } from '@secretgraph/misc/utils/encoding'
+import { AddressEntryData } from './address'
+import BiographyBlock, {
+    BioEntryData,
+    AchievementEntryData,
+} from './biography'
 
 export interface InnerProfileProps {
     disabled?: boolean
@@ -58,9 +63,17 @@ export interface InnerProfileProps {
     hashAlgorithm: string
     nodeData?: any
     data?: {
-        note: string
+        firstname: string
+        middlename: string
+        lastname: string
+        nationality: string
+        birthdate: string | Date
+        addresses: AddressEntryData[]
+        work: BioEntryData[]
+        education: BioEntryData[]
+        achievements: AchievementEntryData[]
+        projects: AchievementEntryData[]
     }
-    tags?: { [name: string]: string[] }
     url: string
     viewOnly?: boolean
 }
@@ -69,7 +82,6 @@ export function InnerProfile({
     nodeData,
     mapper,
     data,
-    tags,
     disabled,
     hashAlgorithm,
     viewOnly,
@@ -83,27 +95,35 @@ export function InnerProfile({
         Contexts.InitializedConfig
     )
     const actions = mappersToArray([mapper], { lockExisting: !!mainCtx.item })
+    const birthdate = data?.birthdate || mainCtx.cloneData?.birthdate
 
     const initialValues = {
         actions,
         cluster: mainCtx.editCluster,
-        day:
-            (tags ? tags['~day'][0] : null) ||
-            new Date(Date.now()).toDateString(),
-        work: (tags ? tags['~work'][0] : null) || '',
-        note: data?.note || '',
+        firstname: data?.firstname || mainCtx.cloneData?.firstname || '',
+        middlename: data?.middlename || mainCtx.cloneData?.middlename || '',
+        lastname: data?.lastname || mainCtx.cloneData?.lastname || '',
+        nationality: data?.nationality || mainCtx.cloneData?.nationality || '',
+        birthdate: birthdate ? new Date(birthdate) : null,
         sensitive: nodeData ? nodeData.state == 'sensitive' : false,
     }
     return (
         <Formik
             initialValues={initialValues}
-            onSubmit={async (values, { setSubmitting }) => {
+            onSubmit={async (
+                { firstname, middlename, lastname, birthdate, ...values },
+                { setSubmitting }
+            ) => {
                 if (!values.cluster) {
                     throw Error('Cluster not set')
                 }
+                // TODO:
                 const value = utf8encoder.encode(
                     JSON.stringify({
-                        note: values.note,
+                        firstname,
+                        middlename,
+                        lastname,
+                        birthdate,
                     })
                 )
                 const res = await updateOrCreateContentWithConfig({
@@ -117,11 +137,7 @@ export function InnerProfile({
                     authorization: mainCtx.tokens,
                     state: values.sensitive ? 'sensitive' : 'protected',
                     type: 'Profile',
-                    tags: [
-                        `~name=Work: ${values.work}`,
-                        `~work=${values.work}`,
-                        `~day=${new Date(values.day).toDateString()}`,
-                    ],
+                    tags: [],
                     id: nodeData?.id,
                     updateId: nodeData?.updateId,
                     url,
@@ -198,7 +214,7 @@ export function InnerProfile({
                             }}
                         </FieldArray>
                         <Grid container spacing={2}>
-                            <Grid xs={12}>
+                            <Grid xs={11}>
                                 <FastField
                                     component={ClusterSelectViaUrl}
                                     url={url}
@@ -226,15 +242,6 @@ export function InnerProfile({
                                     </span>
                                 </Tooltip>
                             </Grid>
-                            <Grid xs={12}>
-                                <FastField
-                                    component={FormikTextField}
-                                    name="name"
-                                    fullWidth
-                                    label="Identifying Name"
-                                    disabled={isSubmitting || disabled}
-                                />
-                            </Grid>
                             <Grid xs={12} sm={6}>
                                 <FastField
                                     component={FormikTextField}
@@ -247,22 +254,22 @@ export function InnerProfile({
                             <Grid xs={12} sm={6}>
                                 <FastField
                                     component={FormikTextField}
-                                    name="middlename"
-                                    fullWidth
-                                    label="Middle Names"
-                                    disabled={isSubmitting || disabled}
-                                />
-                            </Grid>
-                            <Grid xs={12} sm={6}>
-                                <FastField
-                                    component={FormikTextField}
                                     name="lastname"
                                     fullWidth
                                     label="Last Name"
                                     disabled={isSubmitting || disabled}
                                 />
                             </Grid>
-                            <Grid xs={12} sm={2}>
+                            <Grid xs={12} sm={12}>
+                                <FastField
+                                    component={FormikTextField}
+                                    name="middlename"
+                                    fullWidth
+                                    label="Middle Names"
+                                    disabled={isSubmitting || disabled}
+                                />
+                            </Grid>
+                            <Grid xs={12} lg={3}>
                                 <FastField
                                     component={FormikTextField}
                                     name="nationality"
@@ -271,7 +278,7 @@ export function InnerProfile({
                                     disabled={isSubmitting || disabled}
                                 />
                             </Grid>
-                            <Grid xs={12} sm={2}>
+                            <Grid xs={12} lg={3}>
                                 <FastField
                                     component={FormikDatePicker}
                                     name="birthdate"

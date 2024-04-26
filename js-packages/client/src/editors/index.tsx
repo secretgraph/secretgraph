@@ -29,6 +29,13 @@ export const elements = new Map<string, Interfaces.ElementEntryInterface>([
         },
     ],
     [
+        'Profile',
+        {
+            label: gettext('Profile'),
+            component: React.lazy(() => import('./Profile')),
+        },
+    ],
+    [
         'PublicKey',
         {
             label: gettext('Keys'),

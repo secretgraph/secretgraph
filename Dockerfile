@@ -7,7 +7,7 @@ COPY assets /app/assets
 COPY js-packages /app/js-packages
 RUN npm install && npm run build
 
-FROM docker.io/python:3.11
+FROM docker.io/python:3.12
 ENV PYTHONUNBUFFERED=1 DJANGO_SETTINGS_MODULE=secretgraph.settings.docker POETRY_VIRTUALENVS_CREATE=false
 RUN useradd -Mr -G www-data secretgraph
 RUN mkdir -p /var/lib/secretgraph && chown secretgraph:secretgraph /var/lib/secretgraph

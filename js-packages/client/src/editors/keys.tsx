@@ -415,6 +415,9 @@ function UpdateKeysForm({
                             name={`callbacks[${index}]`}
                             key={index}
                             validate={(val: string) => {
+                                if (!val) {
+                                    return undefined
+                                }
                                 try {
                                     new URL(val)
                                 } catch (e) {
@@ -1023,9 +1026,9 @@ const KeysUpdate = ({
                             publicTags: [
                                 `description=${values.description}`,
                                 `name=${values.name}`,
-                                ...values.callbacks.map(
-                                    (callback) => `callback=${callback}`
-                                ),
+                                ...values.callbacks
+                                    .filter((val) => val)
+                                    .map((callback) => `callback=${callback}`),
                             ],
                             publicKey: unserializeToArrayBuffer(pubKey),
                             privateKey: privKey
@@ -1059,9 +1062,9 @@ const KeysUpdate = ({
                             publicTags: [
                                 `description=${values.description}`,
                                 `name=${values.name}`,
-                                ...values.callbacks.map(
-                                    (callback) => `callback=${callback}`
-                                ),
+                                ...values.callbacks
+                                    .filter((val) => val)
+                                    .map((callback) => `callback=${callback}`),
                             ],
                             privkeys: Object.values(privateKeys),
                             pubkeys: Object.values(publicKeys),
