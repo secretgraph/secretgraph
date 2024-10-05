@@ -7,7 +7,7 @@ import Button from '@mui/material/Button'
 import IconButton from '@mui/material/IconButton'
 import LinearProgress from '@mui/material/LinearProgress'
 import Tooltip from '@mui/material/Tooltip'
-import Grid from '@mui/material/Unstable_Grid2'
+import Grid from '@mui/material/Grid2'
 import {
     clusterFeedQuery,
     getClusterQuery,
@@ -416,7 +416,7 @@ const ClusterIntern = ({
                                 }}
                             </FieldArray>
                             <Grid container spacing={2}>
-                                <Grid xs>
+                                <Grid>
                                     <Field
                                         component={FormikTextField}
                                         InputProps={{
@@ -481,7 +481,7 @@ const ClusterIntern = ({
                                     />
                                 </Grid>
 
-                                <Grid xs="auto">
+                                <Grid size="auto">
                                     <Tooltip title="Actions">
                                         <span>
                                             <IconButton
@@ -499,7 +499,7 @@ const ClusterIntern = ({
                                     </Tooltip>
                                 </Grid>
 
-                                <Grid xs={12}>
+                                <Grid size={12}>
                                     <Field
                                         component={FormikTextField}
                                         name="description"
@@ -511,7 +511,7 @@ const ClusterIntern = ({
                                     />
                                 </Grid>
 
-                                <Grid xs={12}>
+                                <Grid size={12}>
                                     <Field
                                         component={FormikCheckboxWithLabel}
                                         name="featured"
@@ -533,7 +533,7 @@ const ClusterIntern = ({
                                         disabled
                                     />
                                 </Grid>
-                                <Grid xs={12}>
+                                <Grid size={12}>
                                     <Typography>Cluster Groups</Typography>
                                     <SplittedGroupSelectList
                                         admin={permissions.has(
@@ -547,7 +547,7 @@ const ClusterIntern = ({
                                         disabled={disabled || loading}
                                     />
                                 </Grid>
-                                <Grid xs={12}>
+                                <Grid size={12}>
                                     <Typography>Net Groups</Typography>
                                     <GroupSelectList
                                         name="netGroups"
@@ -568,11 +568,11 @@ const ClusterIntern = ({
                                     />
                                 </Grid>
 
-                                <Grid xs={12}>
+                                <Grid size={12}>
                                     {loading && <LinearProgress />}
                                 </Grid>
                                 {viewOnly ? null : (
-                                    <Grid xs={12}>
+                                    <Grid size={12}>
                                         <Button
                                             variant="contained"
                                             color="primary"

@@ -12,7 +12,7 @@ import Tab from '@mui/material/Tab'
 import TextField, { TextFieldProps } from '@mui/material/TextField'
 import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
-import Grid from '@mui/material/Unstable_Grid2'
+import Grid from '@mui/material/Grid2'
 import Box from '@mui/system/Box'
 import {
     contentFeedQuery,
@@ -372,7 +372,7 @@ export function InnerFile({
                     }
                     const form = (
                         <Grid container spacing={2}>
-                            <Grid xs={12}>
+                            <Grid size={12}>
                                 <Stack
                                     direction="row"
                                     justifyContent="start"
@@ -433,7 +433,7 @@ export function InnerFile({
                                 </Stack>
                             </Grid>
 
-                            <Grid xs={12} md={6}>
+                            <Grid size={{ xs: 12, md: 6 }}>
                                 <FastField
                                     component={StateSelect}
                                     name="state"
@@ -448,7 +448,7 @@ export function InnerFile({
                                     }}
                                 />
                             </Grid>
-                            <Grid xs={12} md={6}>
+                            <Grid size={{ xs: 12, md: 6 }}>
                                 <FastField
                                     component={ClusterSelectViaUrl}
                                     url={url}
@@ -464,7 +464,7 @@ export function InnerFile({
                                     }}
                                 />
                             </Grid>
-                            <Grid xs={12}>
+                            <Grid size={12}>
                                 <FastField
                                     component={SimpleSelect}
                                     name="keywords"
@@ -477,7 +477,7 @@ export function InnerFile({
                             </Grid>
                             {viewOnly ? null : (
                                 <>
-                                    <Grid xs={12}>
+                                    <Grid size={12}>
                                         <TabContext value={tab}>
                                             <Box
                                                 sx={{
@@ -684,7 +684,7 @@ export function InnerFile({
                                             </TabPanel>
                                         </TabContext>
                                     </Grid>
-                                    <Grid xs={12}>
+                                    <Grid size={12}>
                                         <Field
                                             name="fileInput"
                                             disabled={
@@ -827,10 +827,10 @@ export function InnerFile({
                                 </>
                             )}
 
-                            <Grid xs={12}>
+                            <Grid size={12}>
                                 {isSubmitting && <LinearProgress />}
                             </Grid>
-                            <Grid xs={12}>
+                            <Grid size={12}>
                                 <Button
                                     variant="contained"
                                     color="primary"
@@ -900,7 +900,7 @@ export function InnerFile({
                                                 }}
                                             >
                                                 <Grid
-                                                    xs
+                                                    size="grow"
                                                     style={{
                                                         whiteSpace: 'normal',
                                                     }}
@@ -908,7 +908,7 @@ export function InnerFile({
                                                     {name}
                                                 </Grid>
 
-                                                <Grid xs="auto">
+                                                <Grid size="auto">
                                                     <Tooltip title="Actions">
                                                         <span>
                                                             <IconButton

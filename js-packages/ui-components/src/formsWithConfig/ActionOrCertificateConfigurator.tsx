@@ -2,7 +2,7 @@ import Box from '@mui/material/Box'
 import Stack from '@mui/material/Stack'
 import TextField, { TextFieldProps } from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
-import Grid from '@mui/material/Unstable_Grid2'
+import Grid from '@mui/material/Grid2'
 import * as Constants from '@secretgraph/misc/constants'
 import * as Interfaces from '@secretgraph/misc/interfaces'
 import {
@@ -325,7 +325,7 @@ const SelectStartStop = React.memo(function SelectStartStop({
     return (
         <>
             <Grid container>
-                <Grid xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                     <FastField
                         name={`${path}start`}
                         component={FormikDateTimePicker}
@@ -334,7 +334,7 @@ const SelectStartStop = React.memo(function SelectStartStop({
                         label="Start"
                     />
                 </Grid>
-                <Grid xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                     <FastField
                         name={`${path}stop`}
                         component={FormikDateTimePicker}
@@ -364,7 +364,7 @@ const TokenAndValidForSelector = React.memo(function TokenAndValidForSelector({
     return (
         <Grid container spacing={1}>
             {tokens ? (
-                <Grid xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                     <FastField
                         name={`${path}data`}
                         component={TokenSelect}
@@ -379,7 +379,7 @@ const TokenAndValidForSelector = React.memo(function TokenAndValidForSelector({
                 </Grid>
             ) : null}
             {validForOptions.length >= 1 ? (
-                <Grid xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                     <FastField
                         name={`${path}validFor`}
                         component={SimpleSelect}

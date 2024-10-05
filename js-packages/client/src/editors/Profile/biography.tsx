@@ -1,5 +1,5 @@
 import { Typography } from '@mui/material'
-import Grid from '@mui/material/Unstable_Grid2'
+import Grid from '@mui/material/Grid2'
 import FormikDatePicker from '@secretgraph/ui-components/formik/FormikDatePicker'
 import FormikTextField from '@secretgraph/ui-components/formik/FormikTextField'
 import FormikTimePicker from '@secretgraph/ui-components/formik/FormikTimePicker'
@@ -29,7 +29,7 @@ const AchievementEntry = React.memo(function AchievementEntry({
 }) {
     return (
         <Grid container spacing={1}>
-            <Grid xs={12} md={4}>
+            <Grid size={{ xs: 12, md: 4 }}>
                 <Field
                     name={`${prefix}.${index}.when`}
                     component={FormikDatePicker}
@@ -38,7 +38,7 @@ const AchievementEntry = React.memo(function AchievementEntry({
                     fullWidth
                 />
             </Grid>
-            <Grid xs={12} md={8}>
+            <Grid size={{ xs: 12, md: 8 }}>
                 <FastField
                     name={`${prefix}.${index}.what`}
                     component={FormikTextField}
@@ -48,7 +48,7 @@ const AchievementEntry = React.memo(function AchievementEntry({
                     fullWidth
                 />
             </Grid>
-            <Grid xs={12}>
+            <Grid size={12}>
                 <FastField
                     name={`${prefix}.${index}.link`}
                     component={FormikTextField}
@@ -125,7 +125,7 @@ export const BioEntry = React.memo(function BioEntry({
 
     return (
         <Grid container spacing={1}>
-            <Grid xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
                 <Field
                     name={`${prefix}.${index}.start`}
                     component={FormikDatePicker}
@@ -135,7 +135,7 @@ export const BioEntry = React.memo(function BioEntry({
                     fullWidth
                 />
             </Grid>
-            <Grid xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
                 <Field
                     name={`${prefix}.${index}.stop`}
                     component={FormikTimePicker}
@@ -145,7 +145,7 @@ export const BioEntry = React.memo(function BioEntry({
                     fullWidth
                 />
             </Grid>
-            <Grid xs={12}>
+            <Grid size={12}>
                 <FastField
                     name={`${prefix}.${index}.what`}
                     component={FormikTextField}
@@ -156,7 +156,7 @@ export const BioEntry = React.memo(function BioEntry({
                 />
             </Grid>
             {achievementName && achievementLabel ? (
-                <Grid xs={12}>
+                <Grid size={12}>
                     <Typography variant="h4">{achievementLabel}</Typography>
                     <FieldArray name={`${prefix}.${index}.${achievementName}`}>
                         {({ push, form, name }: FieldArrayRenderProps) => (
@@ -243,7 +243,7 @@ export default React.memo(function BiographyBlock({
                 </span>
             </summary>
             <Grid container spacing={1}>
-                <Grid xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                     <Typography variant="h4">Education</Typography>
                     <FieldArray name="education">
                         {({ push, form, name }: FieldArrayRenderProps) => (
@@ -258,7 +258,7 @@ export default React.memo(function BiographyBlock({
                         )}
                     </FieldArray>
                 </Grid>
-                <Grid xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                     <Typography variant="h4">Work</Typography>
                     <FieldArray name="work">
                         {({ push, form, name }: FieldArrayRenderProps) => (
@@ -274,7 +274,7 @@ export default React.memo(function BiographyBlock({
                     </FieldArray>
                 </Grid>
 
-                <Grid xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                     <Typography variant="h4">Achievements</Typography>
                     <FieldArray name="achievements">
                         {({ push, form, name }: FieldArrayRenderProps) => (
@@ -287,7 +287,7 @@ export default React.memo(function BiographyBlock({
                         )}
                     </FieldArray>
                 </Grid>
-                <Grid xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                     <Typography variant="h4">Projects</Typography>
                     <FieldArray name="projects">
                         {({ push, form, name }: FieldArrayRenderProps) => (

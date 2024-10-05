@@ -9,7 +9,7 @@ import FormHelperText from '@mui/material/FormHelperText'
 import Link from '@mui/material/Link'
 import { Theme } from '@mui/material/styles'
 import TextField from '@mui/material/TextField'
-import Grid from '@mui/material/Unstable_Grid2'
+import Grid from '@mui/material/Grid2'
 import useMediaQuery from '@mui/material/useMediaQuery'
 import { exportConfig, updateConfig } from '@secretgraph/misc/utils/config'
 import {
@@ -127,7 +127,7 @@ export default React.memo(function ConfigShareDialog({
             <DialogTitle id="export-dialog-title">Export</DialogTitle>
             <DialogContent>
                 <Grid container spacing={2}>
-                    <Grid xs={12} md={6}>
+                    <Grid size={{ xs: 12, md: 6 }}>
                         <div>
                             <FormControl>
                                 <div style={{ display: 'none' }}>
@@ -211,7 +211,7 @@ export default React.memo(function ConfigShareDialog({
                             </div>
                         ) : null}
                     </Grid>
-                    <Grid xs={12} md={6}>
+                    <Grid size={{ xs: 12, md: 6 }}>
                         <QRCodeSVG
                             value={exportUrl}
                             width="100%"
@@ -226,7 +226,7 @@ export default React.memo(function ConfigShareDialog({
                     </Grid>
                     {isMedium ? null : (
                         <Grid
-                            xs={12}
+                            size={12}
                             style={{
                                 visibility:
                                     typing || !show ? 'hidden' : 'visible',

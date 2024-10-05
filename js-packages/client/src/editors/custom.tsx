@@ -9,7 +9,7 @@ import IconButton from '@mui/material/IconButton'
 import LinearProgress from '@mui/material/LinearProgress'
 import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
-import Grid from '@mui/material/Unstable_Grid2'
+import Grid from '@mui/material/Grid2'
 import Box from '@mui/system/Box'
 import {
     contentFeedQuery,
@@ -216,12 +216,12 @@ const InnerCustom = ({
                             }}
                         </FieldArray>
                         <Grid container spacing={2}>
-                            <Grid xs={11}>
+                            <Grid size="grow">
                                 <Typography>Active Url</Typography>
                                 <Typography>{url}</Typography>
                             </Grid>
 
-                            <Grid xs>
+                            <Grid size="auto">
                                 <Tooltip title="Actions">
                                     <span>
                                         <IconButton
@@ -233,7 +233,7 @@ const InnerCustom = ({
                                     </span>
                                 </Tooltip>
                             </Grid>
-                            <Grid xs={12}>
+                            <Grid size={12}>
                                 <Field
                                     component={FormikTextField}
                                     name="type"
@@ -244,7 +244,7 @@ const InnerCustom = ({
                                     label="Type"
                                 />
                             </Grid>
-                            <Grid xs={12} md={6}>
+                            <Grid size={{ xs: 12, md: 6 }}>
                                 <Field
                                     component={StateSelect}
                                     name="state"
@@ -259,7 +259,7 @@ const InnerCustom = ({
                                     }}
                                 />
                             </Grid>
-                            <Grid xs={12} md={6}>
+                            <Grid size={{ xs: 12, md: 6 }}>
                                 <Field
                                     component={ClusterSelectViaUrl}
                                     url={url}
@@ -275,7 +275,7 @@ const InnerCustom = ({
                                     }}
                                 />
                             </Grid>
-                            <Grid xs={12}>
+                            <Grid size={12}>
                                 <Field
                                     component={FormikTextField}
                                     name="contentHash"
@@ -297,7 +297,7 @@ const InnerCustom = ({
                                     }}
                                 />
                             </Grid>
-                            <Grid xs={12}>
+                            <Grid size={12}>
                                 <Box
                                     sx={{
                                         padding: (theme) =>
@@ -403,7 +403,7 @@ const InnerCustom = ({
                                     )}
                                 </Box>
                             </Grid>
-                            <Grid xs={12}>
+                            <Grid size={12}>
                                 <Field
                                     component={FormikTextField}
                                     name="text"
@@ -415,7 +415,7 @@ const InnerCustom = ({
                                     variant="outlined"
                                 />
                             </Grid>
-                            <Grid xs={12}>
+                            <Grid size={12}>
                                 <Field
                                     name="text"
                                     disabled={!!(isSubmitting || disabled)}
@@ -509,11 +509,11 @@ const InnerCustom = ({
                                     }}
                                 </Field>
                             </Grid>
-                            <Grid xs={12}>
+                            <Grid size={12}>
                                 {isSubmitting && <LinearProgress />}
                             </Grid>
                             {!viewOnly && (
-                                <Grid xs={12}>
+                                <Grid size={12}>
                                     <Button
                                         variant="contained"
                                         color="primary"

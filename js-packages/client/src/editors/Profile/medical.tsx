@@ -1,4 +1,4 @@
-import Grid from '@mui/material/Unstable_Grid2'
+import Grid from '@mui/material/Grid2'
 import FormikDatePicker from '@secretgraph/ui-components/formik/FormikDatePicker'
 import FormikTextField from '@secretgraph/ui-components/formik/FormikTextField'
 import FormikTimePicker from '@secretgraph/ui-components/formik/FormikTimePicker'
@@ -21,7 +21,7 @@ export const MedicalEntry = React.memo(function MedicalEntry({
 }) {
     return (
         <Grid container spacing={1}>
-            <Grid xs={12} md={4}>
+            <Grid size={{ xs: 12, md: 4 }}>
                 <Field
                     name={`${prefix}.${index}.when`}
                     component={FormikDatePicker}
@@ -30,7 +30,7 @@ export const MedicalEntry = React.memo(function MedicalEntry({
                     fullWidth
                 />
             </Grid>
-            <Grid xs={12} md={8}>
+            <Grid size={{ xs: 12, md: 8 }}>
                 <FastField
                     name={`${prefix}.${index}.what`}
                     component={FormikTextField}

@@ -8,7 +8,7 @@ import { Theme } from '@mui/material/styles'
 import { useTheme } from '@mui/material/styles'
 import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
-import Grid from '@mui/material/Unstable_Grid2'
+import Grid from '@mui/material/Grid2'
 import {
     contentFeedQuery,
     contentRetrievalQuery,
@@ -278,11 +278,11 @@ function InnerConfig({
                                 }}
                             </FieldArray>
                             <Grid container spacing={2}>
-                                <Grid xs>
+                                <Grid size="grow">
                                     <Typography>Config Url</Typography>
                                     <Typography>{url}</Typography>
                                 </Grid>
-                                <Grid xs="auto">
+                                <Grid size="auto">
                                     <Tooltip title="Actions">
                                         <span>
                                             <IconButton
@@ -294,8 +294,8 @@ function InnerConfig({
                                         </span>
                                     </Tooltip>
                                 </Grid>
-                                <Grid container xs={12}>
-                                    <Grid xs={12} md={6}>
+                                <Grid container size={12}>
+                                    <Grid size={{ xs: 12, md: 6 }}>
                                         <Field
                                             component={SimpleSelect}
                                             name="slots"
@@ -312,7 +312,7 @@ function InnerConfig({
                                             }}
                                         />
                                     </Grid>
-                                    <Grid xs={12} md={6}>
+                                    <Grid size={{ xs: 12, md: 6 }}>
                                         <Field
                                             component={ClusterSelectViaUrl}
                                             url={url}
@@ -329,7 +329,7 @@ function InnerConfig({
                                         />
                                     </Grid>
                                 </Grid>
-                                <Grid container xs={12}>
+                                <Grid container size={12}>
                                     <Stack
                                         spacing={1}
                                         direction="column"
@@ -361,7 +361,7 @@ function InnerConfig({
                                         />
                                     </Stack>
                                 </Grid>
-                                <Grid container xs={12}>
+                                <Grid container size={12}>
                                     <Stack
                                         spacing={1}
                                         direction="column"
@@ -420,12 +420,12 @@ function InnerConfig({
                                 </Grid>
                                 {viewOnly ? null : (
                                     <>
-                                        <Grid xs={12}>
+                                        <Grid size={12}>
                                             {isSubmitting && (
                                                 <LinearProgress />
                                             )}
                                         </Grid>
-                                        <Grid xs={12}>
+                                        <Grid size={12}>
                                             <Button
                                                 variant="contained"
                                                 color="primary"

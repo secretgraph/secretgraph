@@ -10,7 +10,7 @@ import LinearProgress from '@mui/material/LinearProgress'
 import Stack from '@mui/material/Stack'
 import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
-import Grid from '@mui/material/Unstable_Grid2'
+import Grid from '@mui/material/Grid2'
 import Box from '@mui/system/Box'
 import {
     contentFeedQuery,
@@ -68,7 +68,7 @@ const TimeEntry = function TimeEntry({
 
     return (
         <Grid container spacing={1}>
-            <Grid xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
                 <FastField
                     name={`times.${index}.start`}
                     component={FormikTimePicker}
@@ -79,7 +79,7 @@ const TimeEntry = function TimeEntry({
                     fullWidth
                 />
             </Grid>
-            <Grid xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
                 <FastField
                     name={`times.${index}.stop`}
                     component={FormikTimePicker}
@@ -90,7 +90,7 @@ const TimeEntry = function TimeEntry({
                     fullWidth
                 />
             </Grid>
-            <Grid xs={12} sm={10}>
+            <Grid size={{ xs: 12, sm: 10 }}>
                 <FastField
                     name={`times.${index}.name`}
                     component={FormikTextField}
@@ -99,7 +99,7 @@ const TimeEntry = function TimeEntry({
                     fullWidth
                 />
             </Grid>
-            <Grid xs={12} sm={2}>
+            <Grid size={{ xs: 12, sm: 2 }}>
                 <FastField
                     name={`times.${index}.distance`}
                     component={FormikTextField}
@@ -325,8 +325,8 @@ const InnerWorkday = React.memo(function InnerWorkday({
                             }}
                         </FieldArray>
                         <Grid container spacing={2}>
-                            <Grid xs={11} container spacing={2}>
-                                <Grid xs>
+                            <Grid size="grow" container spacing={2}>
+                                <Grid size="grow">
                                     <FastField
                                         component={FormikTextField}
                                         name="work"
@@ -335,7 +335,7 @@ const InnerWorkday = React.memo(function InnerWorkday({
                                         disabled={isSubmitting || disabled}
                                     />
                                 </Grid>
-                                <Grid xs>
+                                <Grid size="grow">
                                     <FastField
                                         component={FormikDatePicker}
                                         name="day"
@@ -344,7 +344,7 @@ const InnerWorkday = React.memo(function InnerWorkday({
                                         disabled={isSubmitting || disabled}
                                     />
                                 </Grid>
-                                <Grid xs>
+                                <Grid size="grow">
                                     <FastField
                                         component={ClusterSelectViaUrl}
                                         url={url}
@@ -361,7 +361,7 @@ const InnerWorkday = React.memo(function InnerWorkday({
                                     />
                                 </Grid>
                             </Grid>
-                            <Grid xs>
+                            <Grid size="auto">
                                 <Tooltip title="Actions">
                                     <span>
                                         <IconButton
@@ -373,7 +373,7 @@ const InnerWorkday = React.memo(function InnerWorkday({
                                     </span>
                                 </Tooltip>
                             </Grid>
-                            <Grid xs={12}>
+                            <Grid size={12}>
                                 <FastField
                                     component={FormikTextField}
                                     name="note"
@@ -384,7 +384,7 @@ const InnerWorkday = React.memo(function InnerWorkday({
                                     disabled={isSubmitting || disabled}
                                 />
                             </Grid>
-                            <Grid xs={12}>
+                            <Grid size={12}>
                                 <Stack
                                     direction="column"
                                     spacing={1}
@@ -403,11 +403,11 @@ const InnerWorkday = React.memo(function InnerWorkday({
                                     </FieldArray>
                                 </Stack>
                             </Grid>
-                            <Grid xs={12}>
+                            <Grid size={12}>
                                 {isSubmitting && <LinearProgress />}
                             </Grid>
                             {!viewOnly && (
-                                <Grid xs={12}>
+                                <Grid size={12}>
                                     <Button
                                         variant="contained"
                                         color="primary"

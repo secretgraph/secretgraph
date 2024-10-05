@@ -10,7 +10,7 @@ import LinearProgress from '@mui/material/LinearProgress'
 import Stack from '@mui/material/Stack'
 import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
-import Grid from '@mui/material/Unstable_Grid2'
+import Grid from '@mui/material/Grid2'
 import Box from '@mui/system/Box'
 import {
     contentFeedQuery,
@@ -214,7 +214,7 @@ export function InnerProfile({
                             }}
                         </FieldArray>
                         <Grid container spacing={2}>
-                            <Grid xs={11}>
+                            <Grid size="grow">
                                 <FastField
                                     component={ClusterSelectViaUrl}
                                     url={url}
@@ -230,7 +230,7 @@ export function InnerProfile({
                                     }}
                                 />
                             </Grid>
-                            <Grid xs>
+                            <Grid size="auto">
                                 <Tooltip title="Actions">
                                     <span>
                                         <IconButton
@@ -242,7 +242,7 @@ export function InnerProfile({
                                     </span>
                                 </Tooltip>
                             </Grid>
-                            <Grid xs={12} sm={6}>
+                            <Grid size={{ xs: 12, sm: 6 }}>
                                 <FastField
                                     component={FormikTextField}
                                     name="firstname"
@@ -251,7 +251,7 @@ export function InnerProfile({
                                     disabled={isSubmitting || disabled}
                                 />
                             </Grid>
-                            <Grid xs={12} sm={6}>
+                            <Grid size={{ xs: 12, sm: 6 }}>
                                 <FastField
                                     component={FormikTextField}
                                     name="lastname"
@@ -260,7 +260,7 @@ export function InnerProfile({
                                     disabled={isSubmitting || disabled}
                                 />
                             </Grid>
-                            <Grid xs={12} sm={12}>
+                            <Grid size={12}>
                                 <FastField
                                     component={FormikTextField}
                                     name="middlename"
@@ -269,7 +269,7 @@ export function InnerProfile({
                                     disabled={isSubmitting || disabled}
                                 />
                             </Grid>
-                            <Grid xs={12} lg={3}>
+                            <Grid size={{ xs: 12, lg: 3 }}>
                                 <FastField
                                     component={FormikTextField}
                                     name="nationality"
@@ -278,7 +278,7 @@ export function InnerProfile({
                                     disabled={isSubmitting || disabled}
                                 />
                             </Grid>
-                            <Grid xs={12} lg={3}>
+                            <Grid size={{ xs: 12, lg: 3 }}>
                                 <FastField
                                     component={FormikDatePicker}
                                     name="birthdate"
@@ -287,12 +287,12 @@ export function InnerProfile({
                                     disabled={isSubmitting || disabled}
                                 />
                             </Grid>
-                            <Grid xs={12}></Grid>
-                            <Grid xs={12}>
+                            <Grid size={12}></Grid>
+                            <Grid size={12}>
                                 {isSubmitting && <LinearProgress />}
                             </Grid>
                             {!viewOnly && (
-                                <Grid xs={12}>
+                                <Grid size={12}>
                                     <Button
                                         variant="contained"
                                         color="primary"
