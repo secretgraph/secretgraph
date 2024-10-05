@@ -126,8 +126,9 @@ async def transfer_value(
     if session:
         s = session
     else:
+        transport = httpx.ASGITransport(app=import_string(settings.ASGI_APPLICATION)) if inline_domain else None
         s = httpx.AsyncClient(
-            app=import_string(settings.ASGI_APPLICATION) if inline_domain else None,
+            transport=transport,
             verify=_verify,
             proxies=proxies,
         )

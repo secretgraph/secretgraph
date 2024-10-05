@@ -257,7 +257,7 @@ class BasicTests(TransactionTestCase):
         self.assertEqual(await Content.objects.acount(), 3)
         self.assertTrue(url)
         with self.subTest("check signature without item"):
-            client = httpx.AsyncClient(app=application)
+            client = httpx.AsyncClient(transport=httpx.ASGITransport(app=application))
             # NOTE: quote_plus is required for urlencoding
             rets, errors = await verify_content(
                 client,
@@ -267,7 +267,7 @@ class BasicTests(TransactionTestCase):
             self.assertEqual(len(rets), 1)
         self.assertTrue(item_id)
         with self.subTest("check signature with item"):
-            client = httpx.AsyncClient(app=application)
+            client = httpx.AsyncClient(transport=httpx.ASGITransport(app=application))
             # NOTE: quote_plus is required for urlencoding
             rets, errors = await verify_content(
                 client,

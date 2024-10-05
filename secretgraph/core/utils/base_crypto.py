@@ -356,14 +356,15 @@ class AESGCMAlgo(EncryptionAlgorithm):
             params = copy.copy(params)
         if isinstance(key, str):
             key = b64decode(key)
+        cryptor = None
         if isinstance(key, bytes):
-            key = AESGCM(key)
+            cryptor = AESGCM(key)
         if not params.get("nonce"):
             params["nonce"] = urandom(13)
         if isinstance(params["nonce"], str):
             params["nonce"] = b64decode(params["nonce"])
         return CryptoResult(
-            data=key.encrypt(params["nonce"], data, None), params=params, key=key._key
+            data=cryptor.encrypt(params["nonce"], data, None), params=params, key=key
         )
 
     async def encryptor(self, key, params):
@@ -383,10 +384,11 @@ class AESGCMAlgo(EncryptionAlgorithm):
             params["nonce"] = b64decode(params["nonce"])
         if isinstance(key, str):
             key = b64decode(key)
+        cryptor = None
         if isinstance(key, bytes):
-            key = AESGCM(key)
+            cryptor = AESGCM(key)
         return CryptoResult(
-            data=key.decrypt(params["nonce"], data, None), params=params, key=key._key
+            data=cryptor.decrypt(params["nonce"], data, None), params=params, key=key
         )
 
     async def decryptor(self, key, params):
