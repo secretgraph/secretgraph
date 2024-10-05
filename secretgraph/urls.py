@@ -25,6 +25,7 @@ urlpatterns = [
             CORSFileUploadGraphQLView.as_view(
                 graphql_ide="graphiql",
                 subscriptions_enabled=True,
+                multipart_uploads_enabled=True,
                 schema=schema,
             )
         ),
