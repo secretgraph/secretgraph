@@ -65,7 +65,7 @@ async def _transform_key_into_dataobj(
     if isinstance(key_obj.publicKey, str):
         key_obj.publicKey = base64.b64decode(key_obj.publicKey)
     if isinstance(key_obj.cryptoParameters, str):
-        key_obj.cryptoParameters = base64.b64decode(key_obj.cryptoParameters)
+        key_obj.cryptoParameters = key_obj.cryptoParameters
     if key_obj.privateKey:
         if not key_obj.cryptoParameters:
             raise ValueError("encrypted private key requires cryptoParameters")

@@ -285,6 +285,9 @@ export async function decrypt(
         const splitted = splitFirstOnly(params)
         algorithm = splitted[0]
         const entry = mapEncryptionAlgorithms['' + algorithm]
+        if (!entry) {
+            throw new UnknownAlgorithm('invalid algorithm: ' + algorithm)
+        }
         params = (await entry.deserialize(splitted[1])).params
     }
     const entry = mapEncryptionAlgorithms['' + algorithm]
