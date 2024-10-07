@@ -538,16 +538,20 @@ const EditCustom = ({ viewOnly }: { viewOnly?: boolean }) => {
     const { config } = React.useContext(Contexts.InitializedConfig)
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
     const [data, setData] = React.useState<
-        | (Exclude<
-              UnpackPromise<ReturnType<typeof decryptContentObject>>,
-              null
-          > & {
-              text: string
-              key: string
-              hashAlgorithm: string
-              url: string
-              mapper: UnpackPromise<ReturnType<typeof generateActionMapper>>
-          })
+        | [
+              Exclude<
+                  UnpackPromise<ReturnType<typeof decryptContentObject>>,
+                  null
+              > & {
+                  text: string
+                  hashAlgorithm: string
+                  url: string
+                  mapper: UnpackPromise<
+                      ReturnType<typeof generateActionMapper>
+                  >
+              },
+              string
+          ]
         | null
     >(null)
 
@@ -650,14 +654,16 @@ const EditCustom = ({ viewOnly }: { viewOnly?: boolean }) => {
                 name = obj.tags['~name'][0]
             }
             updateOb['title'] = name
-            setData({
-                ...obj,
-                text: await new Blob([obj.data]).text(),
-                key: `${new Date().getTime()}`,
-                hashAlgorithm: hashAlgorithms[0],
-                url: mainCtx.url as string,
-                mapper: await mapper,
-            })
+            setData([
+                {
+                    ...obj,
+                    text: await new Blob([obj.data]).text(),
+                    hashAlgorithm: hashAlgorithms[0],
+                    url: mainCtx.url as string,
+                    mapper: await mapper,
+                },
+                `${new Date().getTime()}`,
+            ])
         }
         f()
         return () => {
@@ -667,7 +673,14 @@ const EditCustom = ({ viewOnly }: { viewOnly?: boolean }) => {
     if (!data) {
         return null
     }
-    return <InnerCustom {...data} disabled={loading} viewOnly={viewOnly} />
+    return (
+        <InnerCustom
+            {...data[0]}
+            key={data[1]}
+            disabled={loading}
+            viewOnly={viewOnly}
+        />
+    )
 }
 const CreateCustom = () => {
     const { activeUrl } = React.useContext(Contexts.ActiveUrl)

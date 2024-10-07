@@ -1217,10 +1217,7 @@ function EditKeys({ viewOnly }: { viewOnly?: boolean }) {
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
     const { config } = React.useContext(Contexts.InitializedConfig)
     const [data, setData] = React.useState<
-        | (UnpackPromise<ReturnType<typeof loadKeys>> & {
-              key: string
-          })
-        | null
+        [UnpackPromise<ReturnType<typeof loadKeys>>, string] | null
     >(null)
 
     let {
@@ -1302,10 +1299,7 @@ function EditKeys({ viewOnly }: { viewOnly?: boolean }) {
             }
             if (active) {
                 updateMainCtx(updateOb)
-                setData({
-                    ...reskeys,
-                    key: `${new Date().getTime()}`,
-                })
+                setData([reskeys, `${new Date().getTime()}`])
             }
         }
         f()
@@ -1319,7 +1313,8 @@ function EditKeys({ viewOnly }: { viewOnly?: boolean }) {
 
     return (
         <KeysUpdate
-            {...data}
+            {...data[0]}
+            key={data[1]}
             url={mainCtx.url as string}
             disabled={loading || viewOnly}
             viewOnly={viewOnly}

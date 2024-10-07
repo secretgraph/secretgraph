@@ -18,14 +18,21 @@ import { InnerFile } from './form'
 const EditFile = ({ viewOnly = false }: { viewOnly?: boolean }) => {
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
     const { config } = React.useContext(Contexts.InitializedConfig)
-    const [data, setData] = React.useState<{
-        mapper: UnpackPromise<ReturnType<typeof generateActionMapper>>
-        hashAlgorithms: string[]
-        nodeData: any
-        tags: { [name: string]: string[] }
-        data: Blob | null
-        key: string | number
-    } | null>(null)
+    const [data, setData] = React.useState<
+        | [
+              {
+                  mapper: UnpackPromise<
+                      ReturnType<typeof generateActionMapper>
+                  >
+                  hashAlgorithms: string[]
+                  nodeData: any
+                  tags: { [name: string]: string[] }
+                  data: Blob | null
+              },
+              string
+          ]
+        | null
+    >(null)
 
     let {
         data: dataUnfinished,
@@ -137,17 +144,19 @@ const EditFile = ({ viewOnly = false }: { viewOnly?: boolean }) => {
             }
             updateOb['title'] = name
             updateMainCtx(updateOb)
-            setData({
-                ...obj,
-                hashAlgorithms,
-                mapper,
-                data: new Blob([obj.data], {
-                    type:
-                        (obj.tags?.mime ? obj.tags.mime[0] : undefined) ??
-                        'application/octet-stream',
-                }),
-                key: `${new Date().getTime()}`,
-            })
+            setData([
+                {
+                    ...obj,
+                    hashAlgorithms,
+                    mapper,
+                    data: new Blob([obj.data], {
+                        type:
+                            (obj.tags?.mime ? obj.tags.mime[0] : undefined) ??
+                            'application/octet-stream',
+                    }),
+                },
+                `${new Date().getTime()}`,
+            ])
         }
         f()
         return () => {
@@ -160,7 +169,8 @@ const EditFile = ({ viewOnly = false }: { viewOnly?: boolean }) => {
     }
     return (
         <InnerFile
-            {...data}
+            {...data[0]}
+            key={data[1]}
             url={mainCtx.url as string}
             disabled={loading || viewOnly}
             viewOnly={viewOnly}
@@ -176,12 +186,19 @@ const CreateFile = () => {
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
     const { activeUrl } = React.useContext(Contexts.ActiveUrl)
     const { config } = React.useContext(Contexts.InitializedConfig)
-    const [data, setData] = React.useState<{
-        mapper: UnpackPromise<ReturnType<typeof generateActionMapper>>
-        hashAlgorithms: string[]
-        data?: Blob | null
-        key: string | number
-    } | null>(null)
+    const [data, setData] = React.useState<
+        | [
+              {
+                  mapper: UnpackPromise<
+                      ReturnType<typeof generateActionMapper>
+                  >
+                  hashAlgorithms: string[]
+                  data?: Blob | null
+              },
+              string
+          ]
+        | null
+    >(null)
     // const [PSelections, setPSelections] = React.useState<string[]>([])
     const { data: dataUnfinished, refetch } = useQuery(
         getContentConfigurationQuery,
@@ -230,11 +247,13 @@ const CreateFile = () => {
             })
             if (active) {
                 updateMainCtx(updateOb)
-                setData({
-                    hashAlgorithms,
-                    mapper,
-                    key: `${new Date().getTime()}`,
-                })
+                setData([
+                    {
+                        hashAlgorithms,
+                        mapper,
+                    },
+                    `${new Date().getTime()}`,
+                ])
             }
         }
         f()
@@ -246,7 +265,7 @@ const CreateFile = () => {
         return null
     }
 
-    return <InnerFile url={activeUrl} {...data} />
+    return <InnerFile url={activeUrl} {...data[0]} key={data[1]} />
 }
 
 export default function FileComponent() {

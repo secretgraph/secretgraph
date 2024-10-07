@@ -434,12 +434,9 @@ const InnerWorkday = React.memo(function InnerWorkday({
 const EditWorkday = ({ viewOnly }: { viewOnly?: boolean }) => {
     const { config } = React.useContext(Contexts.InitializedConfig)
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
-    const [data, setData] = React.useState<
-        | (InnerWorkdayProps & {
-              key: string
-          })
-        | null
-    >(null)
+    const [data, setData] = React.useState<[InnerWorkdayProps, string] | null>(
+        null
+    )
 
     let {
         data: dataUnfinished,
@@ -542,14 +539,16 @@ const EditWorkday = ({ viewOnly }: { viewOnly?: boolean }) => {
                 name = obj.tags['~name'][0]
             }
             updateOb['title'] = name
-            setData({
-                ...obj,
-                data: JSON.parse(await new Blob([obj.data]).text()),
-                key: `${new Date().getTime()}`,
-                hashAlgorithm: hashAlgorithms[0],
-                url: mainCtx.url as string,
-                mapper: await mapper,
-            })
+            setData([
+                {
+                    ...obj,
+                    data: JSON.parse(await new Blob([obj.data]).text()),
+                    hashAlgorithm: hashAlgorithms[0],
+                    url: mainCtx.url as string,
+                    mapper: await mapper,
+                },
+                `${new Date().getTime()}`,
+            ])
         }
         f()
         return () => {
@@ -559,18 +558,32 @@ const EditWorkday = ({ viewOnly }: { viewOnly?: boolean }) => {
     if (!data) {
         return null
     }
-    return <InnerWorkday {...data} disabled={loading} viewOnly={viewOnly} />
+    return (
+        <InnerWorkday
+            {...data[0]}
+            key={data[1]}
+            disabled={loading}
+            viewOnly={viewOnly}
+        />
+    )
 }
 const CreateWorkday = () => {
     const { activeUrl } = React.useContext(Contexts.ActiveUrl)
     const { config } = React.useContext(Contexts.InitializedConfig)
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
-    const [data, setData] = React.useState<{
-        key: string
-        hashAlgorithm: string
-        url: string
-        mapper: UnpackPromise<ReturnType<typeof generateActionMapper>>
-    } | null>(null)
+    const [data, setData] = React.useState<
+        | [
+              {
+                  hashAlgorithm: string
+                  url: string
+                  mapper: UnpackPromise<
+                      ReturnType<typeof generateActionMapper>
+                  >
+              },
+              string
+          ]
+        | null
+    >(null)
     let {
         data: dataUnfinished,
         refetch,
@@ -625,12 +638,14 @@ const CreateWorkday = () => {
             if (!active) {
                 return
             }
-            setData({
-                key: `${new Date().getTime()}`,
-                hashAlgorithm: hashAlgorithms[0],
-                url: activeUrl,
-                mapper: mapper,
-            })
+            setData([
+                {
+                    hashAlgorithm: hashAlgorithms[0],
+                    url: activeUrl,
+                    mapper: mapper,
+                },
+                `${new Date().getTime()}`,
+            ])
         }
         f()
         return () => {
@@ -640,7 +655,7 @@ const CreateWorkday = () => {
     if (!data) {
         return null
     }
-    return <InnerWorkday {...data} disabled={loading} />
+    return <InnerWorkday {...data[0]} key={data[1]} disabled={loading} />
 }
 const ViewWorkday = () => {
     return <EditWorkday viewOnly />

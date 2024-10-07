@@ -596,10 +596,7 @@ const EditCluster = ({ viewOnly = false }: { viewOnly?: boolean }) => {
     const { config } = React.useContext(Contexts.InitializedConfig)
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
     const [data, setData] = React.useState<
-        | (UnpackPromise<ReturnType<typeof extractInfo>> & {
-              key: string
-          })
-        | null
+        [UnpackPromise<ReturnType<typeof extractInfo>>, string] | null
     >(null)
     const {
         data: dataUnfinished,
@@ -680,11 +677,7 @@ const EditCluster = ({ viewOnly = false }: { viewOnly?: boolean }) => {
             })
             if (active) {
                 updateMainCtx(updateOb)
-                setData({
-                    ...newData,
-
-                    key: `edit${new Date().getTime()}`,
-                })
+                setData([newData, `edit${new Date().getTime()}`])
             }
         }
         f()
@@ -697,7 +690,14 @@ const EditCluster = ({ viewOnly = false }: { viewOnly?: boolean }) => {
         return null
     }
 
-    return <ClusterIntern viewOnly={viewOnly} loading={loading} {...data} />
+    return (
+        <ClusterIntern
+            viewOnly={viewOnly}
+            loading={loading}
+            {...data[0]}
+            key={data[1]}
+        />
+    )
 }
 
 const ViewCluster = () => {

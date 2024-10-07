@@ -143,7 +143,7 @@ export async function createCluster(options: {
                                     options.asymmetricEncryptionAlgorithm ||
                                     DEFAULT_ASYMMETRIC_ENCRYPTION_ALGORITHM,
                             }
-                        ).then((data) => `key=:${data}`)
+                        ).then((data) => `key=${data}`)
                     )
                     return ret
                 })()

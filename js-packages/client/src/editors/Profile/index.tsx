@@ -50,12 +50,9 @@ import { InnerProfile, InnerProfileProps } from './form'
 const EditProfile = ({ viewOnly }: { viewOnly?: boolean }) => {
     const { config } = React.useContext(Contexts.InitializedConfig)
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
-    const [data, setData] = React.useState<
-        | (InnerProfileProps & {
-              key: string
-          })
-        | null
-    >(null)
+    const [data, setData] = React.useState<[InnerProfileProps, string] | null>(
+        null
+    )
 
     let {
         data: dataUnfinished,
@@ -156,14 +153,16 @@ const EditProfile = ({ viewOnly }: { viewOnly?: boolean }) => {
                 name = obj.tags['~name'][0]
             }
             updateOb['title'] = name
-            setData({
-                ...obj,
-                data: JSON.parse(await new Blob([obj.data]).text()),
-                key: `${new Date().getTime()}`,
-                hashAlgorithm: hashAlgorithms[0],
-                url: mainCtx.url as string,
-                mapper: await mapper,
-            })
+            setData([
+                {
+                    ...obj,
+                    data: JSON.parse(await new Blob([obj.data]).text()),
+                    hashAlgorithm: hashAlgorithms[0],
+                    url: mainCtx.url as string,
+                    mapper: await mapper,
+                },
+                `${new Date().getTime()}`,
+            ])
         }
         f()
         return () => {
@@ -173,7 +172,14 @@ const EditProfile = ({ viewOnly }: { viewOnly?: boolean }) => {
     if (!data) {
         return null
     }
-    return <InnerProfile {...data} disabled={loading} viewOnly={viewOnly} />
+    return (
+        <InnerProfile
+            {...data[0]}
+            key={data[1]}
+            disabled={loading}
+            viewOnly={viewOnly}
+        />
+    )
 }
 const CreateProfile = () => {
     const { activeUrl } = React.useContext(Contexts.ActiveUrl)

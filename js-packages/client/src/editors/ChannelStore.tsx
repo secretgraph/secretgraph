@@ -179,14 +179,21 @@ function CustomView({ data }: { data: Blob }) {
 function ViewChannelStore() {
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
     const { config } = React.useContext(Contexts.InitializedConfig)
-    const [data, setData] = React.useState<{
-        mapper: UnpackPromise<ReturnType<typeof generateActionMapper>>
-        hashAlgorithms: string[]
-        nodeData: any
-        tags: { [name: string]: string[] }
-        data: Blob
-        key: string | number
-    } | null>(null)
+    const [data, setData] = React.useState<
+        | [
+              {
+                  mapper: UnpackPromise<
+                      ReturnType<typeof generateActionMapper>
+                  >
+                  hashAlgorithms: string[]
+                  nodeData: any
+                  tags: { [name: string]: string[] }
+                  data: Blob
+              },
+              key: string | number
+          ]
+        | null
+    >(null)
 
     let {
         data: dataUnfinished,
@@ -308,17 +315,19 @@ function ViewChannelStore() {
             }
             updateOb['title'] = name
             updateMainCtx(updateOb)
-            setData({
-                ...obj,
-                hashAlgorithms,
-                mapper,
-                data: new Blob([obj.data], {
-                    type:
-                        (obj.tags?.mime ? obj.tags.mime[0] : undefined) ??
-                        'application/octet-stream',
-                }),
-                key: `${new Date().getTime()}`,
-            })
+            setData([
+                {
+                    ...obj,
+                    hashAlgorithms,
+                    mapper,
+                    data: new Blob([obj.data], {
+                        type:
+                            (obj.tags?.mime ? obj.tags.mime[0] : undefined) ??
+                            'application/octet-stream',
+                    }),
+                },
+                `${new Date().getTime()}`,
+            ])
             loading = false
         }
         f()
@@ -330,12 +339,17 @@ function ViewChannelStore() {
     if (!data) {
         return null
     }
-    if (data.tags['~mime'][0] == 'application/json') {
-        return <JSONView data={data.data} />
-    } else if (rdfMimes.has(data.tags['~mime'][0])) {
-        return <RDFTripleView data={data.data} mime={data.tags['~mime'][0]} />
+    if (data[0].tags['~mime'][0] == 'application/json') {
+        return <JSONView data={data[0].data} />
+    } else if (rdfMimes.has(data[0].tags['~mime'][0])) {
+        return (
+            <RDFTripleView
+                data={data[0].data}
+                mime={data[0].tags['~mime'][0]}
+            />
+        )
     } else {
-        return <CustomView data={data.data} />
+        return <CustomView data={data[0].data} key={data[1]} />
     }
     //return <InnerFile {...data} url={mainCtx.url as string} />
 }

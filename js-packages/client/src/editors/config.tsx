@@ -452,19 +452,23 @@ const EditConfig = ({ viewOnly }: { viewOnly?: boolean }) => {
     const { config } = React.useContext(Contexts.InitializedConfig)
     const { mainCtx, updateMainCtx } = React.useContext(Contexts.Main)
     const [data, setData] = React.useState<
-        | (Omit<
-              Exclude<
-                  UnpackPromise<ReturnType<typeof decryptContentObject>>,
-                  null
-              >,
-              'data'
-          > & {
-              config: Interfaces.ConfigInterface
-              key: string
-              hashAlgorithm: string
-              url: string
-              mapper: UnpackPromise<ReturnType<typeof generateActionMapper>>
-          })
+        | [
+              Omit<
+                  Exclude<
+                      UnpackPromise<ReturnType<typeof decryptContentObject>>,
+                      null
+                  >,
+                  'data'
+              > & {
+                  config: Interfaces.ConfigInterface
+                  hashAlgorithm: string
+                  url: string
+                  mapper: UnpackPromise<
+                      ReturnType<typeof generateActionMapper>
+                  >
+              },
+              string
+          ]
         | null
         | Error
     >(null)
@@ -580,14 +584,16 @@ const EditConfig = ({ viewOnly }: { viewOnly?: boolean }) => {
                 setData(error)
                 return
             }
-            setData({
-                ...obj2,
-                config: thisConfig,
-                key: `${new Date().getTime()}`,
-                hashAlgorithm: hashAlgorithms[0],
-                url: mainCtx.url as string,
-                mapper: await mapper,
-            })
+            setData([
+                {
+                    ...obj2,
+                    config: thisConfig,
+                    hashAlgorithm: hashAlgorithms[0],
+                    url: mainCtx.url as string,
+                    mapper: await mapper,
+                },
+                `${new Date().getTime()}`,
+            ])
         }
         f()
         return () => {
@@ -600,7 +606,14 @@ const EditConfig = ({ viewOnly }: { viewOnly?: boolean }) => {
     if (data instanceof Error) {
         throw data
     }
-    return <InnerConfig {...data} disabled={loading} viewOnly={viewOnly} />
+    return (
+        <InnerConfig
+            {...data[0]}
+            key={data[1]}
+            disabled={loading}
+            viewOnly={viewOnly}
+        />
+    )
 }
 const ViewConfig = () => {
     return <EditConfig viewOnly />
