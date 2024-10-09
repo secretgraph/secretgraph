@@ -32,7 +32,8 @@ argon2-cffi = "*"
 httpx = {version = "*", extras = ["http2"]}
 httpcore = {version = "*", extras = ["asyncio"]}
 gql = {version = ">=3.5", extras = ["websockets"]}
-django = {version = '>=4.2', optional = true}
+# performance regression in django 5.1
+django = {version = '>=4.2,<5.1', optional = true}
 channels = {version = ">=4.0", optional = true}
 graphene-protector = {version=">=0.8.0", optional = true}
 strawberry-graphql = {version=">=0.183",  optional = true}

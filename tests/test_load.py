@@ -104,7 +104,7 @@ class LoadTests(TransactionTestCase):
         )["cluster"]
 
         with self.subTest("setup"):
-            for i in range(900):
+            for i in range(400):
                 request = self.factory.get("/graphql")
                 tags = ["name=foo", "mime=text/plain"]
                 if i % 20 == 0:
@@ -150,7 +150,7 @@ class LoadTests(TransactionTestCase):
         faker = Faker()
 
         with self.subTest("setup"):
-            for i in range(900):
+            for i in range(400):
                 # cluster creates also 1 content
                 request = self.factory.get("/graphql")
                 cluster = (

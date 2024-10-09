@@ -16,15 +16,12 @@ last_modified_date = timezone.now()
 
 urlpatterns = [
     # without no contents can be retrieved
-    path(
-        "secretgraph/", include("secretgraph.server.urls"), name="secretgraph"
-    ),
+    path("secretgraph/", include("secretgraph.server.urls"), name="secretgraph"),
     path(
         "graphql/",
         csrf_exempt(
             CORSFileUploadGraphQLView.as_view(
                 graphql_ide="graphiql",
-                subscriptions_enabled=True,
                 multipart_uploads_enabled=True,
                 schema=schema,
             )
@@ -34,9 +31,7 @@ urlpatterns = [
     # for general favicon, see also linked favicon in template
     path(
         "favicon.ico",
-        RedirectView.as_view(
-            url=staticfiles_storage.url("secretgraph/favicon.svg")
-        ),
+        RedirectView.as_view(url=staticfiles_storage.url("secretgraph/favicon.svg")),
     ),
 ]
 i18n_urlpatterns = []
